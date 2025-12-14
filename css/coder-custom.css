@@ -1,0 +1,14 @@
+.avatar,
+.avatar img {
+    width: 240px !important;
+    height: 240px !important;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
+    margin: 0 auto; /* center it */
+}
+
+
+.navigation .navigation-title {
+    text-transform: none;
+}

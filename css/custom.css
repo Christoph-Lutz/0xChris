@@ -1,0 +1,68 @@
+/* Menu container */
+nav ul.menu {
+  display: flex !important;
+  align-items: center;
+  padding-left: 0;
+  gap: 1.2rem; /* spacing between menu items */
+  font-size: inherit; /* use same size as body (matches xmin) */
+}
+
+/* Menu items */
+nav ul.menu li {
+  display: flex;
+  align-items: center;
+  list-style: none;
+}
+
+/* Links with icons */
+nav ul.menu li.icon a,
+nav ul.menu li a {
+  display: flex;
+  align-items: center;
+  color: #666;
+  text-decoration: none;
+  gap: 0.4rem; /* spacing between icon and text */
+
+  /* remove grey box */
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* Icon images */
+nav ul.menu li.icon img {
+  width: 1em;   /* same height as text */
+  height: 1em;  /* same height as text */
+  display: block;
+  vertical-align: middle;
+}
+
+/* Hover state */
+nav ul.menu li.icon a:hover,
+nav ul.menu li a:hover {
+  color: #000;
+}
+
+/* Remove grey background around the post title and metadata */
+.article-meta {
+    background: none;
+    padding: 0;
+    border-radius: 0;
+}
+
+/* Ensure the title text has no extra background */
+.article-meta .title {
+    background: none;
+    padding: 0 ;
+    border: none;
+}
+
+/* Make the date smaller */
+.article-meta .date {
+    font-size: 1.4rem;      /* slightly smaller than title */
+    line-height: 1.0;       /* better spacing */
+    margin-top: 0.2rem;     /* spacing below title */
+    display: inline-block;  /* keeps layout consistent */
+}
+
+
