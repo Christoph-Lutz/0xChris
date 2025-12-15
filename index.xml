@@ -1,19 +1,14 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Home on 0xChris.dev</title>
-    <link>http://localhost:1313/</link>
-    <description>Recent content in Home on 0xChris.dev</description>
-    <generator>Hugo</generator>
-    <language>en-us</language>
-    <lastBuildDate>Sun, 14 Dec 2025 00:00:00 +0000</lastBuildDate>
-    <atom:link href="http://localhost:1313/index.xml" rel="self" type="application/rss+xml" />
-    <item>
+    <title>0xChris.dev</title>
+    <link>https://www.0xChris.dev/</link>
+    <description>0xChris.dev updates</description>
+    <atom:link href="https://www.0xChris.dev/" rel="self" type="application/rss+xml"/><item>
       <title>Test</title>
-      <link>http://localhost:1313/blog/test/</link>
-      <pubDate>Sun, 14 Dec 2025 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/blog/test/</guid>
-      <description>&lt;h1 id=&#34;section-1&#34;&gt;Section 1&lt;/h1&gt;&#xA;&lt;p&gt;Not much to see here yet, but ideas are taking shape and drafts are in the works — stay tuned!&lt;/p&gt;</description>
-    </item>
-  </channel>
+      <link>https://www.0xChris.dev/blog/test/</link>
+      <pubDate>Sun, 14 Dec 2025 00:00:00 UTC</pubDate>
+      <guid>https://www.0xChris.dev/blog/test/</guid>
+      <description>&lt;h1 id=&#34;section-1&#34;&gt;Section 1&lt;/h1&gt;
+&lt;p&gt;Not much to see here yet, but ideas are taking shape and drafts are in the works — stay tuned!&lt;/p&gt;</description>
+    </item></channel>
 </rss>
