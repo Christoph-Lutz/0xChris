@@ -37,6 +37,17 @@ nav ul.menu li.icon img {
   vertical-align: middle;
 }
 
+
+/* Inline SVG icons in the menu */
+nav ul.menu li a svg {
+  width: 1.5em;
+  height: 1.5em;
+  display: inline-block;
+  vertical-align: middle;
+  fill: currentColor;
+}
+
+
 /* Hover state */
 nav ul.menu li.icon a:hover,
 nav ul.menu li a:hover {

@@ -12,3 +12,24 @@
 .navigation .navigation-title {
     text-transform: none;
 }
+
+
+ul li a svg {
+  width: 36px;
+  height: 36px;
+  display: inline-block;
+  vertical-align: middle
+  fill: currentColor;
+  vertical-align: -5px; /* adjust this value until it visually aligns */
+}
+
+/* Inline SVG icons */
+ul li a:hover svg {
+  fill: #007bff;         /* changes SVG fill color */
+  transition: fill 0.3s; 
+}
+
+ul li a:hover {
+  cursor: pointer;
+}
+
