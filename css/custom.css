@@ -37,19 +37,16 @@ nav ul.menu li.icon img {
   vertical-align: middle;
 }
 
-
 /* Inline SVG icons in the menu */
 nav ul.menu li a svg {
-  width: 1.5em;
-  height: 1.5em;
+  width: 1.0em;
+  height: 1.0em;
   display: inline-block;
   vertical-align: middle;
   fill: currentColor;
 }
 
-
 /* Hover state */
-nav ul.menu li.icon a:hover,
 nav ul.menu li a:hover {
   color: #000;
 }
@@ -76,4 +73,11 @@ nav ul.menu li a:hover {
     display: inline-block;  /* keeps layout consistent */
 }
 
-
+/* Style all figure captions consistently */
+figure figcaption {
+    text-align: left; !important;
+    color: #666 !important;
+    font-size: 0.9em !important;
+    margin-top: 0.25em !important;
+    line-height: 1.2em; !important;
+}
