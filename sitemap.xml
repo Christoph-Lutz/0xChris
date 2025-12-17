@@ -2,33 +2,33 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>http://localhost:1313/</loc>
+    <loc>https://www.0xChris.dev/</loc>
     <lastmod>2025-12-14T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/blog/</loc>
+    <loc>https://www.0xChris.dev/blog/</loc>
     <lastmod>2025-12-14T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/categories/</loc>
+    <loc>https://www.0xChris.dev/categories/</loc>
     <lastmod>2025-12-14T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/categories/hello-world/</loc>
+    <loc>https://www.0xChris.dev/categories/hello-world/</loc>
     <lastmod>2025-12-14T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/tags/helloworld/</loc>
+    <loc>https://www.0xChris.dev/tags/helloworld/</loc>
     <lastmod>2025-12-14T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/tags/</loc>
+    <loc>https://www.0xChris.dev/tags/</loc>
     <lastmod>2025-12-14T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/blog/test/</loc>
+    <loc>https://www.0xChris.dev/blog/test/</loc>
     <lastmod>2025-12-14T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/categories/test/</loc>
+    <loc>https://www.0xChris.dev/categories/test/</loc>
     <lastmod>2025-12-14T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/tags/test/</loc>
+    <loc>https://www.0xChris.dev/tags/test/</loc>
     <lastmod>2025-12-14T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/contact/</loc>
+    <loc>https://www.0xChris.dev/contact/</loc>
   </url>
 </urlset>
