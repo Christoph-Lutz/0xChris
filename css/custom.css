@@ -69,12 +69,13 @@ nav ul.menu li a:hover {
 .article-meta .date {
     font-size: 1.4rem;      /* slightly smaller than title */
     line-height: 1.0;       /* better spacing */
-    margin-top: 0.2rem;     /* spacing below title */
+    margin-top: 0.1rem;     /* spacing below title */
     display: inline-block;  /* keeps layout consistent */
 }
 
 /* Style all figure captions consistently */
 figure figcaption {
+    /* font-family: Charter, Optima, Georgia, "Times New Roman", Times, serif; */
     text-align: left; !important;
     color: #666 !important;
     font-size: 0.9em !important;
@@ -143,3 +144,14 @@ blockquote.warning {
   background: #fff7ed;
 }
 */
+
+/* Font adjustments */
+body p {
+    font-family: Charter, Optima, Georgia, "Times New Roman", Times, serif;
+    line-height: 1.6; /* optional, for readability */
+}
+
+blockquote {
+    font-family: Charter, Optima, Georgia, "Times New Roman", Times, serif;
+    line-height: 1.6;
+}
