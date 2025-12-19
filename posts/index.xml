@@ -3,5 +3,5 @@
     <title>0xChris</title>
     <link>https://www.0xChris.dev/</link>
     <description>0xChris updates</description>
-    <atom:link href="https://www.0xChris.dev/" rel="self" type="application/rss+xml"/></channel>
+    <atom:link href="https://www.0xChris.dev/posts/" rel="self" type="application/rss+xml"/></channel>
 </rss>

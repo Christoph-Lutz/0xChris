@@ -1,14 +1,7 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>0xChris.dev</title>
-    <link>http://localhost:1313/</link>
-    <description>0xChris.dev updates</description>
-    <atom:link href="http://localhost:1313/tags/helloworld/" rel="self" type="application/rss+xml"/><item>
-      <title>Test</title>
-      <link>http://localhost:1313/blog/test/</link>
-      <pubDate>Sun, 14 Dec 2025 00:00:00 UTC</pubDate>
-      <guid>http://localhost:1313/blog/test/</guid>
-      <description>&lt;p&gt;Not much to see here yet, but ideas are taking shape and drafts are in the works — stay tuned!&lt;/p&gt;
-&lt;p&gt;Lorem ipsum dolor sit amet. Ex inventore saepe ut quia optio qui consequuntur laudantium qui similique corporis est quibusdam culpa! Est praesentium quod qui placeat nihil aut possimus ipsa nam consequuntur mollitia et perspiciatis consequuntur qui rerum dolorem. Est rerum autem ad vero quia non voluptas ullam. Quo sint delectus qui nemo delectus cum neque tenetur id sint temporibus eum odit inventore.&lt;/p&gt;</description>
-    </item></channel>
+    <title>0xChris</title>
+    <link>https://www.0xChris.dev/</link>
+    <description>0xChris updates</description>
+    <atom:link href="https://www.0xChris.dev/tags/helloworld/" rel="self" type="application/rss+xml"/></channel>
 </rss>

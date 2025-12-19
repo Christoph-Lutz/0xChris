@@ -81,3 +81,65 @@ figure figcaption {
     margin-top: 0.25em !important;
     line-height: 1.2em; !important;
 }
+
+/* Make author link in footer black */
+footer a {
+  color: #000;
+}
+
+/* Blockquote formatting */
+blockquote {
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+  border-left: 4px solid #9ca3af;
+  background: #f9fafb;
+}
+
+blockquote strong:first-child {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+blockquote.note {
+  border-left-color: #6b7280;
+  background: #f9fafb;
+}
+
+blockquote.info {
+  border-left-color: #6b7280;
+  background: #f9fafb;
+}
+
+blockquote.tip {
+  border-left-color: #6b7280;
+  background: #f9fafb;
+}
+
+blockquote.warning {
+  border-left-color: #6b7280;
+  background: #f9fafb;
+}
+
+/* Colored blockquotes:     */
+/* Remove comment to enable */
+/* 
+blockquote.note {
+  border-left-color: #6b7280;
+  background: #f9fafb;
+}
+
+blockquote.info {
+  border-left-color: #0284c7;
+  background: #eff6ff;
+}
+
+blockquote.tip {
+  border-left-color: #16a34a;
+  background: #f0fdf4;
+}
+
+blockquote.warning {
+  border-left-color: #d97706;
+  background: #fff7ed;
+}
+*/
