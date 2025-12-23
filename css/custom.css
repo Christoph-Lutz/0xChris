@@ -155,3 +155,8 @@ blockquote {
     font-family: Charter, Optima, Georgia, "Times New Roman", Times, serif;
     line-height: 1.6;
 }
+
+/* Reduce spacing below all headings */
+h1, h2, h3, h4, h5, h6 {
+    margin-bottom: 0.5em; /* adjust as needed */
+}

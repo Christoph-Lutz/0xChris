@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Printing Non-Null-Terminated Strings with GDB | 0xChris</title>
+
+    
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="/css/custom.css" />
+
+    
+    
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Printing Non-Null-Terminated Strings with GDB">
+  <meta name="twitter:description" content="In C, a string is an array of characters terminated by the null terminator character &#39;\0&#39; (ASCII 0x0). String handling functions like strlen, strcpy, strcmp, etc. use the null terminator to determine where the string data ends. Without it, string handling functions can read past the intended memory, leading to undefined behavior.
+Similarly, in gdb, when printing a string or examining a memory address as a string (using x/s &lt;addr&gt;), both the printf and examine commands also rely on the null terminator to determine where a string ends. However, sometimes programs store strings without a null terminator, and their functions use a length parameter instead to indicate the length of a string.">
+
+
+<meta property="og:title" content="Printing Non-Null-Terminated Strings with GDB">
+<meta property="og:description" content="In C, a string is an array of characters terminated by the null terminator character &amp;#39;\0&amp;#39; (ASCII 0x0). String handling functions like strlen, strcpy, strcmp, etc. use the null terminator to determine where the string data ends. Without it, string handling functions can read past the intended memory, leading to undefined behavior.
+Similarly, in gdb, when printing a string or examining a memory address as a string (using x/s &amp;amp;lt;addr&amp;amp;gt;), both the printf and examine commands also rely on the null terminator to determine where a string ends. However, sometimes programs store strings without a null terminator, and their functions use a length parameter instead to indicate the length of a string.
+">
+<meta property="og:url" content="https://www.0xChris.dev/posts/2025-12-23-printing-non-null-terminated-strings-with-gdb/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="0xChris">
+
+
+
+<meta property="og:image" content="https://www.0xChris.dev/">
+
+
+  </head>
+
+  <body>
+    <nav>
+      <ul class="menu">
+        
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/posts/">Blog</a></li>
+        
+          <li><a href="/categories/">Categories</a></li>
+        
+          <li><a href="/tags/">Tags</a></li>
+        
+          <li><a href="/contact/">Contact</a></li>
+        
+          <li><a href="/index.xml">Subscribe</a></li>
+        
+
+        
+        
+          
+            <li class="icon">
+              <a href="https://github.com/Christoph-Lutz" aria-label="GitHub">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <title>GitHub</title>
+  <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" fill="currentColor"/>
+</svg>
+
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://x.com/chris_skyflier" aria-label="Twitter">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>X</title><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://bsky.app/profile/christophlutz.bsky.social" aria-label="Bluesky">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Bluesky</title><path d="M5.202 2.857C7.954 4.922 10.913 9.11 12 11.358c1.087-2.247 4.046-6.436 6.798-8.501C20.783 1.366 24 .213 24 3.883c0 .732-.42 6.156-.667 7.037-.856 3.061-3.978 3.842-6.755 3.37 4.854.826 6.089 3.562 3.422 6.299-5.065 5.196-7.28-1.304-7.847-2.97-.104-.305-.152-.448-.153-.327 0-.121-.05.022-.153.327-.568 1.666-2.782 8.166-7.847 2.97-2.667-2.737-1.432-5.473 3.422-6.3-2.777.473-5.899-.308-6.755-3.369C.42 10.04 0 4.615 0 3.883c0-3.67 3.217-2.517 5.202-1.026"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://sym42.org" aria-label="Sym42">
+                
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+  <path transform="scale(0.1004,0.1364) translate(11,1)" d="M0 0 C8.91 0 17.82 0 27 0 C27 32.01 27 64.02 27 97 C51.75 97 76.5 97 102 97 C102.33 118.78 102.66 140.56 103 163 C113.65023618 149.38741342 113.65023618 149.38741342 124 135.5625 C125.16793211 133.96872315 126.33590197 132.37497396 127.50390625 130.78125 C128.08156738 129.99105469 128.65922852 129.20085937 129.25439453 128.38671875 C132.14116363 124.43971809 135.0386119 120.50060445 137.9375 116.5625 C138.50952148 115.78430908 139.08154297 115.00611816 139.67089844 114.2043457 C143.34771065 109.21167043 147.06937462 104.25523259 150.81298828 99.3125 C170.98641999 74.34600723 170.98641999 74.34600723 177 44 C175.18481682 37.01549082 172.39314724 31.88945254 166.25390625 27.8515625 C158.52779633 23.46773353 150.43585329 23.37053009 141.8828125 25.125 C137.49428572 26.45701897 133.56042734 28.49182265 129.53125 30.66015625 C127 32 127 32 124 33 C124 23.76 124 14.52 124 5 C138.64493558 -0.63266753 138.64493558 -0.63266753 144.8828125 -0.62890625 C145.54860321 -0.63131821 146.21439392 -0.63373016 146.90036011 -0.63621521 C148.28308171 -0.63525162 149.66584937 -0.62222324 151.04833984 -0.59692383 C153.13124785 -0.56239643 155.20993568 -0.57639315 157.29296875 -0.59570312 C171.18361481 -0.58191047 181.8308422 3.34041929 192.00390625 12.87890625 C200.75379996 22.23354424 204.74719368 34.28009799 205.375 47 C204.41179837 64.52286038 196.17302926 80.08711875 186 94 C185.50757813 94.67724121 185.01515625 95.35448242 184.5078125 96.05224609 C180.97969681 100.89390965 177.41603046 105.70856193 173.84228516 110.51660156 C171.48040306 113.70041612 169.13374187 116.89527097 166.78710938 120.09033203 C159.52624187 129.97226581 152.18066843 139.78923387 144.81054688 149.58984375 C143.01140967 151.98481172 141.21597581 154.38250747 139.421875 156.78125 C138.8645166 157.52608643 138.3071582 158.27092285 137.73291016 159.03833008 C136.68515004 160.43879049 135.6379229 161.83964987 134.59130859 163.2409668 C131.11186653 167.88813347 131.11186653 167.88813347 130 169 C128.28134591 169.0935919 126.55884256 169.11744611 124.83764648 169.11352539 C123.73658066 169.11344986 122.63551483 169.11337433 121.50108337 169.11329651 C120.3031868 169.10813522 119.10529022 169.10297394 117.87109375 169.09765625 C116.65172623 169.0962413 115.4323587 169.09482635 114.17604065 169.09336853 C110.2631693 169.08774967 106.35035419 169.07519396 102.4375 169.0625 C99.79231853 169.05748743 97.14713617 169.0529241 94.50195312 169.04882812 C88.00126274 169.03862296 81.50069467 169.01905121 75 169 C75 154.15 75 139.3 75 124 C50.25 124 25.5 124 0 124 C0 83.08 0 42.16 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(155.8828125,0.37109375)" d="M0 0 C0.66579071 -0.00241196 1.33158142 -0.00482391 2.01754761 -0.00730896 C3.40026921 -0.00634537 4.78303687 0.00668301 6.16552734 0.03198242 C8.24843535 0.06650982 10.32712318 0.0525131 12.41015625 0.03320312 C26.30080231 0.04699578 36.9480297 3.96932554 47.12109375 13.5078125 C55.87098746 22.86245049 59.86438118 34.90900424 60.4921875 47.62890625 C59.52898587 65.15176663 51.29021676 80.716025 41.1171875 94.62890625 C40.62476563 95.30614746 40.13234375 95.98338867 39.625 96.68115234 C36.09688431 101.5228159 32.53321796 106.33746818 28.95947266 111.14550781 C26.59759056 114.32932237 24.25092937 117.52417722 21.90429688 120.71923828 C14.64342937 130.60117206 7.29785593 140.41814012 -0.07226562 150.21875 C-1.87140283 152.61371797 -3.66683669 155.01141372 -5.4609375 157.41015625 C-6.2969751 158.52741089 -6.2969751 158.52741089 -7.14990234 159.66723633 C-8.19766246 161.06769674 -9.2448896 162.46855612 -10.29150391 163.86987305 C-13.77094597 168.51703972 -13.77094597 168.51703972 -14.8828125 169.62890625 C-17.02840077 169.7166623 -19.17685671 169.73585844 -21.32421875 169.7265625 C-22.62939453 169.72333984 -23.93457031 169.72011719 -25.27929688 169.71679688 C-26.6679694 169.70844026 -28.05664127 169.6999753 -29.4453125 169.69140625 C-30.83788906 169.68639291 -32.23046731 169.68182972 -33.62304688 169.67773438 C-37.0430112 169.66590059 -40.46289094 169.64941505 -43.8828125 169.62890625 C-43.27097081 166.41918652 -42.20356776 164.38991326 -40.25 161.78515625 C-39.69892578 161.04394531 -39.14785156 160.30273438 -38.58007812 159.5390625 C-37.97873047 158.74371094 -37.37738281 157.94835937 -36.7578125 157.12890625 C-35.82098633 155.87400391 -35.82098633 155.87400391 -34.86523438 154.59375 C-32.87737817 151.93402615 -30.8807052 149.28109666 -28.8828125 146.62890625 C-27.62458729 144.95213253 -26.3667668 143.27505503 -25.109375 141.59765625 C-23.23806447 139.10192152 -21.36611031 136.60668841 -19.49169922 134.11328125 C-14.67303275 127.70001086 -9.90631899 121.24999876 -5.16113281 114.78222656 C-1.50429727 109.80538271 2.1987027 104.86635957 5.92797852 99.94360352 C26.10348636 74.9765367 26.10348636 74.9765367 32.1171875 44.62890625 C30.30200432 37.64439707 27.51033474 32.51835879 21.37109375 28.48046875 C13.64498383 24.09663978 5.55304079 23.99943634 -3 25.75390625 C-7.38852678 27.08592522 -11.32238516 29.1207289 -15.3515625 31.2890625 C-17.8828125 32.62890625 -17.8828125 32.62890625 -20.8828125 33.62890625 C-20.8828125 24.38890625 -20.8828125 15.14890625 -20.8828125 5.62890625 C-6.23787692 -0.00376128 -6.23787692 -0.00376128 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(171,143)" d="M0 0 C15.51 0 31.02 0 47 0 C47 8.91 47 17.82 47 27 C31.49 27 15.98 27 0 27 C0 18.09 0 9.18 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(135,6)" d="M0 0 C0.99 0.495 0.99 0.495 2 1 C1.67 8.92 1.34 16.84 1 25 C1.66 25 2.32 25 3 25 C2.67 25.99 2.34 26.98 2 28 C1.34 28 0.68 28 0 28 C0 18.76 0 9.52 0 0 Z"/>
+</svg>
+
+              </a>
+            </li>
+          
+        
+      </ul>
+      <hr/>
+    </nav>
+  </body>
+</html>
+<div class="article-meta">
+<h1><span class="title">Printing Non-Null-Terminated Strings with GDB</span></h1>
+
+<h2 class="date">2025/12/23</h2>
+</div>
+
+<main>
+<p>In C, a string is an array of characters terminated by the null terminator character <code>'\0'</code> (ASCII 0x0). String handling functions like <code>strlen</code>, <code>strcpy</code>, <code>strcmp</code>, etc. use the null terminator to determine where the string data ends. Without it, string handling functions can read past the intended memory, leading to undefined behavior.</p>
+<p>Similarly, in gdb, when printing a string or examining a memory address as a string (using <code>x/s &lt;addr&gt;</code>), both the printf and examine commands also rely on the null terminator to determine where a string ends. However, sometimes programs store strings without a null terminator, and their functions use a length parameter instead to indicate the length of a string.</p>
+<p>I encountered such a scenario the other day while digging into some of Oracle&rsquo;s low-level SQL statement generation functions called by <code>EXPLAIN PLAN</code> and <code>DBMS_UTILITY.EXPAND_SQL_TEXT</code>, for instance. In my case, the functions of interest were <code>msqaps</code> and <code>msqapp</code>. According to <a href="https://orafun.info">orafun.info</a>, the <code>msq</code> function prefix identifies the SQL statement generation module, while <code>aps</code> and <code>app</code> likely stand for &ldquo;append string&rdquo; and &ldquo;append&rdquo;, respectively.</p>
+<p>Anyway, the exact purpose of these functions is not relevant to the subject of this post, but both share a similar prototype and operate on a string pointer  plus the string&rsquo;s length, something like this:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span><span style="color:#00a000">msqaps</span>(<span style="color:#0b0;font-weight:bold">uint64_t</span> addr, <span style="color:#0b0;font-weight:bold">uint64_t</span> str_p, <span style="color:#0b0;font-weight:bold">uint32_t</span> len);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#00a000">msqapp</span>(<span style="color:#0b0;font-weight:bold">uint64_t</span> addr, <span style="color:#0b0;font-weight:bold">uint64_t</span> str_p, <span style="color:#0b0;font-weight:bold">uint32_t</span> len);</span></span></code></pre></div>
+<figcaption>Listing 1: msqap and msqapp function prototypes</figcaption>
+</figure>
+<p>To inspect the string values passed to these functions at runtime, we can attach to a process with gdb, set a breakpoint, resume execution, and — when the breakpoint is hit — peek into the memory referenced by the <code>str_p</code> argument. Note that according to the x86-64 calling convention on Linux, the second argument (<code>str_p</code>) is passed in register <code>%rsi</code> and the third argument (<code>len</code>) in register <code>%rdx</code>.</p>
+<p>To provide an example, let&rsquo;s fire up gdb, set a breakpoint on <code>msqapp</code> and have a look:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span># gdb -q -p &lt;pid&gt;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>(gdb) break msqapp
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>Breakpoint 1 at 0x3f58050
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>(gdb) continue
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>Continuing.
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>(gdb) printf &#34;len = %u\n&#34;, $rdx
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>len = 9
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span>(gdb) printf &#34;str_p = %p\n&#34;, $rsi
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span>str_p = 0x7fa570d76eb0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span>(gdb) printf &#34;str = %s\n&#34;, (char *) $rsi
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span>str = a-b-c-d-eC</span></span></code></pre></div>
+<figcaption>Listing 2: Inspect string values at runtime with gdb</figcaption>
+</figure>
+<p>This does the following:</p>
+<ul>
+<li>Line 1: Attach to the process with <code>&lt;pid&gt;</code>. This will immediately stop execution of the process.</li>
+<li>Line 3: Set a breakpoint on function <code>msqapp</code>. The next time this function gets executed, gdb will stop execution of the process.</li>
+<li>Line 5: Resume process execution.</li>
+<li>Line 9: Print the length of the string passed in register <code>%rdx</code> (parameter <code>len</code>).</li>
+<li>Line 12: Print the address of the string pointer passed in register <code>%rsi</code> (parameter <code>str_p</code>).</li>
+<li>Line 15: Dereference the string pointer passed in register <code>%rsi</code> (parameter <code>str_p</code>).</li>
+</ul>
+<p>Can you spot the oddity on line 16? The <code>len</code> parameter specifies a string length of 9, yet <code>printf</code> outputs a string of length 10. The reason becomes clear when we inspect the memory at address <code>0x7fa570d76eb0</code> pointed to by <code>str_p</code>, byte by byte.</p>
+<p>The command below examines 16 bytes, starting at the memory address stored in register <code>%rsi</code> (<code>0x7fa570d76eb0</code>):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span><span>(gdb) x/16xb $rsi
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span><span>0x7fa570d76eb0: 0x61    0x2d    0x62    0x2d    0x63    0x2d    0x64    0x2d
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span><span>0x7fa570d76eb8: 0x65    0x43    0x00    0x00    0x00    0x00    0x00    0x00</span></span></code></pre></div>
+<figcaption>Listing 3: Inspect memory pointed to by str_p byte by byte</figcaption>
+</figure>
+<p>What happens is that <code>printf</code> starts reading bytes from address <code>0x7fa570d76eb0</code> until it encounters a null terminator, which in this case occurs after 10 bytes (at relative byte offset 10, counting from 0; line 3). As a result, <code>printf</code> reads more bytes than intended — the trailing character <code>C</code> (hex <code>0x43</code>) should not be printed at all. So we need a way to tell gdb how many bytes to print.</p>
+<p>The C programming language provides the &ldquo;dynamic precision&rdquo; format specifier <code>%.s</code> for this purpose, which allows specifying a maximum string length, but unfortunately, gdb’s <code>printf</code> implementation does not support it.</p>
+<p>The small example program below illustrates how to use the dynamic precision specifier in C:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span><span style="">$</span> vi vstr.c
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span><span style="color:#080">#include</span> <span style="color:#080">&lt;stdio.h&gt;</span><span style="color:#080">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span><span style="color:#080"></span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span><span style="color:#0b0;font-weight:bold">int</span> <span style="color:#00a000">main</span>(<span style="color:#0b0;font-weight:bold">int</span> argc, <span style="color:#0b0;font-weight:bold">char</span> <span style="color:#666">*</span>argv[]) {
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>   <span style="color:#0b0;font-weight:bold">int</span> len <span style="color:#666">=</span> <span style="color:#666">9</span>;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>   <span style="color:#a2f;font-weight:bold">const</span> <span style="color:#0b0;font-weight:bold">char</span> <span style="color:#666">*</span> str <span style="color:#666">=</span> <span style="color:#b44">&#34;This is a string with more than 9 characters&#34;</span>;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>   <span style="color:#00a000">printf</span>(<span style="color:#b44">&#34;Print only %d chars: %.*s</span><span style="color:#b62;font-weight:bold">\n</span><span style="color:#b44">&#34;</span>, len, len, str);
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>   <span style="color:#a2f;font-weight:bold">return</span> <span style="color:#666">0</span>;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>}
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span><span style="">$</span> gcc <span style="color:#666">-</span>o vstr.c vstr
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span><span style="">$</span> .<span style="color:#666">/</span>vstr
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span>Print only <span style="color:#666">9</span> <span style="color:#a0a000">chars</span>: This is a</span></span></code></pre></div>
+<figcaption>Listing 4: Dynamic precision specifier in C</figcaption>
+</figure>
+<p>This is exactly what we need. We define <code>len</code> as 9 (line 6), use it with the dynamic precision specifier (line 8), and print exactly 9 characters (line 15).</p>
+<p>With a dynamic precision specifier in gdb, we could read the <code>len</code> value from register <code>%rdx</code> and use it to specify the string’s length. However, if we try this in gdb, we get an error (gdb version 8.2 on OEL 8.10 in my case):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span><span>(gdb) printf &#34;str = %.*s\n&#34;, $rdx, (char *) $rsi
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span><span>`*&#39; not supported for precision or width in printf</span></span></code></pre></div>
+<figcaption>Listing 5: Dynamic precision specifier in gdb</figcaption>
+</figure>
+<p>No luck, but fortunately, gdb is very versatile and provides several ways to print non-null-terminated strings of variable length.</p>
+<h1 id="option-1-gdb-print-elements-setting">Option 1: GDB &ldquo;print elements&rdquo; Setting</h1>
+<p>The <code>print elements</code> setting in gdb controls how many elements are shown when printing arrays (remember: a string in C is just a null terminated array of characters).</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span>(gdb) show print elements
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>Limit on string chars or array elements to print is 200.
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>(gdb) x/s $rsi
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>0x7fa570d76eb0: &#34;a-b-c-d-eC&#34;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>(gdb) printf &#34;str = %s\n&#34;, (char *) $rsi
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>str = a-b-c-d-eC
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>(gdb) printf &#34;len = %d\n&#34;, $rdx
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>len = 9
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span>(gdb) set print elements $rdx
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span>(gdb) show print elements
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span>Limit on string chars or array elements to print is 9.
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span><span>(gdb) x/s $rsi
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span><span>0x7fa570d76eb0: &#34;a-b-c-d-e&#34;... 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21</span><span>(gdb) printf &#34;str = %s\n&#34;, (char *) $rsi
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22</span><span>str = a-b-c-d-eC</span></span></code></pre></div>
+<figcaption>Listing 6: Change "print elements" setting</figcaption>
+</figure>
+<p>Walkthrough:</p>
+<ul>
+<li>Line 1: Show the default <code>print elements</code> setting, which is 200.</li>
+<li>Lines 4 and 7: Print and examine the <code>str_p</code> in register <code>%rsi</code>. Both commands print 10 characters, because they read until they encounter the null terminator.</li>
+<li>Line 10: Print the value of the <code>len</code> argument in register <code>%rdx</code>.</li>
+<li>Line 13: Use the <code>len</code> value in <code>%rdx</code> to specify the maximum number of characters gdb will print.</li>
+<li>Line 15: Show the updated <code>print elements</code> setting, which now is 9</li>
+<li>Line 18: Examine the <code>str_p</code> again. Now it only prints 9 characters because of the changed <code>print elements</code> setting</li>
+<li>Line 21: Print the <code>str_p</code> using <code>printf</code>. This still prints 10 characters and the <code>print elements</code> limit does not apply.</li>
+</ul>
+<p>So, setting <code>print elements</code> to the desired number of characters works with gdb’s examine command (<code>x/s</code>), but has no effect on <code>printf</code>. It is also a bit unfortunate that the examine command adds three trailing dots (<code>...</code>) to the output, yet this approach is straightforward and probably sufficient for many use cases.</p>
+<blockquote class="note">
+📝 <strong>Note</strong><br>
+Newer versions of gdb feature a <code>print characters</code> setting, but gdb 8.2, shipped in the OEL 8.10 environment where I was working, does not support it. The flipside of working with enterprise distributions is that some pieces of software are quite dated. I tested it in another environment and found it behaves like <code>print elements</code>, which means it doesn’t work with <code>printf</code> the way we'd like either.
+</blockquote>
+<h1 id="option-2-gdb-python-api">Option 2: GDB Python API</h1>
+<p>Gdb offers a very powerful Python API, and the example below uses it in a gdb command to print the non-null-terminated string each time the breakpoint on <code>msqapp</code> is hit:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span>set pagination off
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>break msqapp
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>commands 1
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>    if (*(char *) $rsi == 0)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>        printf &#34;&lt;null&gt;\n&#34;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>    else
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>        python
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>if True:
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>    import gdb
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span>    import string
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span>    str_p = int(gdb.parse_and_eval(&#34;$rsi&#34;))
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span>    len   = int(gdb.parse_and_eval(&#34;$rdx&#34;))
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span><span>    # Raise error for null pointer or zero length
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span><span>    if str_p == 0:
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span><span>        raise gdb.GdbError(&#34;str_p is null&#34;)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20</span><span>    elif len == 0:
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21</span><span>        raise gdb.GdbError(&#34;len is zero&#34;)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22</span><span>    else:
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23</span><span>        char_ptr_type = gdb.lookup_type(&#34;char&#34;).pointer()
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24</span><span>        ptr = gdb.Value(str_p).cast(char_ptr_type)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25</span><span>        data = bytes(
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26</span><span>            int((ptr + i).dereference())
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27</span><span>            for i in range(len)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28</span><span>        )
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29</span><span>        print(data.decode(&#34;utf-8&#34;, errors=&#34;replace&#34;))
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30</span><span>        end
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31</span><span>    end
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">32</span><span>    continue
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">33</span><span>end</span></span></code></pre></div>
+<figcaption>Listing 7: Gdb Python API example</figcaption>
+</figure>
+<p>In short, the Python code  iterates over <code>len</code> bytes starting at the memory address <code>str_p</code>, treating it as a C <code>char*</code> pointer. Each byte is read, assembled into a UTF-8 string, and then printed.</p>
+<p>In more detail:</p>
+<ul>
+<li>Line 6: Check if this is a null string and print <code>&lt;null&gt;</code> if it is.</li>
+<li>Lines 15 and 16: Read <code>str_p</code> and <code>len</code> from the <code>%rsi</code> and <code>%rdx</code> registers, respectively.</li>
+<li>Lines 18 and 20: Error checking. Neither <code>str_p</code> nor <code>len</code> must be 0.</li>
+<li>Lines 23 and 24: Cast the memory address <code>str_p</code> to a typed <code>char *</code> pointer.</li>
+<li>Lines 25 - 28: Read <code>len</code> bytes starting at <code>ptr</code> and construct a Python <code>bytes</code> object.</li>
+<li>Line 29: Print the <code>bytes</code> as a UTF-8 encoded string. With <code>errors='replace'</code>, any invalid byte sequences are replaced with the Unicode replacement character <code>�</code> instead of raising an error.</li>
+</ul>
+<p>This is the output gdb will print when the breakpoint on <code>msqapp</code> is hit:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span><span>Breakpoint 1, 0x0000000003f58050 in msqapp ()
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span><span>a-b-c-d-e</span></span></code></pre></div>
+<figcaption>Listing 8: Print str_p using the gdb Python API</figcaption>
+</figure>
+<p>The advantage of this approach is the flexibility it offers: we can control the behavior in detail and add special-case logic, such as custom output for null strings or substituting invalid Unicode characters.</p>
+<p>A drawback is that gdb and Python use different block-ending mechanisms, and mixing them in inline Python code, as in the example above, can make things hard to read. Python is also sensitive to indentation, so incorrect spacing can easily cause indentation errors, especially with more complex code. You may have noted the always-true conditional <code>if True:</code> on line 11. It is essentially just a trick to allow proper indentation for the rest of the <code>python</code> code to make everything a bit more readable.</p>
+<h1 id="option-3-user-defined-gdb-command">Option 3: User-Defined GDB Command</h1>
+<p>This builds on the approach described above by encapsulating the Python logic in a user-defined gdb command. A user-defined gdb command lets you package a sequence of actions or more advanced logic into a single, reusable command that behaves like a built-in one.</p>
+<p>I’ve implemented a user-defined gdb command, <code>print_vstr</code>, in Python (Github link <a href="https://github.com/Christoph-Lutz/oracle/blob/main/gdb/print-vstr.py">here</a>). You can use it in gdb as follows:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span>(gdb) source print-vstr.py
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>(gdb) help print_vstr
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>Print a non-null terminated variable-length string from a pointer and length.
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>Optionally, assign the variable-length string to a gdb convenience variable.
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>Usage: print_vstr &lt;str_p&gt; &lt;str_len&gt; [&lt;var&gt;]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>(gdb) break msqapp
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>Breakpoint 1 at 0x3f58050
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>(gdb) command 1
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span>Type commands for breakpoint(s) 1, one per line.
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span>End with a line saying just &#34;end&#34;.
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span>&gt;print_vstr $rsi $rdx
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span>&gt;continue
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span>&gt;end
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span><span>(gdb) continue
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20</span><span>Breakpoint 1, 0x0000000003f58050 in msqapp ()
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21</span><span>a-b-c-d-e</span></span></code></pre></div>
+<figcaption>Listing 9: User-defined gdb command print-vstr </figcaption>
+</figure>
+<p>The user-defined <code>print_vstr</code> command can also store the non-null-terminated string in a user-defined convenience variable. Just provide the name of the convenience variable as a third argument. In the example below, the convenience variable is called <code>$mystr</code>, which you can then use with <code>printf</code> as needed (lines 8 and 9).</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span>(gdb) source print-vstr.py
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>(gdb) break msqapp
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>(gdb) command 1
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>Type commands for breakpoint(s) 1, one per line.
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>End with a line saying just &#34;end&#34;.
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>&gt;print_vstr $rsi $rdx $mystr
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>&gt;printf &#34;str = %s\n&#34;, $mystr
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>&gt;continue
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>&gt;end
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span>(gdb) continue
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span>Breakpoint 1, 0x0000000003f58050 in msqapp ()
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span>str = a-b-c-d-e</span></span></code></pre></div>
+<figcaption>Listing 10: User-defined gdb command print-vstr with convenience variable $mystr</figcaption>
+</figure>
+<p>A user-defined gdb command requires some scripting effort, but it offers maximum flexibility and makes printing non-null-terminated, variable-length strings easy. Using it is straightforward, just like a native built-in gdb command.</p>
+<h1 id="references">References</h1>
+<ul>
+<li><a href="https://github.com/Christoph-Lutz/oracle/blob/main/gdb/print-vstr.py">Christoph Lutz, oracle Github Repository, GDB Script: print-vstr.py</a></li>
+<li><a href="https://sourceware.org/gdb/current/onlinedocs/gdb.html/Memory.html#Memory">Debugging with GDB, Section 10.6: Examining Memory</a></li>
+<li><a href="https://sourceware.org/gdb/current/onlinedocs/gdb.html/Print-Settings.html#Print-Settings">Debugging with GDB, Section 10.9: Print Settings</a></li>
+<li><a href="https://sourceware.org/gdb/current/onlinedocs/gdb.html/Define.html">Debugging with GDB, Section 23.1.1: User-defined Commands</a></li>
+<li><a href="https://orafun.info">orafun.info, Oracle C Functions Annotations</a></li>
+<li><a href="https://sourceware.org/gdb/current/onlinedocs/gdb.html/Python.html#Python">Debugging with GDB, Section 23.3: Extending GDB using Python</a></li>
+<li><a href="https://en.wikipedia.org/wiki/X86_calling_conventions">Wikipedia, x86 Calling Conventions</a></li>
+</ul>
+
+</main>
+
+  <footer>
+  
+  <hr/>
+  © <a href="https://www.0xChris.dev">Christoph Lutz</a> 2025 &ndash; 2025
+  
+  <hr/>
+  <script src="https://giscus.app/client.js"
+            data-repo="Christoph-Lutz/0xChris-Comments"
+            data-repo-id="R_kgDOQo-jcg"
+            data-category="Comments"
+            data-category-id="DIC_kwDOQo-jcs4Cz0NV"
+            data-mapping="pathname"
+            data-strict="1"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="light"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+        </script>
+  </footer>
+  </body>
+</html>
+

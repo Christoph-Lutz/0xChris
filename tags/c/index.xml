@@ -3,20 +3,12 @@
     <title>0xChris</title>
     <link>https://www.0xChris.dev/</link>
     <description>0xChris updates</description>
-    <atom:link href="https://www.0xChris.dev/" rel="self" type="application/rss+xml"/><item>
+    <atom:link href="https://www.0xChris.dev/tags/c/" rel="self" type="application/rss+xml"/><item>
       <title>Printing Non-Null-Terminated Strings with GDB</title>
       <link>https://www.0xChris.dev/posts/2025-12-23-printing-non-null-terminated-strings-with-gdb/</link>
       <pubDate>Tue, 23 Dec 2025 00:00:00 UTC</pubDate>
       <guid>https://www.0xChris.dev/posts/2025-12-23-printing-non-null-terminated-strings-with-gdb/</guid>
       <description>&lt;p&gt;In C, a string is an array of characters terminated by the null terminator character &lt;code&gt;&#39;\0&#39;&lt;/code&gt; (ASCII 0x0). String handling functions like &lt;code&gt;strlen&lt;/code&gt;, &lt;code&gt;strcpy&lt;/code&gt;, &lt;code&gt;strcmp&lt;/code&gt;, etc. use the null terminator to determine where the string data ends. Without it, string handling functions can read past the intended memory, leading to undefined behavior.&lt;/p&gt;
 &lt;p&gt;Similarly, in gdb, when printing a string or examining a memory address as a string (using &lt;code&gt;x/s &amp;lt;addr&amp;gt;&lt;/code&gt;), both the printf and examine commands also rely on the null terminator to determine where a string ends. However, sometimes programs store strings without a null terminator, and their functions use a length parameter instead to indicate the length of a string.&lt;/p&gt;</description>
-    </item><item>
-      <title>Hello World</title>
-      <link>https://www.0xChris.dev/posts/2025-12-18-hello-world/</link>
-      <pubDate>Thu, 18 Dec 2025 00:00:00 UTC</pubDate>
-      <guid>https://www.0xChris.dev/posts/2025-12-18-hello-world/</guid>
-      <description>&lt;p&gt;Welcome to my blog! This is the very first post, and I’m excited to start sharing my thoughts, ideas, and projects with you.&lt;/p&gt;
-&lt;p&gt;I’ll be writing about things I&amp;rsquo;m interested in and topics I’m passionate about.&lt;/p&gt;
-&lt;p&gt;There&amp;rsquo;s not much to see here yet, but ideas are taking shape and drafts are in the works — stay tuned and thanks for stopping by!&lt;/p&gt;</description>
     </item></channel>
 </rss>
