@@ -1,0 +1,16 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>0xChris</title>
+    <link>https://www.0xChris.dev/</link>
+    <description>0xChris updates</description>
+    <atom:link href="https://www.0xChris.dev/categories/oel/" rel="self" type="application/rss+xml"/><item>
+      <title>Obtain The Source Code For Particular UEK Kernel Versions</title>
+      <link>https://www.0xChris.dev/posts/2025-12-28-obtain-the-source-code-for-particular-uek-kernel-versions/</link>
+      <pubDate>Sun, 28 Dec 2025 00:00:00 UTC</pubDate>
+      <guid>https://www.0xChris.dev/posts/2025-12-28-obtain-the-source-code-for-particular-uek-kernel-versions/</guid>
+      <description>&lt;p&gt;One of the nice aspects of Linux is that its source code is openly available. This also applies to Oracle Linux, which ships with its own Unbreakable Enterprise Kernel (UEK).&lt;/p&gt;
+&lt;p&gt;The UEK kernel sources are publicly available on GitHub and can be obtained via &lt;code&gt;git&lt;/code&gt;. This short note provides a quick walkthrough on how to obtain and check out the source code for a particular version.&lt;/p&gt;
+&lt;h2 id=&#34;step-1-clone-the-uek-github-repository&#34;&gt;Step 1: Clone the UEK GitHub repository&lt;/h2&gt;
+&lt;p&gt;If you are behind a proxy, you may need to configure your proxy settings before starting. Then change to a directory with a few GB of free space and clone the repository using &lt;code&gt;git&lt;/code&gt;. This may take a while, depending on the speed of your connection.&lt;/p&gt;</description>
+    </item></channel>
+</rss>

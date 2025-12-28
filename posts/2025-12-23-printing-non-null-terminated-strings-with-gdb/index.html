@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Printing Non-Null-Terminated Strings with GDB | 0xChris</title>
+    <title>Printing Non-Null-Terminated Strings With GDB | 0xChris</title>
 
     
     <link rel="stylesheet" href="/css/style.css" />
@@ -13,12 +13,12 @@
     
     
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Printing Non-Null-Terminated Strings with GDB">
+  <meta name="twitter:title" content="Printing Non-Null-Terminated Strings With GDB">
   <meta name="twitter:description" content="In C, a string is an array of characters terminated by the null terminator character &#39;\0&#39; (ASCII 0x0). String handling functions like strlen, strcpy, strcmp, etc. use the null terminator to determine where the string data ends. Without it, string handling functions can read past the intended memory, leading to undefined behavior.
 Similarly, in gdb, when printing a string or examining a memory address as a string (using x/s &lt;addr&gt;), both the printf and examine commands also rely on the null terminator to determine where a string ends. However, sometimes programs store strings without a null terminator, and their functions use a length parameter instead to indicate the length of a string.">
 
 
-<meta property="og:title" content="Printing Non-Null-Terminated Strings with GDB">
+<meta property="og:title" content="Printing Non-Null-Terminated Strings With GDB">
 <meta property="og:description" content="In C, a string is an array of characters terminated by the null terminator character &amp;#39;\0&amp;#39; (ASCII 0x0). String handling functions like strlen, strcpy, strcmp, etc. use the null terminator to determine where the string data ends. Without it, string handling functions can read past the intended memory, leading to undefined behavior.
 Similarly, in gdb, when printing a string or examining a memory address as a string (using x/s &amp;amp;lt;addr&amp;amp;gt;), both the printf and examine commands also rely on the null terminator to determine where a string ends. However, sometimes programs store strings without a null terminator, and their functions use a length parameter instead to indicate the length of a string.
 ">
@@ -102,7 +102,7 @@ Similarly, in gdb, when printing a string or examining a memory address as a str
   </body>
 </html>
 <div class="article-meta">
-<h1><span class="title">Printing Non-Null-Terminated Strings with GDB</span></h1>
+<h1><span class="title">Printing Non-Null-Terminated Strings With GDB</span></h1>
 
 <h2 class="date">2025/12/23</h2>
 </div>
@@ -185,7 +185,7 @@ Similarly, in gdb, when printing a string or examining a memory address as a str
 <figcaption>Listing 5: Dynamic precision specifier in gdb</figcaption>
 </figure>
 <p>No luck, but fortunately, gdb is very versatile and provides several ways to print non-null-terminated strings of variable length.</p>
-<h1 id="option-1-gdb-print-elements-setting">Option 1: GDB &ldquo;print elements&rdquo; Setting</h1>
+<h2 id="option-1-gdb-print-elements-setting">Option 1: GDB &ldquo;print elements&rdquo; Setting</h2>
 <p>The <code>print elements</code> setting in gdb controls how many elements are shown when printing arrays (remember: a string in C is just a null terminated array of characters).</p>
 <figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span>(gdb) show print elements
@@ -227,7 +227,7 @@ Similarly, in gdb, when printing a string or examining a memory address as a str
 📝 <strong>Note</strong><br>
 Newer versions of gdb feature a <code>print characters</code> setting, but gdb 8.2, shipped in the OEL 8.10 environment where I was working, does not support it. The flipside of working with enterprise distributions is that some pieces of software are quite dated. I tested it in another environment and found it behaves like <code>print elements</code>, which means it doesn’t work with <code>printf</code> the way we'd like either.
 </blockquote>
-<h1 id="option-2-gdb-python-api">Option 2: GDB Python API</h1>
+<h2 id="option-2-gdb-python-api">Option 2: GDB Python API</h2>
 <p>Gdb offers a very powerful Python API, and the example below uses it in a gdb command to print the non-null-terminated string each time the breakpoint on <code>msqapp</code> is hit:</p>
 <figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span>set pagination off
@@ -283,7 +283,7 @@ Newer versions of gdb feature a <code>print characters</code> setting, but gdb 8
 </figure>
 <p>The advantage of this approach is the flexibility it offers: we can control the behavior in detail and add special-case logic, such as custom output for null strings or substituting invalid Unicode characters.</p>
 <p>A drawback is that gdb and Python use different block-ending mechanisms, and mixing them in inline Python code, as in the example above, can make things hard to read. Python is also sensitive to indentation, so incorrect spacing can easily cause indentation errors, especially with more complex code. You may have noted the always-true conditional <code>if True:</code> on line 11. It is essentially just a trick to allow proper indentation for the rest of the <code>python</code> code to make everything a bit more readable.</p>
-<h1 id="option-3-user-defined-gdb-command">Option 3: User-Defined GDB Command</h1>
+<h2 id="option-3-user-defined-gdb-command">Option 3: User-Defined GDB Command</h2>
 <p>This builds on the approach described above by encapsulating the Python logic in a user-defined gdb command. A user-defined gdb command lets you package a sequence of actions or more advanced logic into a single, reusable command that behaves like a built-in one.</p>
 <p>I’ve implemented a user-defined gdb command, <code>print_vstr</code>, in Python (Github link <a href="https://github.com/Christoph-Lutz/oracle/blob/main/gdb/print-vstr.py">here</a>). You can use it in gdb as follows:</p>
 <figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
@@ -331,7 +331,7 @@ Newer versions of gdb feature a <code>print characters</code> setting, but gdb 8
 <figcaption>Listing 10: User-defined gdb command print-vstr with convenience variable $mystr</figcaption>
 </figure>
 <p>A user-defined gdb command requires some scripting effort, but it offers maximum flexibility and makes printing non-null-terminated, variable-length strings easy. Using it is straightforward, just like a native built-in gdb command.</p>
-<h1 id="references">References</h1>
+<h2 id="references">References</h2>
 <ul>
 <li><a href="https://github.com/Christoph-Lutz/oracle/blob/main/gdb/print-vstr.py">Christoph Lutz, oracle Github Repository, GDB Script: print-vstr.py</a></li>
 <li><a href="https://sourceware.org/gdb/current/onlinedocs/gdb.html/Memory.html#Memory">Debugging with GDB, Section 10.6: Examining Memory</a></li>
