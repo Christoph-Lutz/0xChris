@@ -1,0 +1,18 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>0xChris</title>
+    <link>https://www.0xChris.dev/</link>
+    <description>0xChris updates</description>
+    <atom:link href="https://www.0xChris.dev/tags/exadata/" rel="self" type="application/rss+xml"/><item>
+      <title>Tracing The Tracer: Chasing A Funny Bpftrace Bug</title>
+      <link>https://www.0xChris.dev/posts/2025-12-29-tracing-the-tracer-chasing-a-funny-bpftrace-bug/</link>
+      <pubDate>Mon, 29 Dec 2025 00:00:00 UTC</pubDate>
+      <guid>https://www.0xChris.dev/posts/2025-12-29-tracing-the-tracer-chasing-a-funny-bpftrace-bug/</guid>
+      <description>&lt;p&gt;I&amp;rsquo;ve recently encountered a strange issue with bpftrace while tracing a problem on a real-life Exadata system. The issue was quite intriguing and caused by a combination of the following two factors:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;bpftrace version 0.16.0-6 (shipped with OEL 8.10)&lt;/li&gt;
+&lt;li&gt;Exadata X10 with Capacity on Demand enabled&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;A systematic analysis of the issue required the use of gdb and low-level tracing tools, and ultimately led me to hacking the bpftrace binary. If you enjoy low-level tracing, debugging, dissecting system calls, and diving into Linux kernel source code, this write-up may be of interest to you.&lt;/p&gt;</description>
+    </item></channel>
+</rss>

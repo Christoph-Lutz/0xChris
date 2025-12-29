@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tracing The Tracer: Chasing A Funny Bpftrace Bug | 0xChris</title>
+
+    
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="/css/custom.css" />
+
+    
+    
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Tracing The Tracer: Chasing A Funny Bpftrace Bug">
+  <meta name="twitter:description" content="I’ve recently encountered a strange issue with bpftrace while tracing a problem on a real-life Exadata system. The issue was quite intriguing and caused by a combination of the following two factors:
+bpftrace version 0.16.0-6 (shipped with OEL 8.10) Exadata X10 with Capacity on Demand enabled A systematic analysis of the issue required the use of gdb and low-level tracing tools, and ultimately led me to hacking the bpftrace binary. If you enjoy low-level tracing, debugging, dissecting system calls, and diving into Linux kernel source code, this write-up may be of interest to you.">
+
+
+<meta property="og:title" content="Tracing The Tracer: Chasing A Funny Bpftrace Bug">
+<meta property="og:description" content="I&amp;amp;rsquo;ve recently encountered a strange issue with bpftrace while tracing a problem on a real-life Exadata system. The issue was quite intriguing and caused by a combination of the following two factors:
+bpftrace version 0.16.0-6 (shipped with OEL 8.10) Exadata X10 with Capacity on Demand enabled A systematic analysis of the issue required the use of gdb and low-level tracing tools, and ultimately led me to hacking the bpftrace binary. If you enjoy low-level tracing, debugging, dissecting system calls, and diving into Linux kernel source code, this write-up may be of interest to you.
+">
+<meta property="og:url" content="https://www.0xChris.dev/posts/2025-12-29-tracing-the-tracer-chasing-a-funny-bpftrace-bug/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="0xChris">
+
+
+
+<meta property="og:image" content="https://www.0xChris.dev/">
+
+
+  </head>
+
+  <body>
+    <nav>
+      <ul class="menu">
+        
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/posts/">Blog</a></li>
+        
+          <li><a href="/categories/">Categories</a></li>
+        
+          <li><a href="/tags/">Tags</a></li>
+        
+          <li><a href="/contact/">Contact</a></li>
+        
+          <li><a href="/index.xml">Subscribe</a></li>
+        
+
+        
+        
+          
+            <li class="icon">
+              <a href="https://github.com/Christoph-Lutz" aria-label="GitHub">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <title>GitHub</title>
+  <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" fill="currentColor"/>
+</svg>
+
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://x.com/chris_skyflier" aria-label="Twitter">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>X</title><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://bsky.app/profile/christophlutz.bsky.social" aria-label="Bluesky">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Bluesky</title><path d="M5.202 2.857C7.954 4.922 10.913 9.11 12 11.358c1.087-2.247 4.046-6.436 6.798-8.501C20.783 1.366 24 .213 24 3.883c0 .732-.42 6.156-.667 7.037-.856 3.061-3.978 3.842-6.755 3.37 4.854.826 6.089 3.562 3.422 6.299-5.065 5.196-7.28-1.304-7.847-2.97-.104-.305-.152-.448-.153-.327 0-.121-.05.022-.153.327-.568 1.666-2.782 8.166-7.847 2.97-2.667-2.737-1.432-5.473 3.422-6.3-2.777.473-5.899-.308-6.755-3.369C.42 10.04 0 4.615 0 3.883c0-3.67 3.217-2.517 5.202-1.026"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://sym42.org" aria-label="Sym42">
+                
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+  <path transform="scale(0.1004,0.1364) translate(11,1)" d="M0 0 C8.91 0 17.82 0 27 0 C27 32.01 27 64.02 27 97 C51.75 97 76.5 97 102 97 C102.33 118.78 102.66 140.56 103 163 C113.65023618 149.38741342 113.65023618 149.38741342 124 135.5625 C125.16793211 133.96872315 126.33590197 132.37497396 127.50390625 130.78125 C128.08156738 129.99105469 128.65922852 129.20085937 129.25439453 128.38671875 C132.14116363 124.43971809 135.0386119 120.50060445 137.9375 116.5625 C138.50952148 115.78430908 139.08154297 115.00611816 139.67089844 114.2043457 C143.34771065 109.21167043 147.06937462 104.25523259 150.81298828 99.3125 C170.98641999 74.34600723 170.98641999 74.34600723 177 44 C175.18481682 37.01549082 172.39314724 31.88945254 166.25390625 27.8515625 C158.52779633 23.46773353 150.43585329 23.37053009 141.8828125 25.125 C137.49428572 26.45701897 133.56042734 28.49182265 129.53125 30.66015625 C127 32 127 32 124 33 C124 23.76 124 14.52 124 5 C138.64493558 -0.63266753 138.64493558 -0.63266753 144.8828125 -0.62890625 C145.54860321 -0.63131821 146.21439392 -0.63373016 146.90036011 -0.63621521 C148.28308171 -0.63525162 149.66584937 -0.62222324 151.04833984 -0.59692383 C153.13124785 -0.56239643 155.20993568 -0.57639315 157.29296875 -0.59570312 C171.18361481 -0.58191047 181.8308422 3.34041929 192.00390625 12.87890625 C200.75379996 22.23354424 204.74719368 34.28009799 205.375 47 C204.41179837 64.52286038 196.17302926 80.08711875 186 94 C185.50757813 94.67724121 185.01515625 95.35448242 184.5078125 96.05224609 C180.97969681 100.89390965 177.41603046 105.70856193 173.84228516 110.51660156 C171.48040306 113.70041612 169.13374187 116.89527097 166.78710938 120.09033203 C159.52624187 129.97226581 152.18066843 139.78923387 144.81054688 149.58984375 C143.01140967 151.98481172 141.21597581 154.38250747 139.421875 156.78125 C138.8645166 157.52608643 138.3071582 158.27092285 137.73291016 159.03833008 C136.68515004 160.43879049 135.6379229 161.83964987 134.59130859 163.2409668 C131.11186653 167.88813347 131.11186653 167.88813347 130 169 C128.28134591 169.0935919 126.55884256 169.11744611 124.83764648 169.11352539 C123.73658066 169.11344986 122.63551483 169.11337433 121.50108337 169.11329651 C120.3031868 169.10813522 119.10529022 169.10297394 117.87109375 169.09765625 C116.65172623 169.0962413 115.4323587 169.09482635 114.17604065 169.09336853 C110.2631693 169.08774967 106.35035419 169.07519396 102.4375 169.0625 C99.79231853 169.05748743 97.14713617 169.0529241 94.50195312 169.04882812 C88.00126274 169.03862296 81.50069467 169.01905121 75 169 C75 154.15 75 139.3 75 124 C50.25 124 25.5 124 0 124 C0 83.08 0 42.16 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(155.8828125,0.37109375)" d="M0 0 C0.66579071 -0.00241196 1.33158142 -0.00482391 2.01754761 -0.00730896 C3.40026921 -0.00634537 4.78303687 0.00668301 6.16552734 0.03198242 C8.24843535 0.06650982 10.32712318 0.0525131 12.41015625 0.03320312 C26.30080231 0.04699578 36.9480297 3.96932554 47.12109375 13.5078125 C55.87098746 22.86245049 59.86438118 34.90900424 60.4921875 47.62890625 C59.52898587 65.15176663 51.29021676 80.716025 41.1171875 94.62890625 C40.62476563 95.30614746 40.13234375 95.98338867 39.625 96.68115234 C36.09688431 101.5228159 32.53321796 106.33746818 28.95947266 111.14550781 C26.59759056 114.32932237 24.25092937 117.52417722 21.90429688 120.71923828 C14.64342937 130.60117206 7.29785593 140.41814012 -0.07226562 150.21875 C-1.87140283 152.61371797 -3.66683669 155.01141372 -5.4609375 157.41015625 C-6.2969751 158.52741089 -6.2969751 158.52741089 -7.14990234 159.66723633 C-8.19766246 161.06769674 -9.2448896 162.46855612 -10.29150391 163.86987305 C-13.77094597 168.51703972 -13.77094597 168.51703972 -14.8828125 169.62890625 C-17.02840077 169.7166623 -19.17685671 169.73585844 -21.32421875 169.7265625 C-22.62939453 169.72333984 -23.93457031 169.72011719 -25.27929688 169.71679688 C-26.6679694 169.70844026 -28.05664127 169.6999753 -29.4453125 169.69140625 C-30.83788906 169.68639291 -32.23046731 169.68182972 -33.62304688 169.67773438 C-37.0430112 169.66590059 -40.46289094 169.64941505 -43.8828125 169.62890625 C-43.27097081 166.41918652 -42.20356776 164.38991326 -40.25 161.78515625 C-39.69892578 161.04394531 -39.14785156 160.30273438 -38.58007812 159.5390625 C-37.97873047 158.74371094 -37.37738281 157.94835937 -36.7578125 157.12890625 C-35.82098633 155.87400391 -35.82098633 155.87400391 -34.86523438 154.59375 C-32.87737817 151.93402615 -30.8807052 149.28109666 -28.8828125 146.62890625 C-27.62458729 144.95213253 -26.3667668 143.27505503 -25.109375 141.59765625 C-23.23806447 139.10192152 -21.36611031 136.60668841 -19.49169922 134.11328125 C-14.67303275 127.70001086 -9.90631899 121.24999876 -5.16113281 114.78222656 C-1.50429727 109.80538271 2.1987027 104.86635957 5.92797852 99.94360352 C26.10348636 74.9765367 26.10348636 74.9765367 32.1171875 44.62890625 C30.30200432 37.64439707 27.51033474 32.51835879 21.37109375 28.48046875 C13.64498383 24.09663978 5.55304079 23.99943634 -3 25.75390625 C-7.38852678 27.08592522 -11.32238516 29.1207289 -15.3515625 31.2890625 C-17.8828125 32.62890625 -17.8828125 32.62890625 -20.8828125 33.62890625 C-20.8828125 24.38890625 -20.8828125 15.14890625 -20.8828125 5.62890625 C-6.23787692 -0.00376128 -6.23787692 -0.00376128 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(171,143)" d="M0 0 C15.51 0 31.02 0 47 0 C47 8.91 47 17.82 47 27 C31.49 27 15.98 27 0 27 C0 18.09 0 9.18 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(135,6)" d="M0 0 C0.99 0.495 0.99 0.495 2 1 C1.67 8.92 1.34 16.84 1 25 C1.66 25 2.32 25 3 25 C2.67 25.99 2.34 26.98 2 28 C1.34 28 0.68 28 0 28 C0 18.76 0 9.52 0 0 Z"/>
+</svg>
+
+              </a>
+            </li>
+          
+        
+      </ul>
+      <hr/>
+    </nav>
+  </body>
+</html>
+<div class="article-meta">
+<h1><span class="title">Tracing The Tracer: Chasing A Funny Bpftrace Bug</span></h1>
+
+<h2 class="date">2025/12/29</h2>
+</div>
+
+<main>
+<p>I&rsquo;ve recently encountered a strange issue with bpftrace while tracing a problem on a real-life Exadata system. The issue was quite intriguing and caused by a combination of the following two factors:</p>
+<ol>
+<li>bpftrace version 0.16.0-6 (shipped with OEL 8.10)</li>
+<li>Exadata X10 with Capacity on Demand enabled</li>
+</ol>
+<p>A systematic analysis of the issue required the use of gdb and low-level tracing tools, and ultimately led me to hacking the bpftrace binary. If you enjoy low-level tracing, debugging, dissecting system calls, and diving into Linux kernel source code, this write-up may be of interest to you.</p>
+<h3 id="background-information">Background information</h3>
+<p>The system where the problem occurred was an Exadata X10 with a total of 384 physical (“possible”) CPUs per database server, of which only 128 were activated (“online”) using Oracle’s Capacity on Demand (CoD) feature.</p>
+<p>CoD is an Exadata hardware and licensing feature that allows customers to install all hardware upfront while licensing Oracle software for only a subset of CPU cores, paying only for what they initially need and scaling on demand by activating additional cores as workloads grow.</p>
+<p>The following shows the CPU configuration on the affected system (output formatted and edited for readability):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span>~# nproc
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>128
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>~# cat /sys/devices/system/cpu/possible
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>0-383
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>~# cat /sys/devices/system/cpu/online
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>0-2,8-10,16-18,24-26,32-34,40-42,48-50,56-58,64-65,72-73,80-81,88-89,96-98,104-106,
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>112-114,120-122,128-130,136-138,144-146,152-154,160-161,168-169,176-177,184-185,
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>192-194,200-202,208-210,216-218,224-226,232-234,240-242,248-250,256-257,264-265,
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>272-273,280-281,288-290,296-298,304-306,312-314,320-322,328-330,336-338,344-346,
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span>352-353,360-361,368-369,376-377
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span>~# numactl --hardware | egrep &#34;nodes|cpus&#34;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span>available: 2 nodes (0-1)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span><span>node 0 cpus: 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span><span>0 1 2 8 9 10 16 17 18 24 25 26 32 33 34 40 41 42 48 49 50 56 57 58 64 65 72 73 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span><span>80 81 88 89 192 193 194 200 201 202 208 209 210 216 217 218 224 225 226 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20</span><span>232 233 234 240 241 242 248 249 250 256 257 264 265 272 273 280 281
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22</span><span>node 1 cpus: 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23</span><span>96 97 98 104 105 106 112 113 114 120 121 122 128 129 130 136 137 138 144 145 146 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24</span><span>152 153 154 160 161 168 169 176 177 184 185 288 289 290 296 297 298 304 305 306 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25</span><span>312 313 314 320 321 322 328 329 330 336 337 338 344 345 346 352 353 360 361 368 369 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26</span><span>376 377</span></span></code></pre></div>
+<figcaption>Listing 1: Possible CPUs and online CPUs</figcaption>
+</figure>
+<p>There are 384 CPUs in total in the system (CPU IDs 0–383), but only 128 are enabled. Exadata X10 database servers are NUMA-based systems with two CPU sockets per server, and, as shown in the output above, the enabled CPUs are evenly distributed across the two NUMA nodes, with non-consecutive IDs. This odd numbering scheme contributes to the issue we’ll examine shortly.</p>
+<h3 id="problem-description">Problem Description</h3>
+<p>I was using uprobes on an Oracle function that I knew executes multiple times per second. To my surprise, some executions went missing, and significant, unexplained gaps appeared in the bpftrace output. Interestingly, the gap occurrences were intermittent and somewhat random, and I was unable to identify a deterministic pattern.</p>
+<p>To better understand what&rsquo;s going on, I decided to create a simple test case to reproduce the behavior and answer the following questions:</p>
+<ul>
+<li>Do some probes not fire?</li>
+<li>Do the probes fire, but is the output omitted?</li>
+</ul>
+<h3 id="test-case">Test Case</h3>
+<p>I came up with a very simple C program that executes a test function for a specified number of iterations:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span><span style="">$</span> vi test.c 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span><span style="color:#080">#include</span> <span style="color:#080">&lt;stdio.h&gt;</span><span style="color:#080">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span><span style="color:#080">#include</span> <span style="color:#080">&lt;stdlib.h&gt;</span><span style="color:#080">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span><span style="color:#080"></span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span><span style="color:#0b0;font-weight:bold">int</span> <span style="color:#00a000">test_func</span>(<span style="color:#0b0;font-weight:bold">int</span> n) {
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>    <span style="color:#a2f;font-weight:bold">return</span> n <span style="color:#666">*</span> n;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>}
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span><span style="color:#0b0;font-weight:bold">int</span> <span style="color:#00a000">main</span>(<span style="color:#0b0;font-weight:bold">int</span> argc, <span style="color:#0b0;font-weight:bold">char</span> <span style="color:#666">*</span>argv[]) {
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>    <span style="color:#0b0;font-weight:bold">int</span> i <span style="color:#666">=</span> <span style="color:#666">0</span>, iterations <span style="color:#666">=</span> <span style="color:#666">0</span>;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span>    <span style="color:#a2f;font-weight:bold">if</span> (argc <span style="color:#666">!=</span> <span style="color:#666">2</span>) {
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span>        <span style="color:#00a000">printf</span>(<span style="color:#b44">&#34;</span><span style="color:#b62;font-weight:bold">\n</span><span style="color:#b44">Usage: %s &lt;iterations&gt;</span><span style="color:#b62;font-weight:bold">\n\n</span><span style="color:#b44">&#34;</span>, argv[<span style="color:#666">0</span>]);
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span>        <span style="color:#a2f;font-weight:bold">return</span> <span style="color:#666">1</span>;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span>    }
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span><span>    iterations <span style="color:#666">=</span> <span style="color:#00a000">atoi</span>(argv[<span style="color:#666">1</span>]);
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20</span><span>    <span style="color:#a2f;font-weight:bold">for</span>(i<span style="color:#666">=</span><span style="color:#666">0</span>; i<span style="color:#666">&lt;</span>iterations; i<span style="color:#666">++</span>) {
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21</span><span>        <span style="color:#00a000">printf</span>(<span style="color:#b44">&#34;i = %d, n = %d</span><span style="color:#b62;font-weight:bold">\n</span><span style="color:#b44">&#34;</span>, i, <span style="color:#00a000">test_func</span>(i));
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22</span><span>    }
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24</span><span>    <span style="color:#a2f;font-weight:bold">return</span> <span style="color:#666">0</span>;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25</span><span>}
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27</span><span><span style="">$</span> gcc <span style="color:#666">-</span>o test test.c</span></span></code></pre></div>
+<figcaption>Listing 2: Simple test program</figcaption>
+</figure>
+<p>For example, if we execute it with an iterations count of 10, this is the output we get:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span><span style="">$</span> .<span style="color:#666">/</span>test <span style="color:#666">10</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>i <span style="color:#666">=</span> <span style="color:#666">0</span>, n <span style="color:#666">=</span> <span style="color:#666">0</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>i <span style="color:#666">=</span> <span style="color:#666">1</span>, n <span style="color:#666">=</span> <span style="color:#666">1</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>i <span style="color:#666">=</span> <span style="color:#666">2</span>, n <span style="color:#666">=</span> <span style="color:#666">4</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>i <span style="color:#666">=</span> <span style="color:#666">3</span>, n <span style="color:#666">=</span> <span style="color:#666">9</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>i <span style="color:#666">=</span> <span style="color:#666">4</span>, n <span style="color:#666">=</span> <span style="color:#666">16</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>i <span style="color:#666">=</span> <span style="color:#666">5</span>, n <span style="color:#666">=</span> <span style="color:#666">25</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>i <span style="color:#666">=</span> <span style="color:#666">6</span>, n <span style="color:#666">=</span> <span style="color:#666">36</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>i <span style="color:#666">=</span> <span style="color:#666">7</span>, n <span style="color:#666">=</span> <span style="color:#666">49</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>i <span style="color:#666">=</span> <span style="color:#666">8</span>, n <span style="color:#666">=</span> <span style="color:#666">64</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>i <span style="color:#666">=</span> <span style="color:#666">9</span>, n <span style="color:#666">=</span> <span style="color:#666">81</span></span></span></code></pre></div>
+<figcaption>Listing 3: Test program example output (iterations = 10)</figcaption>
+</figure>
+<p>The following bpftrace &ldquo;one-liner&rdquo; (split across multiple lines for readability) counts how many times <code>test_func</code> is invoked in total and prints a line of output each time the function is called:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span><span>~# bpftrace --no-warnings -e &#39;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span><span>uprobe:./test:test_func {
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span><span>    @callcnt++;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4</span><span>    printf(&#34;-&gt; test_func: n=%d\n&#34;, (uint32) arg0);
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5</span><span>}&#39;</span></span></code></pre></div>
+<figcaption>Listing 4: Trace test program with bpftrace</figcaption>
+</figure>
+<p>In detail:</p>
+<ul>
+<li>Line 2: Set a uprobe on <code>test_func</code>. This probe should fire every time the function <code>test_func</code> is called.</li>
+<li>Line 3: Keep track of the total call count of <code>test_func</code> by incrementing the value in the <code>@callcnt</code> map. This value is automatically printed when bpftrace terminates</li>
+<li>Line 4: Print an information message to the screen every time <code>test_func</code> is called.</li>
+</ul>
+<p>When the test program completes, we can compare the number of iterations with both the number of output lines and the total number of calls to <code>test_func</code> tracked in <code>@callcnt</code>. If the test program is executed with 1,000 iterations, we should ideally see 1,000 output lines, and <code>@callcnt</code> should also report 1,000 calls. Any differences would indicate that either some probes did not fire or that their output was lost or omitted.</p>
+<p>I tried this multiple times, and sometimes, in most extreme cases, the output would look like this:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span><span>~# bpftrace --no-warnings -e &#39;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span><span>&gt; uprobe:./test:test_func {
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span><span> &gt;    @callcnt++;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4</span><span> &gt;    printf(&#34;-&gt; test_func: n=%u\n&#34;, (uint32) arg0);
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5</span><span>&gt; }&#39;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6</span><span>Attaching 1 probe...
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7</span><span>^C
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">8</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">9</span><span>@callcnt: 1000</span></span></code></pre></div>
+<figcaption>Listing 5: bpftrace example output</figcaption>
+</figure>
+<p>The <code>@callcnt</code> value of 1000 shows that <code>test_func</code> was called 1,000 times, yet no output was produced at all! This is a clear sign that bpftrace omits the output lines or loses them somewhere. This confirms that there is a problem that needs to be investigated further.</p>
+<h3 id="problem-analysis">Problem analysis</h3>
+<p>I took a moment to think and decided to start investigating with <code>strace</code> and trace the <code>bpftrace</code> command with <code>strace</code>:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span><span>~# strace -o strace.out bpftrace --no-warnings -e &#39;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span><span>&gt; uprobe:./test:test_func {
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span><span> &gt;    @callcnt++;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4</span><span> &gt;    printf(&#34;-&gt; test_func: n=%u\n&#34;, (uint32) arg0);
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5</span><span>&gt; }&#39;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6</span><span>Attaching 1 probe...
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7</span><span>^C</span></span></code></pre></div>
+<figcaption>Listing 6: Trace bpftrace with strace</figcaption>
+</figure>
+<p>While reviewing the strace output, an odd pattern appeared multiple times (output edited for readability; a gist with the full strace output is available <a href="https://gist.github.com/Christoph-Lutz/642bb79bb530e7f33d0504ca5431390d">here</a>):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span>perf_event_open({type=PERF_TYPE_SOFTWARE, size=0, config=PERF_COUNT_SW_BPF_OUTPUT, 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>                sample_period=1, sample_type=PERF_SAMPLE_RAW, read_format=0, precise_ip=0, 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>                ...}, -1, 129, -1, PERF_FLAG_FD_CLOEXEC) = 51
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>ioctl(51, PERF_EVENT_IOC_ENABLE, 0)     = 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>bpf(BPF_MAP_UPDATE_ELEM, {map_fd=4, key=0x7ffcac6e2b9c, value=0x7ffcac6e2ba0, 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>    flags=BPF_ANY}, 128) = -1 E2BIG (Argument list too long)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>epoll_ctl(5, EPOLL_CTL_ADD, 51, {events=EPOLLIN, data={u32=740071040, 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>          u64=94103473526400}}) = 0</span></span></code></pre></div>
+<figcaption>Listing 7: Trace of failed bpf syscalls</figcaption>
+</figure>
+<p>The <code>perf_event_open</code> syscall on line 1 creates a new perf event and returns file descriptor 51, which can be used by subsequent syscalls to interact with the event. The <code>ioctl</code> on line 5 enables the perf event and then something strange happens: the <code>bpf</code> syscall on line 7 attempts to update an element in a map, but it fails with an <code>E2BIG</code> error (&ldquo;Argument list too long&rdquo;). Yet, bpftrace continues by adding file descriptor 51 (the perf event) to epoll instance 5 and configuring it so that the epoll instance is notified whenever the perf event has data to read ( <code>EPOLLIN)</code>. In other words, this sequence of syscalls creates a perf event to monitor BPF output.</p>
+<blockquote class="note">
+📝 <strong>Note</strong><br>
+Recent versions of bpftrace use bpf ring buffers <a href="https://www.kernel.org/doc/html/v6.16/bpf/ringbuf.html" target="_blank" rel="noopener">[1]</a> instead of perf events. For an overview of the bpftrace architecture, see Brendan Gregg’s presentation <a href="https://www.usenix.org/system/files/lisa21_slides_gregg_bpf.pdf"  target="_blank" rel="noopener">[2]</a>; for details on the bpf ring buffer design, refer to Mouad Kondah’s blog post <a href="https://www.deep-kondah.com/deep-dive-into-ebpf-ring-buffers/" target="_blank" rel="noopener">[3]</a>.
+</blockquote>
+<p>Interestingly, multiple sequences of the same syscall patterns just a few lines higher in the trace don’t show any problems, and the <code>bpf</code> syscall returns successfully (return code 0):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span>perf_event_open({type=PERF_TYPE_SOFTWARE, size=0, config=PERF_COUNT_SW_BPF_OUTPUT, 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>                sample_period=1, sample_type=PERF_SAMPLE_RAW, read_format=0, precise_ip=0, 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>                ...}, -1, 122, -1, PERF_FLAG_FD_CLOEXEC) = 49
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>ioctl(49, PERF_EVENT_IOC_ENABLE, 0)     = 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>bpf(BPF_MAP_UPDATE_ELEM, {map_fd=4, key=0x7ffcac6e2b9c, value=0x7ffcac6e2ba0, 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>    flags=BPF_ANY}, 128) = 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>epoll_ctl(5, EPOLL_CTL_ADD, 49, {events=EPOLLIN, data={u32=740070880, 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>          u64=94103473526240}}) = 0</span></span></code></pre></div>
+<figcaption>Listing 8: Trace of successful bpf syscalls</figcaption>
+</figure>
+<p>According to the bpf syscall <a href="https://man7.org/linux/man-pages/man2/bpf.2.html">man page</a>, <code>E2BIG</code> occurs when &ldquo;a map reached the max_entries limit (maximum number of elements)&rdquo;. The following line from the strace output shows that bpftrace creates a map of type <code>BPF_MAP_TYPE_PERF_EVENT</code> array with a maximum size of 128 (<code>max_entries=128</code>).</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span><span>bpf(BPF_MAP_CREATE, {map_type=BPF_MAP_TYPE_PERF_EVENT_ARRAY, 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span><span>                    key_size=4, value_size=4, max_entries=128, 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span><span>                    map_flags=0, inner_map_fd=0, map_name=&#34;printf&#34;, 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4</span><span>                    map_ifindex=0, btf_fd=0, btf_key_type_id=0, 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5</span><span>                    btf_value_type_id=0, btf_vmlinux_value_type_id=0, 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6</span><span>                    map_extra=0}, 72) = 4</span></span></code></pre></div>
+<figcaption>Listing 9: bpf syscall arguments</figcaption>
+</figure>
+<p>Interestingly, the value 128 also coincides with the number of online CPUs on the system (see the <code>nproc</code> and <code>/sys/devices/system/cpu/online</code> output above), and this coincidence looks suspicious enough to be worth investigating further.</p>
+<p>Let&rsquo;s continue analyzing the entire strace output and check how many <code>bpf</code> syscalls with <code>BPF_MAP_UPDATE_ELEM</code> succeeded and how many failed:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span># Total number of bpf syscalls with BPF_MAP_UPDATE_ELEM
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>~# grep BPF_MAP_UPDATE_ELEM /tmp/strace.out | wc -l
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>128
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span># Total number of failed bpf syscalls
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>~# grep BPF_MAP_UPDATE_ELEM /tmp/strace.out | grep E2BIG | wc -l
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>84
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span># Total number of successful bpf syscalls
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>~# grep BPF_MAP_UPDATE_ELEM /tmp/strace.out | grep -v E2BIG | wc -l
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>44</span></span></code></pre></div>
+<figcaption>Listing 10: Number of successful and failed bpf syscalls with BPF_MAP_UPDATE_ELEM</figcaption>
+</figure>
+<p>The trace captured 128 <code>bpf</code> syscalls in total, of which 84 failed and 44 succeeded (84 + 44 = 128). Repeating the experiment and capturing a new trace yielded the same pattern every time: bpftrace creates a new map, after which 44 map update syscalls succeed and the remaining 84 fail.</p>
+<p>This strongly indicates that <code>bpftrace</code> updates a map element for each online CPU on the system, but for some reason the map updates start to fail from the 45th syscall onward.</p>
+<p>A bpf map entry is a key/value pair that must be passed in a <code>bpf_attr</code> union as shown below when using <code>BPF_MAP_UPDATE_ELEM</code>.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span><span>union bpf_attr attr = {
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span><span>   .map_fd = fd,
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span><span>   .key    = ptr_to_u64(key),
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4</span><span>   .value  = ptr_to_u64(value),
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5</span><span>   .flags  = flags,
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6</span><span>};</span></span></code></pre></div>
+<figcaption>Listing 11: union bpf_attr struct for BPF_MAP_UPDATE_ELEM</figcaption>
+</figure>
+<p>Since the <code>key</code> and <code>value</code> members are pointers, strace only shows their addresses, but not the actual values and understanding these values in detail may provide further clues as to why some of the map updates fail. Unfortunately, strace can&rsquo;t dereference pointers, but we can always revert to gdb for analysis, which lets us dereference pointers and inspect memory directly.</p>
+<p>The following commands execute <code>bpftrace</code> under the control of gdb and set a breakpoint on <code>bpf_map_update_elem</code>, allowing to inspect the <code>key</code> and <code>value</code> memory addresses at runtime. Note that <code>bpf_map_update_elem</code> is a libbpf helper function (essentially a low-level wrapper around the <code>BPF_MAP_UPDATE_ELEM</code> syscall) that takes the <code>key</code> and <code>value</code> pointers as its second and third arguments and passes them to the <code>bpf</code> syscall. Probing the helper function with gdb is easier than probing the syscall, as it provides direct access to the <code>key</code> and <code>value</code> pointers, whereas the syscall interface would require extracting these fields from a <code>bpf_attr</code> union.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span>~# gdb -q -args \
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>&gt; bpftrace -e &#39;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>&gt; uprobe:./test:test_func { @callcnt++; printf(&#34;-&gt; test_func: n=%u\n&#34;, (uint32) arg0);}&#39;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>(gdb) set logging file /tmp/gdb.out
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>(gdb) set logging on
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>(gdb) set pagination off
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>(gdb) set $i=0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>(gdb) break bpf_map_update_elem
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>Make breakpoint pending on future shared library load? (y or [n]) y
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span>Breakpoint 1 (bpf_map_update_elem) pending.
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span>(gdb) command 1
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span>Type commands for breakpoint(s) 1, one per line.
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span>End with a line saying just &#34;end&#34;.
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span><span>&gt;printf &#34;update_elem: i=%u, key=%u, value=%u\n&#34;, $i, *(uint32_t *) $rsi, *(uint32_t *) $rdx
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span><span>&gt;set $i++
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span><span>&gt;continue
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20</span><span>&gt;end
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22</span><span>(gdb) run</span></span></code></pre></div>
+<figcaption>Listing 12: gdb commands to dereference key/value pointers</figcaption>
+</figure>
+<p>The gdb output now allows correlating which key/value pairs are passed when <code>bpf_map_update_elem</code> is called. Examining the <code>key</code> values reveals an interesting pattern (output edited for readability):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span>~# grep &#34;update_elem:&#34; gdb.out
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>update_elem: i=0, key=0, value=7
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>update_elem: i=1, key=1, value=8
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>update_elem: i=2, key=2, value=9
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>update_elem: i=3, key=8, value=10
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>update_elem: i=4, key=9, value=11
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>update_elem: i=5, key=10, value=12
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>update_elem: i=6, key=16, value=13
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span>update_elem: i=7, key=17, value=14
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span>update_elem: i=8, key=18, value=15
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span>...
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span>update_elem: i=124, key=368, value=131
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span>update_elem: i=125, key=369, value=132
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span><span>update_elem: i=126, key=376, value=133
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span><span>update_elem: i=127, key=377, value=134</span></span></code></pre></div>
+<figcaption>Listing 13: Dereferenced key/value outputs</figcaption>
+</figure>
+<p>The <code>key</code> values in the gdb output perfectly correlate with the online CPU numbers listed in <code>/sys/devices/system/cpu/online</code>. That is, bpftrace updates the key ranges <code>0-2</code>, <code>8-10</code>, <code>16-18</code>, etc.:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span><span>~# cat /sys/devices/system/cpu/online
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span><span>0-2,8-10,16-18,24-26,32-34,40-42,48-50,56-58,64-65,72-73,80-81,88-89,96-98,104-106,
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span><span>112-114,120-122,128-130,136-138,144-146,152-154,160-161,168-169,176-177,184-185,
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4</span><span>192-194,200-202,208-210,216-218,224-226,232-234,240-242,248-250,256-257,264-265,
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5</span><span>272-273,280-281,288-290,296-298,304-306,312-314,320-322,328-330,336-338,344-346,
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6</span><span>352-353,360-361,368-369,376-377</span></span></code></pre></div>
+<figcaption>Listing 14: Online CPU numbers listed in /sys/devices/system/cpu/online</figcaption>
+</figure>
+<p>From the previous strace analysis we know that 44 <code>bpf</code> syscalls succeed, while 84 syscalls fail. This means something interesting happens when the 45th call is issued. In the gdb output, the value of <code>i</code> is a running counter showing the number of map updates (technically, the number of calls to <code>bpf_map_update_elem</code>) and we can use it to identify the calls of interest.</p>
+<p>The first 44 invocations (<code>i=0</code> to <code>i=43</code>) succeed and cover the key range 0–122. Starting with <code>i=44</code> and key 128, the calls begin to fail.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span>update_elem: i=0, key=0, value=7
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>update_elem: i=1, key=1, value=8
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>update_elem: i=2, key=2, value=9
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>...
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>update_elem: i=40, key=114, value=47
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>update_elem: i=41, key=120, value=48
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>update_elem: i=42, key=121, value=49
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>update_elem: i=43, key=122, value=50   &lt;&lt;&lt; invocations 0 - 43 succeed 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>update_elem: i=44, key=128, value=51   &lt;&lt;&lt; invocations 44 and above fail
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>update_elem: i=45, key=129, value=52
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>update_elem: i=46, key=130, value=53
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span>...</span></span></code></pre></div>
+<figcaption>Listing 15: bpf_map_update_elem invocations</figcaption>
+</figure>
+<p>The reason errors start to occur when bpftrace attempts to insert a value with key 128 (<code>i=44</code>) is that the BPF map has a size of 128. Since the map type is <code>BPF_MAP_TYPE_PERF_EVENT_ARRAY</code>, the map key represents an array index and must be in the range <code>0..max_entries-1</code>. This means, the valid key range is 0–127, so an insert with key 128 (or higher) is out of bounds, resulting in an <code>E2BIG</code> error. Note that the values stored in the map represent the file descriptors returned by <code>perf_event_open</code>, so the map effectively maps CPUs to perf event file descriptors.</p>
+<p>We can take a closer look and check what happens behind the <code>bpf</code> syscall when execution enters the kernel. For this, we need the UEK kernel sources, which are publicly available. Follow the instructions in this <a href="https://www.0xchris.dev/posts/2025-12-28-obtain-the-source-code-for-particular-uek-kernel-versions/">note</a> to check out the kernel sources for your target kernel version.</p>
+<p>The <code>bpf</code> syscall is defined in <code>kernel/bpf/syscall.c</code> and is essentially just a dispatcher function that routes calls to different bpf operations based on the value of the <code>cmd</code> argument. In the case of <code>BPF_MAP_UPDATE_ELEM</code>, calls are dispatched to the kernel function <code>map_update_elem</code> and the error code returned by the map update operation is passed on by the syscall.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span><span style="color:#00a000">SYSCALL_DEFINE3</span>(bpf, <span style="color:#0b0;font-weight:bold">int</span>, cmd, <span style="color:#a2f;font-weight:bold">union</span> bpf_attr __user <span style="color:#666">*</span>, uattr, <span style="color:#0b0;font-weight:bold">unsigned</span> <span style="color:#0b0;font-weight:bold">int</span>, size)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>{
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>        <span style="color:#a2f;font-weight:bold">return</span> <span style="color:#00a000">__sys_bpf</span>(cmd, <span style="color:#00a000">USER_BPFPTR</span>(uattr), size);
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>}
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span><span style="color:#a2f;font-weight:bold">static</span> <span style="color:#0b0;font-weight:bold">int</span> <span style="color:#00a000">__sys_bpf</span>(<span style="color:#0b0;font-weight:bold">int</span> cmd, <span style="color:#0b0;font-weight:bold">bpfptr_t</span> uattr, <span style="color:#0b0;font-weight:bold">unsigned</span> <span style="color:#0b0;font-weight:bold">int</span> size)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>{
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>        <span style="color:#a2f;font-weight:bold">union</span> bpf_attr attr;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>        <span style="color:#0b0;font-weight:bold">bool</span> capable;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>        <span style="color:#0b0;font-weight:bold">int</span> err;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>         ...
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span>        <span style="color:#a2f;font-weight:bold">switch</span> (cmd) {
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span>		 ... 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span>        <span style="color:#a2f;font-weight:bold">case</span> <span style="color:#a0a000">BPF_MAP_UPDATE_ELEM</span>:
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span>                err <span style="color:#666">=</span> <span style="color:#00a000">map_update_elem</span>(<span style="color:#666">&amp;</span>attr, uattr);
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span>                <span style="color:#a2f;font-weight:bold">break</span>;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span><span>         ...
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span><span>        <span style="color:#a2f;font-weight:bold">default</span><span style="color:#666">:</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span><span>                err <span style="color:#666">=</span> <span style="color:#666">-</span>EINVAL;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20</span><span>                <span style="color:#a2f;font-weight:bold">break</span>;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21</span><span>        }
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23</span><span>        <span style="color:#a2f;font-weight:bold">return</span> err;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24</span><span>}</span></span></code></pre></div>
+<figcaption>Listing 16: bpf syscall source code</figcaption>
+</figure>
+<p>Now that we know that maps are updated by <code>map_update_elem</code>, we can use the ftrace <code>function_graph</code> tracer to trace its execution at runtime. The example below uses the <code>trace-cmd</code> frontend to trace the execution of bpftrace.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span><span>~# trace-cmd record -p function_graph -g  map_update_elem bpftrace --no-warnings -e &#39;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span><span>&gt; uprobe:./test:test_func {
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span><span> &gt;    @callcnt++;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4</span><span> &gt;    printf(&#34;-&gt; test_func: n=%u\n&#34;, (uint32) arg0);
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5</span><span>&gt; }&#39;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6</span><span>  plugin &#39;function_graph&#39;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7</span><span>Attaching 1 probe...
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">8</span><span>^C</span></span></code></pre></div>
+<figcaption>Listing 17: Trace map_update_elem with the ftrace function_graph tracer </figcaption>
+</figure>
+<p>The ftrace output can be conveniently analyzed with the <code>trace-cmd report</code> command. Zooming into a failing syscall execution reveals the following kernel function flow and return codes (output trimmed and edited for readability; a gist with the full ftrace output is available <a href="https://gist.github.com/Christoph-Lutz/ef690840c588ae130ff84a8efe435ee4">here</a>):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span><span>~# trace-cmd report
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span><span>  map_update_elem() {
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4</span><span>      bpf_map_value_size(); (ret=0x4)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5</span><span>      bpf_map_update_value.isra.0() {
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6</span><span>          bpf_fd_array_map_update_elem(); (ret=0xfffffff9)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7</span><span>      } (ret=0xfffffff9)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">8</span><span>  } (ret=0xfffffff9)</span></span></code></pre></div>
+<figcaption>Listing 18: ftrace function flow map_update_elem</figcaption>
+</figure>
+<p>The return value <code>0xfffffff9</code> represents <code>-7</code> in two&rsquo;s complement and therefore corresponds to <code>E2BIG</code> (see also Linux <a href="https://elixir.bootlin.com/linux/v6.19-rc2/source/include/uapi/asm-generic/errno-base.h">errno.h</a>). It is first returned by the innermost child function <code>bpf_fd_array_map_update_elem</code>, then propagates to the caller function <code>bpf_map_update_value.isra.0</code>, and eventually reaches the syscall.</p>
+<p>The implementation of <code>bpf_fd_array_map_update_elem</code> can be found in <code>kernel/bpf/arraymap.c</code>, and the exact condition under which it returns an <code>E2BIG</code> error is shown on line 8:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-C" data-lang="C"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span><span style="color:#0b0;font-weight:bold">int</span> <span style="color:#00a000">bpf_fd_array_map_update_elem</span>(<span style="color:#a2f;font-weight:bold">struct</span> bpf_map <span style="color:#666">*</span>map, <span style="color:#a2f;font-weight:bold">struct</span> file <span style="color:#666">*</span>map_file,
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>				 <span style="color:#0b0;font-weight:bold">void</span> <span style="color:#666">*</span>key, <span style="color:#0b0;font-weight:bold">void</span> <span style="color:#666">*</span>value, u64 map_flags)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>{
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>	<span style="color:#a2f;font-weight:bold">struct</span> bpf_array <span style="color:#666">*</span>array <span style="color:#666">=</span> <span style="color:#00a000">container_of</span>(map, <span style="color:#a2f;font-weight:bold">struct</span> bpf_array, map);
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>	<span style="color:#0b0;font-weight:bold">void</span> <span style="color:#666">*</span>new_ptr, <span style="color:#666">*</span>old_ptr;
+</span></span><span style="display:flex; background-color:#dfdfdf"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>	u32 index <span style="color:#666">=</span> <span style="color:#666">*</span>(u32 <span style="color:#666">*</span>)key, ufd;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>    ...
+</span></span><span style="display:flex; background-color:#dfdfdf"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>	<span style="color:#a2f;font-weight:bold">if</span> (index <span style="color:#666">&gt;=</span> array<span style="color:#666">-&gt;</span>map.max_entries)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>		<span style="color:#a2f;font-weight:bold">return</span> <span style="color:#666">-</span>E2BIG;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>     ...
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>}</span></span></code></pre></div>
+<figcaption>Listing 19: Kernel function bpf_fd_array_map_update_elem source code</figcaption>
+</figure>
+<p>The excerpt above clearly shows how a <code>key</code> value is mapped to an array index position (line 6), and the <code>if</code> condition (line 8) then checks whether the index exceeds the <code>max_entries</code> limit, returning an <code>E2BIG</code> error in that case.</p>
+<p>This clarifies what occurs in the kernel, but it does not appear to be a kernel issue. We therefore need to examine bpftrace as well, and in particular why it creates a map of size 128 and then tries to update it with out-of-bounds key values.</p>
+<p>In order to find the call site in bpftrace that invokes the problematic syscalls, we can use strace with the <code>-k</code> option to emit a stack trace when the <code>bpf</code> syscall is invoked:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span><span>~# strace -o strace.out -k -e trace=bpf bpftrace --no-warnings -e &#39;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span><span>&gt; uprobe:./test:test_func {
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span><span> &gt;    @callcnt++;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4</span><span> &gt;    printf(&#34;-&gt; test_func: n=%u\n&#34;, (uint32) arg0);
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5</span><span>&gt; }&#39;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6</span><span>Attaching 1 probe...
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7</span><span>^C</span></span></code></pre></div>
+<figcaption>Listing 20: Execute strace trace with stack trace collection</figcaption>
+</figure>
+<p>In the strace output, the stack trace is printed after the syscall, and we can see that the map creation is initiated by bpftrace, flows through libbpf, and then enters the kernel via the bpf syscall (output edited for readability; a gist with the full strace output is available <a href="https://gist.github.com/Christoph-Lutz/1a496076e1a059bbb68d2a2c0e36696f">here</a>).</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span>bpf(BPF_MAP_CREATE, {map_type=BPF_MAP_TYPE_PERF_EVENT_ARRAY, 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>                    key_size=4, value_size=4, max_entries=128, 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>                    map_flags=0, inner_map_fd=0, map_name=&#34;printf&#34;, 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>                    map_ifindex=0, btf_fd=0, btf_key_type_id=0, 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>                    btf_value_type_id=0, btf_vmlinux_value_type_id=0, 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>                    map_extra=0}, 72) = 4
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span> &gt; /usr/lib64/libc-2.28.so(syscall+0x1d) [0x3941d]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span> &gt; /usr/lib64/libbpf.so.0.6.0(bpf_map_create+0x1df) [0xb07f]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span> &gt; /usr/lib64/libbpf.so.0.6.0(bpf_create_map_xattr+0x7c) [0xb21c]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span> &gt; /usr/bin/bpftrace(bpftrace::(anonymous namespace)::create_map(...)+0xa4) [0x126924]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span> &gt; /usr/bin/bpftrace(bpftrace::Map::Map(std::__cxx11::basic_string...) +0xb6) [0x1270c6]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span> &gt; /usr/bin/bpftrace(int bpftrace::RequiredResources::create_maps_impl..) +0xcd) [0x13a3ad]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span> &gt; /usr/bin/bpftrace(bpftrace::BPFtrace::run(std::unordered_map...)+0x487) [0x10fec7]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span> &gt; /usr/bin/bpftrace(main+0x1b96) [0xa05b6]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span> &gt; /usr/lib64/libc-2.28.so(__libc_start_main+0xe4) [0x3a8a4]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span> &gt; /usr/bin/bpftrace(_start+0x2d) [0xcab5d]</span></span></code></pre></div>
+<figcaption>Listing 21: Stack trace bpf map creation</figcaption>
+</figure>
+<p>Starting points for further investigations are the function <code>create_map</code> (line 10) and the map constructor <code>Map::Map</code> (line 11). However, to examine these functions, we first need to download and install the bpftrace 0.16.0-6 source package from the <a href="https://yum.oracle.com/repo/OracleLinux/OL8/appstream/x86_64/index_src.html">OEL 8 AppStream mirror</a>.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span>~# rpm -qa | grep bpftrace
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>bpftrace-0.16.0-6.el8_10.x86_64
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>~# rpm -ivh bpftrace-0.16.0-6.el8_10.src.rpm
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>Updating / installing...
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>1:bpftrace-0.16.0-6.el8_10     ################################# [100%]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>~# cd ~/rpmbuild/SOURCES
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>~# tar xfzv bpftrace-0.16.0.tar.gz
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>bpftrace-0.16.0/.clang-format
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span>bpftrace-0.16.0/.editorconfig
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span>bpftrace-0.16.0/.gitattributes
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span>...
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span>~# cd bpftrace-0.16.0</span></span></code></pre></div>
+<figcaption>Listing 22: Install bpftrace SRPM</figcaption>
+</figure>
+<p>The <code>Map</code> constructor is defined in <code>src/map.cpp</code>:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-CPP" data-lang="CPP"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span>Map<span style="color:#666">::</span>Map(libbpf<span style="color:#666">::</span>bpf_map_type map_type) <span style="color:#666">:</span> IMap(map_type)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>{
+</span></span><span style="display:flex; background-color:#dfdfdf"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>  std<span style="color:#666">::</span>vector<span style="color:#666">&lt;</span><span style="color:#0b0;font-weight:bold">int</span><span style="color:#666">&gt;</span> cpus <span style="color:#666">=</span> get_online_cpus();
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>  <span style="color:#0b0;font-weight:bold">int</span> key_size <span style="color:#666">=</span> <span style="color:#666">4</span>;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>  <span style="color:#0b0;font-weight:bold">int</span> value_size <span style="color:#666">=</span> <span style="color:#666">4</span>;
+</span></span><span style="display:flex; background-color:#dfdfdf"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>  <span style="color:#0b0;font-weight:bold">int</span> max_entries <span style="color:#666">=</span> cpus.size();
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>  <span style="color:#0b0;font-weight:bold">int</span> flags <span style="color:#666">=</span> <span style="color:#666">0</span>;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>  mapfd_ <span style="color:#666">=</span> create_map(
+</span></span><span style="display:flex; background-color:#dfdfdf"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>      map_type, <span style="color:#b44">&#34;printf&#34;</span>, key_size, value_size, max_entries, flags);
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>  <span style="color:#a2f;font-weight:bold">if</span> (mapfd_ <span style="color:#666">&lt;</span> <span style="color:#666">0</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span>  {
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span>    LOG(ERROR) <span style="color:#666">&lt;&lt;</span> <span style="color:#b44">&#34;failed to create &#34;</span> <span style="color:#666">&lt;&lt;</span> name_ <span style="color:#666">&lt;&lt;</span> <span style="color:#b44">&#34; map: &#34;</span> <span style="color:#666">&lt;&lt;</span> strerror(errno);
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span>  }
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span>}</span></span></code></pre></div>
+<figcaption>Listing 23: bpftrace Map constructor source code</figcaption>
+</figure>
+<p>It retrieves the list of online CPUs using the helper function <code>get_online_cpus</code>, which returns a <code>std::vector&lt;int&gt;</code> (line 3). The size of this vector determines <code>max_entries</code> (line 6),  which is then used to create the bpf map (line 10).</p>
+<p>The helper function <code>get_online_cpus</code> is defined in <code>src/utils.cpp</code> and uses another helper function, <code>read_cpu_range</code>, which parses the CPU ranges from <code>/sys/devices/system/cpu/online</code> and returns a vector containing all online CPU IDs as integers (<code>read_cpu_range</code> function details are not shown here):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-CPP" data-lang="CPP"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span><span>std<span style="color:#666">::</span>vector<span style="color:#666">&lt;</span><span style="color:#0b0;font-weight:bold">int</span><span style="color:#666">&gt;</span> get_online_cpus()
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span><span>{
+</span></span><span style="display:flex; background-color:#dfdfdf"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span><span>  <span style="color:#a2f;font-weight:bold">return</span> <span style="color:#00a000">read_cpu_range</span>(<span style="color:#b44">&#34;/sys/devices/system/cpu/online&#34;</span>);
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4</span><span>}
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6</span><span>std<span style="color:#666">::</span>vector<span style="color:#666">&lt;</span><span style="color:#0b0;font-weight:bold">int</span><span style="color:#666">&gt;</span> get_possible_cpus()
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7</span><span>{
+</span></span><span style="display:flex; background-color:#dfdfdf"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">8</span><span>  <span style="color:#a2f;font-weight:bold">return</span> <span style="color:#00a000">read_cpu_range</span>(<span style="color:#b44">&#34;/sys/devices/system/cpu/possible&#34;</span>);
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">9</span><span>}</span></span></code></pre></div>
+<figcaption>Listing 24: bpftrace methods get_online_cpus and get_possible_cpus source code</figcaption>
+</figure>
+<p>Let&rsquo;s recap: bpftrace needs a perf event buffer for every CPU on the system and uses a perf event array with 128 entries, as there are 128 online CPUs, correctly determined by <code>get_online_cpus</code>. The problem, however, is that the array is indexed by CPU ID, and the highest CPU ID among the online CPUs is 383, which leads to an out-of-bounds condition. To avoid this, the perf event array would need 384 entries instead of 128, though half of the entries would remain unused.</p>
+<p>Interestingly, immediately below the <code>get_online_cpus</code> function is another function with an intriguing name: <code>get_possible_cpus</code>. Like <code>get_online_cpus</code>, it uses the <code>read_cpu_range</code> helper, but it parses the list of possible CPUs from <code>/sys/devices/system/cpu/possible</code> (line 8). If bpftrace used this function in its <code>Map</code> constructor, the map would be correctly sized, avoiding the out-of-bounds condition.</p>
+<p>We&rsquo;ve come a long way in understanding what&rsquo;s going on in full detail. However, understanding a problem is one thing, figuring out how to fix it is another.</p>
+<h3 id="workaround">Workaround</h3>
+<p>To fix the problem, the call to <code>get_online_cpus</code> in the <code>Map</code> constructor needs to be replaced with a call to <code>get_possible_cpus</code>. This is not a big change, but compiling bpftrace from scratch requires many dependencies, including the <a href="https://clang.llvm.org/">Clang</a> and <a href="https://llvm.org/">LLVM</a> toolchains. I was quite reluctant to do that, as I didn’t want to install a separate compilation environment. Secondly, this fix should eventually be incorporated upstream so that future bpftrace versions include it by default.</p>
+<p>For these reasons, I reached out to Oracle to have the fix incorporated into the OEL 8 upstream codebase and decided to use a workaround in the meantime, which consisted of patching the existing bpftrace binary manually. This sounds scarier than it really is, as it only requires changing a single byte in the right place.</p>
+<p>In summary, the following steps are required:</p>
+<ol>
+<li>Locate the address of the <code>callq</code> instruction in the <code>Map</code> constructor that calls <code>get_online_cpus</code>.</li>
+<li>Determine the address of the <code>get_possible_cpus</code> method.</li>
+<li>Calculate the RIP-relative displacement from the <code>callq</code> instruction to <code>get_possible_cpus</code>.</li>
+<li>Patch the identified <code>callq</code> instruction so that it calls <code>get_possible_cpus</code> instead of <code>get_online_cpus</code>.</li>
+</ol>
+<blockquote class="info">
+ℹ️ <strong>Info</strong><br>
+RIP-relative addressing in x86-64 computes a memory address by adding a constant offset to the current instruction pointer (RIP). In contrast, absolute addressing uses a fixed memory address, so RIP-relative addressing is position-independent and well suited for relocatable code.
+</blockquote>
+<p>Let&rsquo;s locate the <code>Map</code> constructor in the bpftrace binary using <code>nm</code> first and then manually navigate to the point where <code>get_online_cpus</code> is called. Note that bpftrace is written in C++, and therefore, the symbols must be demangled (with option <code>--demangle</code>):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-CPP" data-lang="CPP"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span><span><span style="color:#666">~</span><span style="">#</span> nm <span style="color:#666">--</span>demangle <span style="color:#666">/</span>usr<span style="color:#666">/</span>bin<span style="color:#666">/</span>bpftrace <span style="color:#666">|</span> grep <span style="">&#39;</span>Map<span style="color:#666">::</span>Map(libbpf<span style="color:#666">::</span>bpf_map_type)<span style="">&#39;</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span><span><span style="color:#666">00000000001277</span>c0 T bpftrace<span style="color:#666">::</span>Map<span style="color:#666">::</span>Map(libbpf<span style="color:#666">::</span>bpf_map_type)</span></span></code></pre></div>
+<figcaption>Listing 25: Determine the address of the Map constructor</figcaption>
+</figure>
+<p>In this example, the <code>Map</code> constructor starts at address <code>0x1277c0</code>. Now disassemble the binary with <code>objdump</code>, pipe the output into <code>less</code>, and search for this address. From there, scroll down until you reach the call to <code>get_online_cpus</code> at address <code>0x1277ff</code> (take note of this address and the subsequent one <code>127804</code> as we will need them both later):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span><span>~# objdump -d --demangle bpftrace | less
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span><span>00000000001277c0 &lt;bpftrace::Map::Map(libbpf::bpf_map_type)&gt;:
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4</span><span>  1277c0:       f3 0f 1e fa             endbr64
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5</span><span>  ...
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6</span><span>  1277ff:       e8 3c b0 02 00          callq  152840 &lt;bpftrace::get_online_cpus()&gt; 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7</span><span>  127804:       48 8d 6c 24 50          lea    0x50(%rsp),%rbp
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">8</span><span>...</span></span></code></pre></div>
+<figcaption>Listing 26: Disassemble the bpftrace Map constructor</figcaption>
+</figure>
+<p>Next, determine the address of the <code>get_possible_cpus</code> method using <code>nm</code>.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-CPP" data-lang="CPP"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span><span><span style="color:#666">~</span><span style="">#</span> nm <span style="color:#666">--</span>demangle bpftrace <span style="color:#666">|</span> grep get_possible_cpus
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span><span><span style="color:#666">0000000000152</span><span style="color:#666">8</span>d0 T bpftrace<span style="color:#666">::</span>get_possible_cpus()</span></span></code></pre></div>
+<figcaption>Listing 27: Determine the address of the get_possible_cpus method</figcaption>
+</figure>
+<p>These are the addresses we&rsquo;re working with:</p>
+<ul>
+<li><code>1277ff</code>: Instruction that calls the <code>get_online_cpus</code> method</li>
+<li><code>127804</code>: Instruction immediately following the call to <code>get_online_cpus</code>; this is needed to calculate the RIP-relative displacement.</li>
+<li><code>1528d0</code>: Address of the <code>get_possible_cpus</code> method</li>
+</ul>
+<p>In an x86-64 binary, all instructions are represented as a variable-length stream of bytes. For instance, the <code>callq</code> instruction to <code>get_online_cpus</code> is encoded as <code>e8 3c b0 02 00</code>. In RIP-relative addressing, this encoding has the following meaning:</p>
+<ul>
+<li>Opcode: <code>e8</code> — call opcode (relative call).</li>
+<li>Operand: <code>3c b0 02 00</code> — 32-bit signed displacement relative to the instruction <em>after</em> the call (this is why we need the address immediately following the <code>callq</code> instruction). Note that because of little-endian encoding, the bytes of the 32-bit operand must be read from least significant to most significant (effectively right to left).</li>
+</ul>
+<p>To calculate the RIP-relative displacement, subtract the address of the instruction immediately following the <code>callq</code> instruction (<code>0x127804</code>) from the address of the target function <code>get_possible_cpus</code> (<code>0x1528d0</code>).</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-CPP" data-lang="CPP"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span><span style="color:#080"># Calculate displacement:
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span><span style="color:#080"></span>displacement <span style="color:#666">=</span> target address <span style="color:#666">-</span> address following the call instruction <span style="color:#666">=</span> 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>             <span style="color:#666">0x1528d0</span> <span style="color:#666">-</span> <span style="color:#666">0x127804</span> <span style="color:#666">=</span> <span style="color:#666">0x0002b0cc</span> 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span><span style="color:#080"># Displacement in little endian byte order:
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span><span style="color:#080"></span><span style="color:#666">00</span> <span style="color:#666">02</span> b0 cc <span style="color:#666">-&gt;</span> cc b0 <span style="color:#666">02</span> <span style="color:#666">00</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span><span style="color:#080"># Existing call instruction:
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span><span style="color:#080"></span><span style="color:#666">1277ff</span><span style="color:#666">:</span>       e8 <span style="color:#666">3</span>c b0 <span style="color:#666">02</span> <span style="color:#666">00</span>          callq  <span style="color:#666">152840</span> <span style="color:#666">&lt;</span>bpftrace<span style="color:#666">::</span>get_online_cpus()<span style="color:#666">&gt;</span> 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span><span style="color:#080"># New call instruction (to be patched)
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span><span style="color:#080"></span><span style="color:#666">1277ff</span><span style="color:#666">:</span>       e8 cc b0 <span style="color:#666">02</span> <span style="color:#666">00</span>          callq  <span style="color:#666">1528</span>d0 <span style="color:#666">&lt;</span>bpftrace<span style="color:#666">::</span>get_possible_cpus()<span style="color:#666">&gt;</span> 
+</span></span></code></pre></div>
+<figcaption>Listing 28: Calculate RIP-relative displacement of method get_possible_cpus</figcaption>
+</figure>
+<p>In this case, the RIP-relative displacement is <code>cc b0 02 00</code> (in little-endian representation), which differs by only one byte from the existing operand <code>3c b0 02 00</code>. Therefore, by replacing the first byte of the call instruction’s operand from <code>3c</code> to <code>cc</code>, the call will target <code>get_possible_cpus</code> instead of <code>get_online_cpus</code>. Using <code>gdb</code>, this can be achieved as follows:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-CPP" data-lang="CPP"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span><span style="color:#080"># Create working copy of binary
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span><span style="color:#080"></span><span style="color:#666">~</span><span style="">#</span> cp <span style="color:#666">/</span>usr<span style="color:#666">/</span>bin<span style="color:#666">/</span>bpftrace <span style="color:#666">/</span>usr<span style="color:#666">/</span>bin<span style="color:#666">/</span>bpftrace.patched
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span><span style="color:#080"># Start gdb
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span><span style="color:#080"></span><span style="color:#666">~</span><span style="">#</span> gdb <span style="color:#666">-</span>q 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span><span style="color:#080"># Enable writing to the program&#39;s memory, including its .text section
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span><span style="color:#080"></span>(gdb) set write on
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span><span style="color:#080"># Load program image
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span><span style="color:#080"></span>(gdb) exec<span style="color:#666">-</span>file <span style="color:#666">/</span>usr<span style="color:#666">/</span>bin<span style="color:#666">/</span>bpftrace.patched
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span><span style="color:#080"># Read symbol information
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span><span style="color:#080"></span>(gdb) file <span style="color:#666">/</span>usr<span style="color:#666">/</span>bin<span style="color:#666">/</span>bpftrace.patched
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span><span style="color:#080"># Examine first byte of call operand
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span><span><span style="color:#080"></span>(gdb) p<span style="color:#666">/</span>x <span style="color:#666">*</span>(<span style="color:#0b0;font-weight:bold">unsigned</span> <span style="color:#0b0;font-weight:bold">char</span> <span style="color:#666">*</span>)(<span style="color:#666">0x1277ff</span> <span style="color:#666">+</span> <span style="color:#666">0x1</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span><span><span style="">$</span><span style="color:#666">1</span> <span style="color:#666">=</span> <span style="color:#666">0x3c</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20</span><span><span style="color:#080"># Change first byte of call operand from 0x3c to 0xcc
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21</span><span><span style="color:#080"></span>(gdb) set <span style="color:#666">*</span>(<span style="color:#0b0;font-weight:bold">unsigned</span> <span style="color:#0b0;font-weight:bold">char</span> <span style="color:#666">*</span>) (<span style="color:#666">0x1277ff</span> <span style="color:#666">+</span> <span style="color:#666">0x1</span>) <span style="color:#666">=</span> <span style="color:#666">0xcc</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23</span><span><span style="color:#080"># Verify change
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24</span><span><span style="color:#080"></span>(gdb) x<span style="color:#666">/</span>i <span style="color:#666">0x1277ff</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25</span><span><span style="color:#666">0x1277ff</span> <span style="color:#666">&lt;</span>bpftrace<span style="color:#666">::</span>Map<span style="color:#666">::</span>Map(...)<span style="color:#666">+</span><span style="color:#666">63</span><span style="color:#666">&gt;:</span>  callq  <span style="color:#666">0x1528d0</span> <span style="color:#666">&lt;</span>bpftrace<span style="color:#666">::</span>get_possible_cpus()<span style="color:#666">&gt;</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27</span><span>(gdb) quit</span></span></code></pre></div>
+<figcaption>Listing 29: Manually patch the bpftrace binary using gdb</figcaption>
+</figure>
+<p>With this single byte change in the binary, the <code>Map</code> constructor now calls <code>get_possible_cpus</code> rather than <code>get_online_cpus</code>. This little hack worked fine for me for a few weeks. Fortunately, the issue has now been fixed officially, so hacking the bpftrace binary is no longer necessary.</p>
+<h3 id="fix">Fix</h3>
+<p>Oracle released the new bpftrace bugfix version bpftrace-0.16.0-6.0.1 on December 07, 2025. The updated <a href="https://yum.oracle.com/repo/OracleLinux/OL8/appstream/x86_64/getPackage/bpftrace-0.16.0-6.0.1.el8_10.x86_64.rpm">RPM file</a> can be downloaded from the OEL 8 AppStream mirror. Similarly, an updated <a href="https://yum.oracle.com/repo/OracleLinux/OL8/appstream/x86_64/getPackageSource/bpftrace-0.16.0-6.0.1.el8_10.src.rpm">SRPM</a> has been released as well and installing it shows that Oracle added a new patch, replacing the call to <code>get_online_cpus</code> with a call to <code>get_possible_cpus</code> in the bpftrace source code.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span>~# cat bpftrace-0.16.0-ol8-set-mapsz-to-num-possible-cpus.patch
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>--- a/src/map.cpp
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>+++ b/src/map.cpp
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>@@ -146,7 +146,7 @@ Map::Map(const SizedType &amp;type) : IMap(type)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span> Map::Map(libbpf::bpf_map_type map_type) : IMap(map_type)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span> {
+</span></span><span style="display:flex; background-color:#dfdfdf"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>-  std::vector&lt;int&gt; cpus = get_online_cpus();
+</span></span><span style="display:flex; background-color:#dfdfdf"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>+  std::vector&lt;int&gt; cpus = get_possible_cpus();
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>...</span></span></code></pre></div>
+<figcaption>Listing 30: bpftrace patch 0.16.0-6.0.1</figcaption>
+</figure>
+<p>Note that bpftrace versions 0.21 and higher are not affected by this problem, because they use bpf ring buffers, eliminating the need for per-CPU perf event arrays indexed by CPU ID.</p>
+<h3 id="tldr">TLDR</h3>
+<p>Bpftrace opens event file descriptors for every online CPU but fails to update its map for all CPUs (<code>BPF_MAP_TYPE_PERF_EVENT_ARRAY</code>). As a result, perf collects data only from CPUs with IDs less than N (where N is the number of online CPUs). Event buffers from CPUs not updated in the map remain uncollected, leading to  missing output. Sporadic output may occur due to system load causing process rescheduling across CPUs, some of which could lack updated event file descriptors.</p>
+<p>For example, if CPUs 0-1 and 10-19 are online (N=12), only event buffers on  CPUs 0, 1, 10, and 11 are collected. Their buffers, including printf strings, are printed only if the process runs on these CPUs. Bpftrace iterates over all online CPUs, but uses the CPU ID as a map key. CPUs with IDs larger than N fail the perf_event_add call with <code>E2BIG</code>, explaining intermittent or missing output. The buffer for a printf call won&rsquo;t be collected if the CPU&rsquo;s event fd  isn&rsquo;t in the map. In the test case, the <code>@callcnt</code> variable is not affected, because  it uses a global instead of a per-CPU map.</p>
+<h2 id="references">References</h2>
+<p>[1] <a href="https://www.kernel.org/doc/html/v6.16/bpf/ringbuf.html">The Linux Kernel Documentation, 6.16.0, Section: BPF Ring Buffer, undated</a><br>
+[2] <a href="https://www.usenix.org/system/files/lisa21_slides_gregg_bpf.pdf">Brendan Gregg, BPF Internals, Tracing Examples, LISA 21, June 2021</a><br>
+[3] <a href="https://www.deep-kondah.com/deep-dive-into-ebpf-ring-buffers/">Mouad Kondah, Unraveling eBPF Ring Buffers, 2025-03-16</a><br>
+[4] <a href="https://man7.org/linux/man-pages/man2/bpf.2.html">Linux System Calls Manual, bpf(2), undated</a><br>
+[5] <a href="https://yum.oracle.com/oracle-linux-8.html">Oracle Linux 8, Package Repositories</a><br>
+[6] <a href="https://www.0xchris.dev/posts/2025-12-28-obtain-the-source-code-for-particular-uek-kernel-versions/">Christoph Lutz, Obtain The Source Code For Particular UEK Kernel Versions, 2025-12-28</a></p>
+
+</main>
+
+  <footer>
+  
+  <hr/>
+  © <a href="https://www.0xChris.dev">Christoph Lutz</a> 2025 &ndash; 2025
+  
+  <hr/>
+  <script src="https://giscus.app/client.js"
+            data-repo="Christoph-Lutz/0xChris-Comments"
+            data-repo-id="R_kgDOQo-jcg"
+            data-category="Comments"
+            data-category-id="DIC_kwDOQo-jcs4Cz0NV"
+            data-mapping="pathname"
+            data-strict="1"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="light"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+        </script>
+  </footer>
+  </body>
+</html>
+

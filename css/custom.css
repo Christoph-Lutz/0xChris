@@ -146,7 +146,10 @@ blockquote.warning {
 */
 
 /* Font adjustments */
-body p {
+body p,
+ul,
+ol,
+li {
     font-family: Charter, Optima, Georgia, "Times New Roman", Times, serif;
     line-height: 1.6; /* optional, for readability */
 }
