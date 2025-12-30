@@ -149,6 +149,12 @@ pre code,
     line-height: 1.4;
 }
 
-html {
-    -webkit-text-size-adjust: 100%;
+@supports (-webkit-overflow-scrolling: touch) {
+    pre,
+    pre code,
+    .highlight,
+    .highlight code,
+    .highlight span {
+        -webkit-text-size-adjust: none;
+    }
 }
