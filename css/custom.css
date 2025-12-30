@@ -121,29 +121,10 @@ blockquote.warning {
   background: #f9fafb;
 }
 
-/* Colored blockquotes:     */
-/* Remove comment to enable */
-/* 
-blockquote.note {
-  border-left-color: #6b7280;
-  background: #f9fafb;
+/* Reduce spacing below all headings */
+h1, h2, h3, h4, h5, h6 {
+    margin-bottom: 0.5em; /* adjust as needed */
 }
-
-blockquote.info {
-  border-left-color: #0284c7;
-  background: #eff6ff;
-}
-
-blockquote.tip {
-  border-left-color: #16a34a;
-  background: #f0fdf4;
-}
-
-blockquote.warning {
-  border-left-color: #d97706;
-  background: #fff7ed;
-}
-*/
 
 /* Font adjustments */
 body p,
@@ -159,7 +140,11 @@ blockquote {
     line-height: 1.6;
 }
 
-/* Reduce spacing below all headings */
-h1, h2, h3, h4, h5, h6 {
-    margin-bottom: 0.5em; /* adjust as needed */
+pre,
+pre code,
+.highlight,
+.highlight code,
+.highlight span {
+    font-family: ui-monospace, monospace;
+    line-height: 1.4;
 }
