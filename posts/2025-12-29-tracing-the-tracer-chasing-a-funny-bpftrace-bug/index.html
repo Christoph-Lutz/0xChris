@@ -670,7 +670,7 @@ RIP-relative addressing in x86-64 computes a memory address by adding a constant
 <h3 id="tldr">TLDR</h3>
 <p>Bpftrace opens event file descriptors for every online CPU but fails to update its map for all CPUs (<code>BPF_MAP_TYPE_PERF_EVENT_ARRAY</code>). As a result, perf collects data only from CPUs with IDs less than N (where N is the number of online CPUs). Event buffers from CPUs not updated in the map remain uncollected, leading to  missing output. Sporadic output may occur due to system load causing process rescheduling across CPUs, some of which could lack updated event file descriptors.</p>
 <p>For example, if CPUs 0-1 and 10-19 are online (N=12), only event buffers on  CPUs 0, 1, 10, and 11 are collected. Their buffers, including printf strings, are printed only if the process runs on these CPUs. Bpftrace iterates over all online CPUs, but uses the CPU ID as a map key. CPUs with IDs larger than N fail the perf_event_add call with <code>E2BIG</code>, explaining intermittent or missing output. The buffer for a printf call won&rsquo;t be collected if the CPU&rsquo;s event fd  isn&rsquo;t in the map. In the test case, the <code>@callcnt</code> variable is not affected, because  it uses a global instead of a per-CPU map.</p>
-<h2 id="references">References</h2>
+<h3 id="references">References</h3>
 <p>[1] <a href="https://www.kernel.org/doc/html/v6.16/bpf/ringbuf.html">The Linux Kernel Documentation, 6.16.0, Section: BPF Ring Buffer, undated</a><br>
 [2] <a href="https://www.usenix.org/system/files/lisa21_slides_gregg_bpf.pdf">Brendan Gregg, BPF Internals, Tracing Examples, LISA 21, June 2021</a><br>
 [3] <a href="https://www.deep-kondah.com/deep-dive-into-ebpf-ring-buffers/">Mouad Kondah, Unraveling eBPF Ring Buffers, 2025-03-16</a><br>
@@ -683,7 +683,7 @@ RIP-relative addressing in x86-64 computes a memory address by adding a constant
   <footer>
   
   <hr/>
-  © <a href="https://www.0xChris.dev">Christoph Lutz</a> 2025 &ndash; 2025
+  © <a href="https://www.0xChris.dev">Christoph Lutz</a> 2025 &ndash; 2026
   
   <hr/>
   <script src="https://giscus.app/client.js"

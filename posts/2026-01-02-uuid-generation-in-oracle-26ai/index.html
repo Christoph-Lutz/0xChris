@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>UUID Generation In Oracle 26ai | 0xChris</title>
+
+    
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="/css/custom.css" />
+
+    
+    
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="UUID Generation In Oracle 26ai">
+  <meta name="twitter:description" content="Some time ago, several bloggers wrote about the new support for UUIDs in Oracle 23ai/26ai (see the blog posts referenced in 1 and 2). This made me curious about how Oracle generates UUIDs behind the scenes and what exactly happens internally when a UUID is created. So, rather than discussing the pros and cons of UUIDs, this note provides a drill-down into Oracle’s UUID implementation details.
+Oracle 23.7 introduced a new uuid() function, which generates 128-bit random UUIDv4 values compliant with RFC 9562. Historically, Oracle has provided the sys_guid() function, but the values it generates are predictable and not truly random.">
+
+
+<meta property="og:title" content="UUID Generation In Oracle 26ai">
+<meta property="og:description" content="Some time ago, several bloggers wrote about the new support for UUIDs in Oracle 23ai/26ai (see the blog posts referenced in 1 and 2). This made me curious about how Oracle generates UUIDs behind the scenes and what exactly happens internally when a UUID is created. So, rather than discussing the pros and cons of UUIDs, this note provides a drill-down into Oracle’s UUID implementation details.
+Oracle 23.7 introduced a new uuid() function, which generates 128-bit random UUIDv4 values compliant with RFC 9562. Historically, Oracle has provided the sys_guid() function, but the values it generates are predictable and not truly random.
+">
+<meta property="og:url" content="https://www.0xChris.dev/posts/2026-01-02-uuid-generation-in-oracle-26ai/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="0xChris">
+
+
+
+<meta property="og:image" content="https://www.0xChris.dev/">
+
+
+  </head>
+
+  <body>
+    <nav>
+      <ul class="menu">
+        
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/posts/">Blog</a></li>
+        
+          <li><a href="/categories/">Categories</a></li>
+        
+          <li><a href="/tags/">Tags</a></li>
+        
+          <li><a href="/contact/">Contact</a></li>
+        
+          <li><a href="/index.xml">Subscribe</a></li>
+        
+
+        
+        
+          
+            <li class="icon">
+              <a href="https://github.com/Christoph-Lutz" aria-label="GitHub">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <title>GitHub</title>
+  <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" fill="currentColor"/>
+</svg>
+
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://x.com/chris_skyflier" aria-label="Twitter">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>X</title><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://bsky.app/profile/christophlutz.bsky.social" aria-label="Bluesky">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Bluesky</title><path d="M5.202 2.857C7.954 4.922 10.913 9.11 12 11.358c1.087-2.247 4.046-6.436 6.798-8.501C20.783 1.366 24 .213 24 3.883c0 .732-.42 6.156-.667 7.037-.856 3.061-3.978 3.842-6.755 3.37 4.854.826 6.089 3.562 3.422 6.299-5.065 5.196-7.28-1.304-7.847-2.97-.104-.305-.152-.448-.153-.327 0-.121-.05.022-.153.327-.568 1.666-2.782 8.166-7.847 2.97-2.667-2.737-1.432-5.473 3.422-6.3-2.777.473-5.899-.308-6.755-3.369C.42 10.04 0 4.615 0 3.883c0-3.67 3.217-2.517 5.202-1.026"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://sym42.org" aria-label="Sym42">
+                
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+  <path transform="scale(0.1004,0.1364) translate(11,1)" d="M0 0 C8.91 0 17.82 0 27 0 C27 32.01 27 64.02 27 97 C51.75 97 76.5 97 102 97 C102.33 118.78 102.66 140.56 103 163 C113.65023618 149.38741342 113.65023618 149.38741342 124 135.5625 C125.16793211 133.96872315 126.33590197 132.37497396 127.50390625 130.78125 C128.08156738 129.99105469 128.65922852 129.20085937 129.25439453 128.38671875 C132.14116363 124.43971809 135.0386119 120.50060445 137.9375 116.5625 C138.50952148 115.78430908 139.08154297 115.00611816 139.67089844 114.2043457 C143.34771065 109.21167043 147.06937462 104.25523259 150.81298828 99.3125 C170.98641999 74.34600723 170.98641999 74.34600723 177 44 C175.18481682 37.01549082 172.39314724 31.88945254 166.25390625 27.8515625 C158.52779633 23.46773353 150.43585329 23.37053009 141.8828125 25.125 C137.49428572 26.45701897 133.56042734 28.49182265 129.53125 30.66015625 C127 32 127 32 124 33 C124 23.76 124 14.52 124 5 C138.64493558 -0.63266753 138.64493558 -0.63266753 144.8828125 -0.62890625 C145.54860321 -0.63131821 146.21439392 -0.63373016 146.90036011 -0.63621521 C148.28308171 -0.63525162 149.66584937 -0.62222324 151.04833984 -0.59692383 C153.13124785 -0.56239643 155.20993568 -0.57639315 157.29296875 -0.59570312 C171.18361481 -0.58191047 181.8308422 3.34041929 192.00390625 12.87890625 C200.75379996 22.23354424 204.74719368 34.28009799 205.375 47 C204.41179837 64.52286038 196.17302926 80.08711875 186 94 C185.50757813 94.67724121 185.01515625 95.35448242 184.5078125 96.05224609 C180.97969681 100.89390965 177.41603046 105.70856193 173.84228516 110.51660156 C171.48040306 113.70041612 169.13374187 116.89527097 166.78710938 120.09033203 C159.52624187 129.97226581 152.18066843 139.78923387 144.81054688 149.58984375 C143.01140967 151.98481172 141.21597581 154.38250747 139.421875 156.78125 C138.8645166 157.52608643 138.3071582 158.27092285 137.73291016 159.03833008 C136.68515004 160.43879049 135.6379229 161.83964987 134.59130859 163.2409668 C131.11186653 167.88813347 131.11186653 167.88813347 130 169 C128.28134591 169.0935919 126.55884256 169.11744611 124.83764648 169.11352539 C123.73658066 169.11344986 122.63551483 169.11337433 121.50108337 169.11329651 C120.3031868 169.10813522 119.10529022 169.10297394 117.87109375 169.09765625 C116.65172623 169.0962413 115.4323587 169.09482635 114.17604065 169.09336853 C110.2631693 169.08774967 106.35035419 169.07519396 102.4375 169.0625 C99.79231853 169.05748743 97.14713617 169.0529241 94.50195312 169.04882812 C88.00126274 169.03862296 81.50069467 169.01905121 75 169 C75 154.15 75 139.3 75 124 C50.25 124 25.5 124 0 124 C0 83.08 0 42.16 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(155.8828125,0.37109375)" d="M0 0 C0.66579071 -0.00241196 1.33158142 -0.00482391 2.01754761 -0.00730896 C3.40026921 -0.00634537 4.78303687 0.00668301 6.16552734 0.03198242 C8.24843535 0.06650982 10.32712318 0.0525131 12.41015625 0.03320312 C26.30080231 0.04699578 36.9480297 3.96932554 47.12109375 13.5078125 C55.87098746 22.86245049 59.86438118 34.90900424 60.4921875 47.62890625 C59.52898587 65.15176663 51.29021676 80.716025 41.1171875 94.62890625 C40.62476563 95.30614746 40.13234375 95.98338867 39.625 96.68115234 C36.09688431 101.5228159 32.53321796 106.33746818 28.95947266 111.14550781 C26.59759056 114.32932237 24.25092937 117.52417722 21.90429688 120.71923828 C14.64342937 130.60117206 7.29785593 140.41814012 -0.07226562 150.21875 C-1.87140283 152.61371797 -3.66683669 155.01141372 -5.4609375 157.41015625 C-6.2969751 158.52741089 -6.2969751 158.52741089 -7.14990234 159.66723633 C-8.19766246 161.06769674 -9.2448896 162.46855612 -10.29150391 163.86987305 C-13.77094597 168.51703972 -13.77094597 168.51703972 -14.8828125 169.62890625 C-17.02840077 169.7166623 -19.17685671 169.73585844 -21.32421875 169.7265625 C-22.62939453 169.72333984 -23.93457031 169.72011719 -25.27929688 169.71679688 C-26.6679694 169.70844026 -28.05664127 169.6999753 -29.4453125 169.69140625 C-30.83788906 169.68639291 -32.23046731 169.68182972 -33.62304688 169.67773438 C-37.0430112 169.66590059 -40.46289094 169.64941505 -43.8828125 169.62890625 C-43.27097081 166.41918652 -42.20356776 164.38991326 -40.25 161.78515625 C-39.69892578 161.04394531 -39.14785156 160.30273438 -38.58007812 159.5390625 C-37.97873047 158.74371094 -37.37738281 157.94835937 -36.7578125 157.12890625 C-35.82098633 155.87400391 -35.82098633 155.87400391 -34.86523438 154.59375 C-32.87737817 151.93402615 -30.8807052 149.28109666 -28.8828125 146.62890625 C-27.62458729 144.95213253 -26.3667668 143.27505503 -25.109375 141.59765625 C-23.23806447 139.10192152 -21.36611031 136.60668841 -19.49169922 134.11328125 C-14.67303275 127.70001086 -9.90631899 121.24999876 -5.16113281 114.78222656 C-1.50429727 109.80538271 2.1987027 104.86635957 5.92797852 99.94360352 C26.10348636 74.9765367 26.10348636 74.9765367 32.1171875 44.62890625 C30.30200432 37.64439707 27.51033474 32.51835879 21.37109375 28.48046875 C13.64498383 24.09663978 5.55304079 23.99943634 -3 25.75390625 C-7.38852678 27.08592522 -11.32238516 29.1207289 -15.3515625 31.2890625 C-17.8828125 32.62890625 -17.8828125 32.62890625 -20.8828125 33.62890625 C-20.8828125 24.38890625 -20.8828125 15.14890625 -20.8828125 5.62890625 C-6.23787692 -0.00376128 -6.23787692 -0.00376128 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(171,143)" d="M0 0 C15.51 0 31.02 0 47 0 C47 8.91 47 17.82 47 27 C31.49 27 15.98 27 0 27 C0 18.09 0 9.18 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(135,6)" d="M0 0 C0.99 0.495 0.99 0.495 2 1 C1.67 8.92 1.34 16.84 1 25 C1.66 25 2.32 25 3 25 C2.67 25.99 2.34 26.98 2 28 C1.34 28 0.68 28 0 28 C0 18.76 0 9.52 0 0 Z"/>
+</svg>
+
+              </a>
+            </li>
+          
+        
+      </ul>
+      <hr/>
+    </nav>
+  </body>
+</html>
+<div class="article-meta">
+<h1><span class="title">UUID Generation In Oracle 26ai</span></h1>
+
+<h2 class="date">2026/01/02</h2>
+</div>
+
+<main>
+<p>Some time ago, several bloggers wrote about the new support for UUIDs in Oracle 23ai/26ai (see the blog posts referenced in <a href="https://oracle-base.com/articles/23/uuid-function-23">1</a> and <a href="https://enesi.no/2025/10/uuids-in-oracle-database/">2</a>). This made me curious about how Oracle generates UUIDs behind the scenes and what exactly happens internally when a UUID is created. So, rather than discussing the pros and cons of UUIDs, this note provides a drill-down into Oracle’s UUID implementation details.</p>
+<p>Oracle 23.7 introduced a new <code>uuid()</code> function, which generates 128-bit random UUIDv4 values compliant with <a href="https://www.rfc-editor.org/rfc/rfc9562.html">RFC 9562</a>. Historically, Oracle has provided the <code>sys_guid()</code> function, but the values it generates are predictable and not truly random.</p>
+<p>Note that, at this time, Oracle only supports the UUIDv4 format and does not yet support the newer UUIDv7 format, which includes a timestamp in the first 48 bits. For that reason, people have implemented their own custom UUIDv7 generators in PL/SQL (see <a href="https://medium.com/@jasminfluri/how-uuidv7-makes-your-database-life-easier-5eee3d0ff9e2">3</a> and <a href="https://simpleoracledba.blogspot.com/2025/11/oracle-26ai-uuid-v4-available-and.html">4</a>) and JavaScript (see <a href="https://enesi.no/2025/12/uuid-v7-in-oracle-database/">5</a>).</p>
+<p>Generating a UUID is straightforward:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span><span><span style="color:#a2f;font-weight:bold">SQL</span><span style="color:#666">&gt;</span><span style="color:#bbb"> </span><span style="color:#a2f;font-weight:bold">select</span><span style="color:#bbb"> </span>uuid();<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span><span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span><span><span style="color:#bbb"></span>UUID()<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4</span><span><span style="color:#bbb"></span><span style="color:#080;font-style:italic">--------------------------------
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5</span><span><span style="color:#080;font-style:italic"></span><span style="color:#666">1</span>DE1CA515BC04F2BBF25D15A0FB67162</span></span></code></pre></div>
+<figcaption>Listing 1: Generating a UUID using the uuid() SQL function</figcaption>
+</figure>
+<p>To observe what Oracle executes in the background, a trace of all userspace function calls is needed. I often use Intel&rsquo;s Processor Trace (Intel PT) for this purpose because it provides hardware-assisted tracing, making it extremely fast, and it integrates tightly with the Linux <code>perf</code> utility. If your processor doesn’t support the <code>intel_pt</code> facility (check with <code>grep intel_pt /proc/cpuinfo</code>), you may need to use other dynamic tracing or instrumentation tools, such as <a href="https://www.intel.com/content/www/us/en/developer/articles/tool/pin-a-dynamic-binary-instrumentation-tool.html">Intel PIN Tools</a>, for instance:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span><span># 1. Start tracing pid 210550:
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span><span>~# perf record -e intel_pt//u -p 210550
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4</span><span># 2. Generate the UUID in sqlplus
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5</span><span>SQL&gt; select uuid();
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7</span><span># 3. Stop the tracing (hit ^C) and analyze the output:
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">8</span><span>~# perf script --call-trace</span></span></code></pre></div>
+<figcaption>Listing 2: Tracing Oracle UUID generation with perf</figcaption>
+</figure>
+<p>This kind of tracing can produce a large amount of output. In this case, <code>perf</code> recorded roughly 6,000 lines—meaning Oracle executed about 6,000 functions in the background—which is not much, as this type of tracing can easily generate tens of thousands of lines. Still, analyzing the output requires some practice since Oracle&rsquo;s function mnemonics can be quite cryptic, but <a href="https://orafun.fino">orafun.info</a> is a great resource for translating them.</p>
+<p>Here is the interesting part of the function trace (edited and simplified for readability):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span>qerfiFetch
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>  kpofcr
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>    evaopn2
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>      kokeeui
+</span></span><span style="display:flex; background-color:#dfdfdf"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>        ztuguid@plt
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>          ztcr2rnd
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>            ztca_GetRandom
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>              ztca_GetRandomMC
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>                ztca_Init
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>                ztca_osl_RNGBytes
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>                  RAND_bytes
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span>                    RAND_get_rand_method
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span>                      CRYPTO_THREAD_run_once
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span>                        pthread_once@plt
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span>                      CRYPTO_THREAD_read_lock
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span>                        pthread_rwlock_rdlock@plt
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span><span>                      CRYPTO_THREAD_unlock
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span><span>                        pthread_rwlock_unlock@plt
+</span></span><span style="display:flex; background-color:#dfdfdf"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span><span>                    RAND_OpenSSL
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20</span><span>                    ossl_lib_ctx_get_data
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21</span><span>                      ossl_lib_ctx_get_concrete</span></span></code></pre></div>
+<figcaption>Listing 3: UUID generation function flow trace (simplified)</figcaption>
+</figure>
+<p>The output shows Oracle executing a fetch operation (<code>qerfiFetch</code>—possibly &ldquo;query execution fixed table fetch&rdquo;) followed by calls to various functions prefixed with <code>zt</code>, which is the prefix that identifies security and encryption related functions.</p>
+<p>Interestingly, the trace also shows several functions prefixed with <code>RAND</code>, including <code>RAND_OpenSSL</code> (line 19), indicating that Oracle uses the OpenSSL library in the background. This is further confirmed by consulting the OpenSSL man pages, where all the <code>RAND</code> functions are documented in detail.</p>
+<p>The entry point for calls to the <code>zt</code> function is <code>ztuguid@plt</code> (line 5). Note that <code>@plt</code> refers to the Procedure Linkage Table, a special section in an ELF binary that the runtime linker uses to dynamically resolve shared library calls at runtime. To learn more about the <code>ztuguid</code> symbol and its origin, we can look up further details using <code>gdb</code>:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span><span>~# gdb -q -p 210550
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span><span>(gdb) info symbol ztuguid
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4</span><span>ztuguid in section text.unlikely of /u01/app/oracle/product/26.0.0.0/dbhome_260_1/lib/libnnzsrv.so</span></span></code></pre></div>
+<figcaption>Listing 4: Symbol information ztuguid</figcaption>
+</figure>
+<p>The <code>ztuguid</code> function resides in the shared library <code>libnnzsrv.so</code> and is stored in its <code>.text.unlikely</code> section. This layout is intended to keep hot code in the main <code>.text</code> segment compact and cache-friendly, while moving rarely executed code into a separate section (usually <code>.text.unlikely</code>). If profile-guided optimization was applied, this could mean UUID generation was not on the hot path. Or maybe it has been placed in <code>.text.unlikely</code> intentionally, with Oracle expecting UUIDs not to be frequently used in practice &hellip;</p>
+<p>Anyway, back to the <code>RAND</code> functions, they are defined in <code>libnnzsrv.so</code> as well, meaning Oracle has incorporated them directly into the rdbms code rather than loading them from the standard OpenSSL library <code>libssl.so</code> at runtime.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span><span>~# nm libnnzsrv.so | egrep -w &#39;RAND_bytes|RAND_get_rand_method|RAND_OpenSSL&#39;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span><span>00000000003bd530 t RAND_bytes
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span><span>00000000003bc700 t RAND_get_rand_method
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4</span><span>00000000003beca0 t RAND_OpenSSL</span></span></code></pre></div>
+<figcaption>Listing 5: RAND functions in libnnzsrv.so</figcaption>
+</figure>
+<p>In the function trace, <code>RAND_bytes</code> is the entry point for the OpenSSL related functions, and the OpenSSL <a href="https://docs.openssl.org/3.1/man3/RAND_bytes/">documentation</a> provides further details and a description of the function signature:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>Synopsis:
+</span></span><span style="display:flex;"><span>~~~~~~~~~
+</span></span><span style="display:flex;"><span>#include &lt;openssl/rand.h&gt;
+</span></span><span style="display:flex;"><span>int RAND_bytes(unsigned char *buf, int num);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Description:
+</span></span><span style="display:flex;"><span>~~~~~~~~~~~~
+</span></span><span style="display:flex;"><span>RAND_bytes() generates num random bytes using a cryptographically 
+</span></span><span style="display:flex;"><span>secure pseudo random generator (CSPRNG) and stores them in buf.</span></span></code></pre></div>
+<figcaption>Listing 6: OpenSSL documentation of function RAND_bytes</figcaption>
+</figure>
+<p>This description is quite useful, as it allows us to examine the parameters passed to <code>RAND_bytes</code> at runtime. Since <code>buf</code> is an out parameter, its contents are only valid after the function returns, making it an ideal candidate for tracing with a bpftrace <code>uretprobe</code> on <code>RAND_bytes</code>.</p>
+<p>When a new UUID is generated using sqlplus while the following bpftrace snippet is running, it captures the <code>buf</code> pointer on function entry and, on function return, prints the <code>buf</code> address and dereferences 16 bytes starting from the memory address it points to (note that due to restrictions imposed by the bpf verifier, the 16 bytes are printed individually using multiple <code>printf</code> operations rather than in a loop):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>~# cd $ORACLE_HOME/lib
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>~# bpftrace --no-warnings -e &#39;
+</span></span><span style="display:flex;"><span>uprobe:./libnnzsrv.so:RAND_bytes 
+</span></span><span style="display:flex;"><span>/ pid == $1 /
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  @buf[pid] = (uint64) arg0;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>uretprobe:./libnnzsrv.so:RAND_bytes 
+</span></span><span style="display:flex;"><span>/ @buf[pid] /
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  $buf = @buf[pid];
+</span></span><span style="display:flex;"><span>  printf(&#34;buf=%p\n&#34;, $buf);
+</span></span><span style="display:flex;"><span>  printf(&#34;*buf=%02x %02x %02x %02x %02x %02x %02x %02x &#34;,
+</span></span><span style="display:flex;"><span>         *(uint8*)$buf,     *(uint8*)($buf + 1),
+</span></span><span style="display:flex;"><span>         *(uint8*)($buf + 2), *(uint8*)($buf + 3),
+</span></span><span style="display:flex;"><span>         *(uint8*)($buf + 4), *(uint8*)($buf + 5),
+</span></span><span style="display:flex;"><span>         *(uint8*)($buf + 6), *(uint8*)($buf + 7));
+</span></span><span style="display:flex;"><span>  printf(&#34;%02x %02x %02x %02x %02x %02x %02x %02x\n&#34;,
+</span></span><span style="display:flex;"><span>         *(uint8*)($buf + 8), *(uint8*)($buf + 9),
+</span></span><span style="display:flex;"><span>         *(uint8*)($buf + 10),*(uint8*)($buf + 11),
+</span></span><span style="display:flex;"><span>         *(uint8*)($buf +12),*(uint8*)($buf + 13),
+</span></span><span style="display:flex;"><span>         *(uint8*)($buf +14),*(uint8*)($buf + 15));
+</span></span><span style="display:flex;"><span>delete(@buf[pid]);
+</span></span><span style="display:flex;"><span>}&#39; 210550
+</span></span><span style="display:flex;"><span>Attaching 2 probes...
+</span></span><span style="display:flex;"><span>buf=0x7fabc1c400d0
+</span></span><span style="display:flex;"><span>*buf=04 64 61 e3 e0 6f bd 50 c6 8d e8 cc f1 bb 86 bc</span></span></code></pre></div>
+<figcaption>Listing 7: Tracing RAND_bytes with bpftrace</figcaption>
+</figure>
+<p>Interestingly, a direct comparison of the <code>sqlplus</code> and <code>bpftrace</code> outputs shows that the UUID values differ: byte positions 6 and 8 (counting from 0) are not the same, and if we repeat the test, the byte values at these positions continue to differ (output edited for readability).</p>
+<p>For instance, in sqlplus, byte position 6 shows the value <code>4F</code>, while the bpftrace output shows the <code>bd</code>; similarly, sqlplus shows <code>BF</code> at byte position 8 and bpftrace shows <code>c6</code>.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>sqlplus output:  04 64 61 E3 E0 6F 4F 50 BF 8D E8 CC F1 BB 86 BC
+</span></span><span style="display:flex;"><span>bpftrace output: 04 64 61 e3 e0 6f bd 50 c6 8d e8 cc f1 bb 86 bc</span></span></code></pre></div>
+<figcaption>Listing 8: Comparison of sqlplus and bpftrace UUID output</figcaption>
+</figure>
+<p>The reason for this is that <code>RAND_bytes</code> generates a 128-bit (16-byte) random value, which is not compatible with the UUID specification, since byte positions 6 and 8 are reserved for the version and variant information (see the UUID specification in <a href="https://www.rfc-editor.org/rfc/rfc9562.html">RFC 9562</a>).</p>
+<p>This is what <a href="https://www.rfc-editor.org/rfc/rfc9562.html">RFC 9562</a> defines (note the <code>ver</code> and <code>var</code> fields):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span> 0                   1                   2                   3
+</span></span><span style="display:flex;"><span> 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+</span></span><span style="display:flex;"><span>+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</span></span><span style="display:flex;"><span>|                           random_a                            |
+</span></span><span style="display:flex;"><span>+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</span></span><span style="display:flex;"><span>|          random_a             |  ver  |       random_b        |
+</span></span><span style="display:flex;"><span>+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</span></span><span style="display:flex;"><span>|var|                       random_c                            |
+</span></span><span style="display:flex;"><span>+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</span></span><span style="display:flex;"><span>|                           random_c                            |
+</span></span><span style="display:flex;"><span>+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>ver:
+</span></span><span style="display:flex;"><span>    The 4-bit version field as defined by Section 4.2, set to 0b0100 (4). 
+</span></span><span style="display:flex;"><span>    Occupies bits 48 through 51 of octet 6.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>var:
+</span></span><span style="display:flex;"><span>    The 2-bit variant field as defined by Section 4.1, set to 0b10. Occupies 
+</span></span><span style="display:flex;"><span>    bits 64 and 65 of octet 8.</span></span></code></pre></div>
+<figcaption>Listing 9: UUID field and bit layout (from RFC 9562)</figcaption>
+</figure>
+<p>Here&rsquo;s what Oracle does:</p>
+<ul>
+<li>Byte position 6: set the first nibble to value 0x4 (0b0100), which corresponds to UUID v4. The second nibble can be random and Oracle fills it with 1s (<code>0xf = 0b1111</code>). Therefore, byte position 6 in Oracle UUIDs always shows the value <code>0x4f</code>.</li>
+<li>Byte position 8: the higher two bits 7-6 must be set to <code>0b10</code>; the lower six bits (bits 5-0) can be random and Oracle fills them with 1s (<code>0b111111</code>). Therefore,  byte position 8 in Oracle UUIDs always shows the value <code>0xbf</code>.</li>
+</ul>
+<p>If you&rsquo;d like to see everything live in action, you can use the bpftrace script <a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/ztuguid.bt">ztuguid.bt</a> to trace Oracle UUID generation. It shows both, the 128-bit random value generated by <code>RAND_bytes</code>, and the final UUID after being adjusted by <code>ztuguid</code>:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span>~# ./ztuguid 210550
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>Attaching 6 probes...
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>Tracing ... Hit Ctrl + C to stop.
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>210550 oracle_210550_t -&gt; ztuguid
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>210550 oracle_210550_t    -&gt; RAND_bytes: buf=0x7fabc1c400d0, num=16
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>210550 oracle_210550_t       OpenSSL uuid: 8d58252c-3817-27bb-6862-880e72452794
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>210550 oracle_210550_t    &lt;- RAND_bytes: 0x1
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>210550 oracle_210550_t    Oracle uuid: 8d58252c-3817-4fbb-bf62-880e72452794
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>210550 oracle_210550_t &lt;- ztuguid: 0</span></span></code></pre></div>
+<figcaption>Listing 10: bpftrace output of script ztuguid.bt</figcaption>
+</figure>
+<h3 id="summary">Summary</h3>
+<p>Oracle 26ai generates UUIDs using OpenSSL code that is incorporated into its <code>libnnzsrv.so</code> shared library. The <code>uuid()</code> SQL function calls <code>ztuguid</code> in the background, which delegates the UUID generation to OpenSSL&rsquo;s <code>RAND_bytes</code> function. This produces a 128-bit random value (similar to <code>openssl rand -hex 16</code>), and <code>ztuguid</code> then adjusts bytes 6 and 8 so that the resulting UUID conforms to the UUIDv4 standard.</p>
+<h3 id="references">References</h3>
+<p>[1] <a href="https://oracle-base.com/articles/23/uuid-function-23">Tim Hall, UUID() Function in Oracle Database 23ai/26ai, 2025-08-01</a><br>
+[2] <a href="https://enesi.no/2025/10/uuids-in-oracle-database/">Øyvind Isene, UUIDs in Oracle Database #JoelKallmanDay, 2025-10-15</a><br>
+[3] <a href="https://medium.com/@jasminfluri/how-uuidv7-makes-your-database-life-easier-5eee3d0ff9e2">Jasmin Fluri, How UUIDv7 makes your (database) life easier, 2025-10-25</a><br>
+[4] <a href="https://simpleoracledba.blogspot.com/2025/11/oracle-26ai-uuid-v4-available-and.html">Piet De Visser, Oracle 26ai - UUID v4 available, and looking at v7, Interesting!, 2025-11-01</a><br>
+[5] <a href="https://enesi.no/2025/12/uuid-v7-in-oracle-database/">Øyvind Isene, UUID v7 in Oracle Database, 2025-12-22</a><br>
+[6] <a href="https://www.rfc-editor.org/rfc/rfc9562.html">RFC 9562, Universally Unique IDentifiers (UUIDs), May 2024</a><br>
+[7] <a href="https://docs.oracle.com/en/database/oracle/oracle-database/26/nfcoa/appdev_sql.html#GUID-102576-1">Oracle Corp.,Oracle AI Database New Features, Release 26ai, Section: Generate and Test UUID Using SQL, 2025-10-14</a><br>
+[8] <a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/ztuguid.bt">Christoph Lutz, oracle GitHub Repository, Script: ztuguid.bt, 2025-11-01</a></p>
+
+</main>
+
+  <footer>
+  
+  <hr/>
+  © <a href="https://www.0xChris.dev">Christoph Lutz</a> 2025 &ndash; 2026
+  
+  <hr/>
+  <script src="https://giscus.app/client.js"
+            data-repo="Christoph-Lutz/0xChris-Comments"
+            data-repo-id="R_kgDOQo-jcg"
+            data-category="Comments"
+            data-category-id="DIC_kwDOQo-jcs4Cz0NV"
+            data-mapping="pathname"
+            data-strict="1"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="light"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+        </script>
+    <script id="partials/analytics.html" 
+  data-goatcounter="https://0xchris.goatcounter.com/count"
+  async src="//gc.zgo.at/count.js"></script>
+
+  </footer>
+  </body>
+</html>
+

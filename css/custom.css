@@ -158,3 +158,11 @@ pre code,
         -webkit-text-size-adjust: none;
     }
 }
+
+/* Code formatting */
+code {
+    hyphens: none;       /* Disable automatic hyphenation */
+    word-break: normal;  /* Prevent breaking in the middle */
+    overflow-wrap: normal; /* Ensure long words stay intact */
+    white-space: pre-wrap; /* Optional: preserve spaces but allow wrapping */
+}

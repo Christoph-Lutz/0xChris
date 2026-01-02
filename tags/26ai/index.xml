@@ -3,19 +3,12 @@
     <title>0xChris</title>
     <link>https://www.0xChris.dev/</link>
     <description>0xChris updates</description>
-    <atom:link href="https://www.0xChris.dev/tags/gdb/" rel="self" type="application/rss+xml"/><item>
+    <atom:link href="https://www.0xChris.dev/tags/26ai/" rel="self" type="application/rss+xml"/><item>
       <title>UUID Generation In Oracle 26ai</title>
       <link>https://www.0xChris.dev/posts/2026-01-02-uuid-generation-in-oracle-26ai/</link>
       <pubDate>Fri, 02 Jan 2026 00:00:00 UTC</pubDate>
       <guid>https://www.0xChris.dev/posts/2026-01-02-uuid-generation-in-oracle-26ai/</guid>
       <description>&lt;p&gt;Some time ago, several bloggers wrote about the new support for UUIDs in Oracle 23ai/26ai (see the blog posts referenced in &lt;a href=&#34;https://oracle-base.com/articles/23/uuid-function-23&#34;&gt;1&lt;/a&gt; and &lt;a href=&#34;https://enesi.no/2025/10/uuids-in-oracle-database/&#34;&gt;2&lt;/a&gt;). This made me curious about how Oracle generates UUIDs behind the scenes and what exactly happens internally when a UUID is created. So, rather than discussing the pros and cons of UUIDs, this note provides a drill-down into Oracle’s UUID implementation details.&lt;/p&gt;
 &lt;p&gt;Oracle 23.7 introduced a new &lt;code&gt;uuid()&lt;/code&gt; function, which generates 128-bit random UUIDv4 values compliant with &lt;a href=&#34;https://www.rfc-editor.org/rfc/rfc9562.html&#34;&gt;RFC 9562&lt;/a&gt;. Historically, Oracle has provided the &lt;code&gt;sys_guid()&lt;/code&gt; function, but the values it generates are predictable and not truly random.&lt;/p&gt;</description>
-    </item><item>
-      <title>Printing Non-Null-Terminated Strings With GDB</title>
-      <link>https://www.0xChris.dev/posts/2025-12-23-printing-non-null-terminated-strings-with-gdb/</link>
-      <pubDate>Tue, 23 Dec 2025 00:00:00 UTC</pubDate>
-      <guid>https://www.0xChris.dev/posts/2025-12-23-printing-non-null-terminated-strings-with-gdb/</guid>
-      <description>&lt;p&gt;In C, a string is an array of characters terminated by the null terminator character &lt;code&gt;&#39;\0&#39;&lt;/code&gt; (ASCII 0x0). String handling functions like &lt;code&gt;strlen&lt;/code&gt;, &lt;code&gt;strcpy&lt;/code&gt;, &lt;code&gt;strcmp&lt;/code&gt;, etc. use the null terminator to determine where the string data ends. Without it, string handling functions can read past the intended memory, leading to undefined behavior.&lt;/p&gt;
-&lt;p&gt;Similarly, in gdb, when printing a string or examining a memory address as a string (using &lt;code&gt;x/s &amp;lt;addr&amp;gt;&lt;/code&gt;), both the printf and examine commands also rely on the null terminator to determine where a string ends. However, sometimes programs store strings without a null terminator, and their functions use a length parameter instead to indicate the length of a string.&lt;/p&gt;</description>
     </item></channel>
 </rss>
