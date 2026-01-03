@@ -3,15 +3,39 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://www.0xChris.dev/</loc>
-    <lastmod>2026-01-02T00:00:00+00:00</lastmod>
+    <lastmod>2026-01-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/categories/</loc>
+    <lastmod>2026-01-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/posts/2026-01-03-decoding-library-cache-lock-and-library-cache-pin-wait-event-parameters/</loc>
+    <lastmod>2026-01-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/kgl/</loc>
+    <lastmod>2026-01-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/categories/library-cache/</loc>
+    <lastmod>2026-01-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/librarycache/</loc>
+    <lastmod>2026-01-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/librarycachelocks/</loc>
+    <lastmod>2026-01-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/posts/</loc>
+    <lastmod>2026-01-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/</loc>
+    <lastmod>2026-01-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/categories/wait-events/</loc>
+    <lastmod>2026-01-03T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/categories/26ai/</loc>
     <lastmod>2026-01-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/tags/26ai/</loc>
-    <lastmod>2026-01-02T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/categories/</loc>
     <lastmod>2026-01-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/tags/gdb/</loc>
@@ -27,12 +51,6 @@
     <lastmod>2026-01-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/tags/oracle/</loc>
-    <lastmod>2026-01-02T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/posts/</loc>
-    <lastmod>2026-01-02T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/tags/</loc>
     <lastmod>2026-01-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/categories/uuid/</loc>

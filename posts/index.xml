@@ -4,6 +4,13 @@
     <link>https://www.0xChris.dev/</link>
     <description>0xChris updates</description>
     <atom:link href="https://www.0xChris.dev/posts/" rel="self" type="application/rss+xml"/><item>
+      <title>Decoding Library Cache Lock and Library Cache Pin Wait Event Parameters</title>
+      <link>https://www.0xChris.dev/posts/2026-01-03-decoding-library-cache-lock-and-library-cache-pin-wait-event-parameters/</link>
+      <pubDate>Sat, 03 Jan 2026 00:00:00 UTC</pubDate>
+      <guid>https://www.0xChris.dev/posts/2026-01-03-decoding-library-cache-lock-and-library-cache-pin-wait-event-parameters/</guid>
+      <description>&lt;p&gt;Oracle wait events provide additional context information through their P1, P2, and P3 parameters, but unfortunately, the documentation for many wait events is incomplete or outdated.&lt;/p&gt;
+&lt;p&gt;If you&amp;rsquo;ve ever had to troubleshoot library cache contention, you have likely encountered the wait events &amp;ldquo;library cache lock&amp;rdquo;, &amp;ldquo;library cache load lock&amp;rdquo;, and &amp;ldquo;library cache pin&amp;rdquo;. They are described in various My Oracle Support notes, such as &lt;a href=&#34;https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;amp;documentId=KB830534&amp;amp;page=sptemplate&amp;amp;sptemplate=km-article&#34;&gt;1&lt;/a&gt;, &lt;a href=&#34;https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;amp;documentId=KB327915&amp;amp;page=sptemplate&amp;amp;sptemplate=km-article&#34;&gt;2&lt;/a&gt;, and &lt;a href=&#34;https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;amp;documentId=KB142997&amp;amp;page=sptemplate&amp;amp;sptemplate=km-article&#34;&gt;3&lt;/a&gt;, and their parameters, according to these docs, are as follows:&lt;/p&gt;</description>
+    </item><item>
       <title>UUID Generation In Oracle 26ai</title>
       <link>https://www.0xChris.dev/posts/2026-01-02-uuid-generation-in-oracle-26ai/</link>
       <pubDate>Fri, 02 Jan 2026 00:00:00 UTC</pubDate>
