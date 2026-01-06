@@ -4,6 +4,19 @@
     <link>https://www.0xChris.dev/</link>
     <description>0xChris updates</description>
     <atom:link href="https://www.0xChris.dev/tags/librarycache/" rel="self" type="application/rss+xml"/><item>
+      <title>Library Cache Lock and Library Cache Pin Wait Events — Identifier vs Hash Value</title>
+      <link>https://www.0xChris.dev/posts/2026-01-06-library-cache-lock-and-library-cache-pin-wait-events--identifier-vs-hash-value/</link>
+      <pubDate>Tue, 06 Jan 2026 00:00:00 UTC</pubDate>
+      <guid>https://www.0xChris.dev/posts/2026-01-06-library-cache-lock-and-library-cache-pin-wait-events--identifier-vs-hash-value/</guid>
+      <description>&lt;p&gt;This post is a follow-up note to a &lt;a href=&#34;https://www.0xChris.dev/posts/2026-01-03-decoding-library-cache-lock-and-library-cache-pin-wait-event-parameters/&#34;&gt;previous note&lt;/a&gt;, which explained how to decode the additional context information encoded in the P3 parameter for the library cache lock and library cache pin wait events.&lt;/p&gt;
+&lt;p&gt;To quickly recap, the P3 wait event parameter is a 64-bit (8-byte) integer value that encodes the following information (from most significant to least significant position):&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;4 bytes (&lt;code&gt;IIII&lt;/code&gt;) — handle identifier (note: for cursors &lt;code&gt;idn&lt;/code&gt;, shows the hash value, not the identifier)&lt;/li&gt;
+&lt;li&gt;2 bytes (&lt;code&gt;NN&lt;/code&gt;) — namespace&lt;/li&gt;
+&lt;li&gt;2 bytes (&lt;code&gt;MM&lt;/code&gt;) — requested lock or pin mode&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;As casually noted in parentheses, there is a specific aspect to be aware of regarding the handle identifier &lt;code&gt;idn&lt;/code&gt; in relation to cursors. This post explains in more detail exactly what that is. Note that all tests and results presented in this post were conducted on Oracle database version 23.26.&lt;/p&gt;</description>
+    </item><item>
       <title>Decoding Library Cache Lock and Library Cache Pin Wait Event Parameters</title>
       <link>https://www.0xChris.dev/posts/2026-01-03-decoding-library-cache-lock-and-library-cache-pin-wait-event-parameters/</link>
       <pubDate>Sat, 03 Jan 2026 00:00:00 UTC</pubDate>

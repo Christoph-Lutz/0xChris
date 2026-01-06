@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Library Cache Lock and Library Cache Pin Wait Events — Identifier vs Hash Value | 0xChris</title>
+
+    
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="/css/custom.css" />
+
+    
+    
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Library Cache Lock and Library Cache Pin Wait Events — Identifier vs Hash Value">
+  <meta name="twitter:description" content="This post is a follow-up note to a previous note, which explained how to decode the additional context information encoded in the P3 parameter for the library cache lock and library cache pin wait events.
+To quickly recap, the P3 wait event parameter is a 64-bit (8-byte) integer value that encodes the following information (from most significant to least significant position):
+4 bytes (IIII) — handle identifier (note: for cursors idn, shows the hash value, not the identifier) 2 bytes (NN) — namespace 2 bytes (MM) — requested lock or pin mode As casually noted in parentheses, there is a specific aspect to be aware of regarding the handle identifier idn in relation to cursors. This post explains in more detail exactly what that is. Note that all tests and results presented in this post were conducted on Oracle database version 23.26.">
+
+
+<meta property="og:title" content="Library Cache Lock and Library Cache Pin Wait Events — Identifier vs Hash Value">
+<meta property="og:description" content="This post is a follow-up note to a previous note, which explained how to decode the additional context information encoded in the P3 parameter for the library cache lock and library cache pin wait events.
+To quickly recap, the P3 wait event parameter is a 64-bit (8-byte) integer value that encodes the following information (from most significant to least significant position):
+4 bytes (IIII) — handle identifier (note: for cursors idn, shows the hash value, not the identifier) 2 bytes (NN) — namespace 2 bytes (MM) — requested lock or pin mode As casually noted in parentheses, there is a specific aspect to be aware of regarding the handle identifier idn in relation to cursors. This post explains in more detail exactly what that is. Note that all tests and results presented in this post were conducted on Oracle database version 23.26.
+">
+<meta property="og:url" content="https://www.0xChris.dev/posts/2026-01-06-library-cache-lock-and-library-cache-pin-wait-events--identifier-vs-hash-value/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="0xChris">
+
+
+
+<meta property="og:image" content="https://www.0xChris.dev/">
+
+
+  </head>
+
+  <body>
+    <nav>
+      <ul class="menu">
+        
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/posts/">Blog</a></li>
+        
+          <li><a href="/categories/">Categories</a></li>
+        
+          <li><a href="/tags/">Tags</a></li>
+        
+          <li><a href="/contact/">Contact</a></li>
+        
+          <li><a href="/index.xml">Subscribe</a></li>
+        
+
+        
+        
+          
+            <li class="icon">
+              <a href="https://github.com/Christoph-Lutz" aria-label="GitHub">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <title>GitHub</title>
+  <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" fill="currentColor"/>
+</svg>
+
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://x.com/chris_skyflier" aria-label="Twitter">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>X</title><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://bsky.app/profile/christophlutz.bsky.social" aria-label="Bluesky">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Bluesky</title><path d="M5.202 2.857C7.954 4.922 10.913 9.11 12 11.358c1.087-2.247 4.046-6.436 6.798-8.501C20.783 1.366 24 .213 24 3.883c0 .732-.42 6.156-.667 7.037-.856 3.061-3.978 3.842-6.755 3.37 4.854.826 6.089 3.562 3.422 6.299-5.065 5.196-7.28-1.304-7.847-2.97-.104-.305-.152-.448-.153-.327 0-.121-.05.022-.153.327-.568 1.666-2.782 8.166-7.847 2.97-2.667-2.737-1.432-5.473 3.422-6.3-2.777.473-5.899-.308-6.755-3.369C.42 10.04 0 4.615 0 3.883c0-3.67 3.217-2.517 5.202-1.026"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://sym42.org" aria-label="Sym42">
+                
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+  <path transform="scale(0.1004,0.1364) translate(11,1)" d="M0 0 C8.91 0 17.82 0 27 0 C27 32.01 27 64.02 27 97 C51.75 97 76.5 97 102 97 C102.33 118.78 102.66 140.56 103 163 C113.65023618 149.38741342 113.65023618 149.38741342 124 135.5625 C125.16793211 133.96872315 126.33590197 132.37497396 127.50390625 130.78125 C128.08156738 129.99105469 128.65922852 129.20085937 129.25439453 128.38671875 C132.14116363 124.43971809 135.0386119 120.50060445 137.9375 116.5625 C138.50952148 115.78430908 139.08154297 115.00611816 139.67089844 114.2043457 C143.34771065 109.21167043 147.06937462 104.25523259 150.81298828 99.3125 C170.98641999 74.34600723 170.98641999 74.34600723 177 44 C175.18481682 37.01549082 172.39314724 31.88945254 166.25390625 27.8515625 C158.52779633 23.46773353 150.43585329 23.37053009 141.8828125 25.125 C137.49428572 26.45701897 133.56042734 28.49182265 129.53125 30.66015625 C127 32 127 32 124 33 C124 23.76 124 14.52 124 5 C138.64493558 -0.63266753 138.64493558 -0.63266753 144.8828125 -0.62890625 C145.54860321 -0.63131821 146.21439392 -0.63373016 146.90036011 -0.63621521 C148.28308171 -0.63525162 149.66584937 -0.62222324 151.04833984 -0.59692383 C153.13124785 -0.56239643 155.20993568 -0.57639315 157.29296875 -0.59570312 C171.18361481 -0.58191047 181.8308422 3.34041929 192.00390625 12.87890625 C200.75379996 22.23354424 204.74719368 34.28009799 205.375 47 C204.41179837 64.52286038 196.17302926 80.08711875 186 94 C185.50757813 94.67724121 185.01515625 95.35448242 184.5078125 96.05224609 C180.97969681 100.89390965 177.41603046 105.70856193 173.84228516 110.51660156 C171.48040306 113.70041612 169.13374187 116.89527097 166.78710938 120.09033203 C159.52624187 129.97226581 152.18066843 139.78923387 144.81054688 149.58984375 C143.01140967 151.98481172 141.21597581 154.38250747 139.421875 156.78125 C138.8645166 157.52608643 138.3071582 158.27092285 137.73291016 159.03833008 C136.68515004 160.43879049 135.6379229 161.83964987 134.59130859 163.2409668 C131.11186653 167.88813347 131.11186653 167.88813347 130 169 C128.28134591 169.0935919 126.55884256 169.11744611 124.83764648 169.11352539 C123.73658066 169.11344986 122.63551483 169.11337433 121.50108337 169.11329651 C120.3031868 169.10813522 119.10529022 169.10297394 117.87109375 169.09765625 C116.65172623 169.0962413 115.4323587 169.09482635 114.17604065 169.09336853 C110.2631693 169.08774967 106.35035419 169.07519396 102.4375 169.0625 C99.79231853 169.05748743 97.14713617 169.0529241 94.50195312 169.04882812 C88.00126274 169.03862296 81.50069467 169.01905121 75 169 C75 154.15 75 139.3 75 124 C50.25 124 25.5 124 0 124 C0 83.08 0 42.16 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(155.8828125,0.37109375)" d="M0 0 C0.66579071 -0.00241196 1.33158142 -0.00482391 2.01754761 -0.00730896 C3.40026921 -0.00634537 4.78303687 0.00668301 6.16552734 0.03198242 C8.24843535 0.06650982 10.32712318 0.0525131 12.41015625 0.03320312 C26.30080231 0.04699578 36.9480297 3.96932554 47.12109375 13.5078125 C55.87098746 22.86245049 59.86438118 34.90900424 60.4921875 47.62890625 C59.52898587 65.15176663 51.29021676 80.716025 41.1171875 94.62890625 C40.62476563 95.30614746 40.13234375 95.98338867 39.625 96.68115234 C36.09688431 101.5228159 32.53321796 106.33746818 28.95947266 111.14550781 C26.59759056 114.32932237 24.25092937 117.52417722 21.90429688 120.71923828 C14.64342937 130.60117206 7.29785593 140.41814012 -0.07226562 150.21875 C-1.87140283 152.61371797 -3.66683669 155.01141372 -5.4609375 157.41015625 C-6.2969751 158.52741089 -6.2969751 158.52741089 -7.14990234 159.66723633 C-8.19766246 161.06769674 -9.2448896 162.46855612 -10.29150391 163.86987305 C-13.77094597 168.51703972 -13.77094597 168.51703972 -14.8828125 169.62890625 C-17.02840077 169.7166623 -19.17685671 169.73585844 -21.32421875 169.7265625 C-22.62939453 169.72333984 -23.93457031 169.72011719 -25.27929688 169.71679688 C-26.6679694 169.70844026 -28.05664127 169.6999753 -29.4453125 169.69140625 C-30.83788906 169.68639291 -32.23046731 169.68182972 -33.62304688 169.67773438 C-37.0430112 169.66590059 -40.46289094 169.64941505 -43.8828125 169.62890625 C-43.27097081 166.41918652 -42.20356776 164.38991326 -40.25 161.78515625 C-39.69892578 161.04394531 -39.14785156 160.30273438 -38.58007812 159.5390625 C-37.97873047 158.74371094 -37.37738281 157.94835937 -36.7578125 157.12890625 C-35.82098633 155.87400391 -35.82098633 155.87400391 -34.86523438 154.59375 C-32.87737817 151.93402615 -30.8807052 149.28109666 -28.8828125 146.62890625 C-27.62458729 144.95213253 -26.3667668 143.27505503 -25.109375 141.59765625 C-23.23806447 139.10192152 -21.36611031 136.60668841 -19.49169922 134.11328125 C-14.67303275 127.70001086 -9.90631899 121.24999876 -5.16113281 114.78222656 C-1.50429727 109.80538271 2.1987027 104.86635957 5.92797852 99.94360352 C26.10348636 74.9765367 26.10348636 74.9765367 32.1171875 44.62890625 C30.30200432 37.64439707 27.51033474 32.51835879 21.37109375 28.48046875 C13.64498383 24.09663978 5.55304079 23.99943634 -3 25.75390625 C-7.38852678 27.08592522 -11.32238516 29.1207289 -15.3515625 31.2890625 C-17.8828125 32.62890625 -17.8828125 32.62890625 -20.8828125 33.62890625 C-20.8828125 24.38890625 -20.8828125 15.14890625 -20.8828125 5.62890625 C-6.23787692 -0.00376128 -6.23787692 -0.00376128 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(171,143)" d="M0 0 C15.51 0 31.02 0 47 0 C47 8.91 47 17.82 47 27 C31.49 27 15.98 27 0 27 C0 18.09 0 9.18 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(135,6)" d="M0 0 C0.99 0.495 0.99 0.495 2 1 C1.67 8.92 1.34 16.84 1 25 C1.66 25 2.32 25 3 25 C2.67 25.99 2.34 26.98 2 28 C1.34 28 0.68 28 0 28 C0 18.76 0 9.52 0 0 Z"/>
+</svg>
+
+              </a>
+            </li>
+          
+        
+      </ul>
+      <hr/>
+    </nav>
+  </body>
+</html>
+<div class="article-meta">
+<h1><span class="title">Library Cache Lock and Library Cache Pin Wait Events — Identifier vs Hash Value</span></h1>
+
+<h2 class="date">2026/01/06</h2>
+</div>
+
+<main>
+<p>This post is a follow-up note to a <a href="/posts/2026-01-03-decoding-library-cache-lock-and-library-cache-pin-wait-event-parameters/">previous note</a>, which explained how to decode the additional context information encoded in the P3 parameter for the library cache lock and library cache pin wait events.</p>
+<p>To quickly recap, the P3 wait event parameter is a 64-bit (8-byte) integer value that encodes the following information (from most significant to least significant position):</p>
+<ul>
+<li>4 bytes (<code>IIII</code>) — handle identifier (note: for cursors <code>idn</code>, shows the hash value, not the identifier)</li>
+<li>2 bytes (<code>NN</code>) — namespace</li>
+<li>2 bytes (<code>MM</code>) — requested lock or pin mode</li>
+</ul>
+<p>As casually noted in parentheses, there is a specific aspect to be aware of regarding the handle identifier <code>idn</code> in relation to cursors. This post explains in more detail exactly what that is. Note that all tests and results presented in this post were conducted on Oracle database version 23.26.</p>
+<p>Various sources on the internet map the <code>idn</code> (&ldquo;identifier&rdquo;) to a library cache object&rsquo;s hash value and use <code>WHERE</code> clauses like <code>HASH_VALUE = &amp;idn</code> in queries to look up library cache object information from views such as <code>v$db_object_cache</code>. This approach is frequently used in combination with library cache mutex- and cursor pin-related waits, for which the P1 parameter is described as <code>idn</code>.</p>
+<p>However, using the <code>idn</code> value to look up object information by hash value does not reliably work with library cache locks and pins, as in this context the <code>idn</code> value only reflects the hash value for cursor objects; for other object types, such as tables, packages, procedures, etc., the <code>idn</code> value differs from the hash value.</p>
+<p>Consequently, for library cache lock and pin waits, the decoded <code>idn</code> value from the P3 parameter cannot be relied upon to identify the affected object, and instead, the handle address exposed in the P1 parameter should be used:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>SQL&gt; select name, parameter3 from v$event_name 
+</span></span><span style="display:flex;"><span>     where name in (&#39;library cache lock&#39;, &#39;library cache load lock&#39;, &#39;library cache pin&#39;);
+</span></span><span style="display:flex;"><span>     
+</span></span><span style="display:flex;"><span>NAME                     PARAMETER1     PARAMETER2   PARAMETER3
+</span></span><span style="display:flex;"><span>------------------------ -------------- ------------ -------------------------------------
+</span></span><span style="display:flex;"><span>library cache pin        handle address pin address  (identifier&lt;&lt;32)+(namespace&lt;&lt;16)+mode
+</span></span><span style="display:flex;"><span>library cache lock       handle address lock address (identifier&lt;&lt;32)+(namespace&lt;&lt;16)+mode
+</span></span><span style="display:flex;"><span>library cache load lock  object address lock address (identifier&lt;&lt;32)+(namespace&lt;&lt;16)+mode</span></span></code></pre></div>
+<figcaption>Listing 1: Wait event parameter descriptions v$event_name</figcaption>
+</figure>
+<p>The examples below illustrate the difference between the identifier (<code>idn</code>) and the hash value based on library cache dumps and bpftrace output.</p>
+<p>This first example shows a level-16 library cache object dump of the <code>DUAL</code> table, for which the handle address is <code>0x7BDDCE488</code>:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span><span style="color:#080;font-style:italic">-- Lookup table object by handle address 
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span><span style="color:#080;font-style:italic"></span><span style="color:#a2f;font-weight:bold">SQL</span><span style="color:#666">&gt;</span><span style="color:#bbb"> </span><span style="color:#a2f;font-weight:bold">select</span><span style="color:#bbb"> </span>kglhdadr,<span style="color:#bbb"> </span>kglnaobj,<span style="color:#bbb"> </span>kglnahsh,<span style="color:#bbb"> </span>kglobtyd<span style="color:#bbb"> </span><span style="color:#a2f;font-weight:bold">from</span><span style="color:#bbb"> </span>x$kglob<span style="color:#bbb"> 
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span><span style="color:#bbb">     </span><span style="color:#a2f;font-weight:bold">where</span><span style="color:#bbb"> </span>kglnaobj<span style="color:#bbb"> </span><span style="color:#666">=</span><span style="color:#bbb"> </span><span style="color:#b44">&#39;DUAL&#39;</span><span style="color:#bbb"> </span><span style="color:#a2f;font-weight:bold">and</span><span style="color:#bbb"> </span>kglnacon<span style="color:#bbb"> </span><span style="color:#666">=</span><span style="color:#bbb"> </span><span style="color:#b44">&#39;CDB$ROOT&#39;</span><span style="color:#bbb"> </span><span style="color:#a2f;font-weight:bold">and</span><span style="color:#bbb"> </span>kglobtyd<span style="color:#bbb"> </span><span style="color:#666">=</span><span style="color:#bbb"> </span><span style="color:#b44">&#39;TABLE&#39;</span>;<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span><span style="color:#bbb"></span>KGLHDADR<span style="color:#bbb">         </span>KGLNAOBJ<span style="color:#bbb">                         </span>KGLNAHSH<span style="color:#bbb"> </span>KGLOBTYD<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span><span style="color:#bbb"></span><span style="color:#080;font-style:italic">---------------- ------------------------------ ---------- ------------------------------
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span><span style="color:#080;font-style:italic"></span><span style="color:#666">00000007</span>BDDCE488<span style="color:#bbb"> </span>DUAL<span style="color:#bbb">                           </span><span style="color:#666">4007856957</span><span style="color:#bbb"> </span><span style="color:#a2f;font-weight:bold">TABLE</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span><span style="color:#bbb"></span><span style="color:#080;font-style:italic">-- Library cache dump (handle address 0x7BDDCE488)
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span><span style="color:#080;font-style:italic"></span><span style="color:#a2f;font-weight:bold">SQL</span><span style="color:#666">&gt;</span><span style="color:#bbb"> </span>oradebug<span style="color:#bbb"> </span>setmypid<span style="color:#bbb"> 
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span><span style="color:#bbb"></span><span style="color:#a2f;font-weight:bold">SQL</span><span style="color:#666">&gt;</span><span style="color:#bbb"> </span>oradebug<span style="color:#bbb"> </span>dump<span style="color:#bbb"> </span>library_cache_object<span style="color:#bbb"> </span><span style="color:#666">16</span><span style="color:#bbb"> </span><span style="color:#666">0</span>x7BDDCE488<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span><span style="color:#bbb"></span><span style="color:#a2f;font-weight:bold">SQL</span><span style="color:#666">&gt;</span><span style="color:#bbb"> </span>oradebug<span style="color:#bbb"> </span>tracefile_name<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span><span style="color:#bbb"></span><span style="color:#666">#</span><span style="color:#bbb"> </span>Library<span style="color:#bbb"> </span><span style="color:#a2f;font-weight:bold">cache</span><span style="color:#bbb"> </span>dump<span style="color:#bbb"> </span>excerpt<span style="color:#bbb">
+</span></span></span><span style="display:flex; background-color:#dfdfdf"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span><span style="color:#bbb"></span>LibraryHandle:<span style="color:#bbb">  </span>Address<span style="color:#666">=</span><span style="color:#666">0</span>x7bddce488<span style="color:#bbb"> </span>Hash<span style="color:#666">=</span>eee30b3d<span style="color:#bbb"> </span>LockMode<span style="color:#666">=</span><span style="color:#666">0</span><span style="color:#bbb"> </span>PinMode<span style="color:#666">=</span><span style="color:#666">0</span><span style="color:#bbb"> </span>LoadLockMode<span style="color:#666">=</span><span style="color:#666">0</span><span style="color:#bbb"> 
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span><span style="color:#bbb">            </span>Status<span style="color:#666">=</span>VALD<span style="color:#bbb"> </span>Subpool<span style="color:#666">=</span><span style="color:#666">2</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span><span><span style="color:#bbb">  </span>ObjectName:<span style="color:#bbb">  </span>Name<span style="color:#666">=</span>CDB$ROOT.SYS.DUAL<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span><span><span style="color:#bbb">    </span>FullHashValue<span style="color:#666">=</span><span style="color:#666">6</span>ddfc9a0e931dac4e4a64887eee30b3d<span style="color:#bbb"> </span>Namespace<span style="color:#666">=</span><span style="color:#a2f;font-weight:bold">TABLE</span><span style="color:#666">/</span><span style="color:#a2f;font-weight:bold">PROCEDURE</span>(<span style="color:#666">01</span>)<span style="color:#bbb"> 
+</span></span></span><span style="display:flex; background-color:#dfdfdf"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span><span><span style="color:#bbb">    </span><span style="color:#a2f;font-weight:bold">Type</span><span style="color:#666">=</span><span style="color:#a2f;font-weight:bold">TABLE</span>(<span style="color:#666">02</span>)<span style="color:#bbb"> </span>ContainerId<span style="color:#666">=</span><span style="color:#666">1</span><span style="color:#bbb"> </span>ContainerUid<span style="color:#666">=</span><span style="color:#666">1</span><span style="color:#bbb"> </span>Identifier<span style="color:#666">=</span><span style="color:#666">148</span><span style="color:#bbb"> </span>OwnerIdn<span style="color:#666">=</span><span style="color:#666">0</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20</span><span><span style="color:#bbb"></span>...</span></span></code></pre></div>
+<figcaption>Listing 2: Library cache dump DUAL table</figcaption>
+</figure>
+<p>The library cache dump excerpt shows that, for the <code>DUAL</code> table object in the library cache, Oracle computed a <code>Hash</code> value of <code>eee30b3d</code> (decimal <code>4007856957</code>, line 15) and an <code>Identifier</code> value of <code>148</code> (line 19). As this mismatch illustrates, there is apparently a difference between an object&rsquo;s identifier and its hash value.</p>
+<p>However, the situation is different for cursors. The following example shows a level-16 library cache object dump, but this time a parent cursor with handle address <code>0x7735E6808</code>. This is the parent cursor for a simple query against the <code>DUAL</code> table:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span><span style="color:#080;font-style:italic">-- Lookup cursor objects by sql_id
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span><span style="color:#080;font-style:italic"></span><span style="color:#a2f;font-weight:bold">SQL</span><span style="color:#666">&gt;</span><span style="color:#bbb"> </span><span style="color:#a2f;font-weight:bold">select</span><span style="color:#bbb"> </span>kglhdpar,<span style="color:#bbb"> </span>kglhdadr,<span style="color:#bbb"> </span>kglnaobj,<span style="color:#bbb"> </span>kglnahsh,<span style="color:#bbb"> </span>kglobtyd<span style="color:#bbb"> </span><span style="color:#a2f;font-weight:bold">from</span><span style="color:#bbb"> </span>x$kglob<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span><span style="color:#bbb">     </span><span style="color:#a2f;font-weight:bold">where</span><span style="color:#bbb"> </span>kglobt03<span style="color:#bbb"> </span><span style="color:#666">=</span><span style="color:#bbb"> </span><span style="color:#b44">&#39;7h35uxf5uhmm1&#39;</span>;<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span><span style="color:#bbb"></span>KGLHDPAR<span style="color:#bbb">         </span>KGLHDADR<span style="color:#bbb">         </span>KGLNAOBJ<span style="color:#bbb">                   </span>KGLNAHSH<span style="color:#bbb"> </span>KGLOBTYD<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span><span style="color:#bbb"></span><span style="color:#080;font-style:italic">---------------- ---------------- ------------------------ ---------- --------
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span><span style="color:#080;font-style:italic"></span><span style="color:#666">00000007735</span>E6808<span style="color:#bbb"> </span><span style="color:#666">0000000757798298</span><span style="color:#bbb"> </span><span style="color:#a2f;font-weight:bold">select</span><span style="color:#bbb"> </span>sysdate<span style="color:#bbb"> </span><span style="color:#a2f;font-weight:bold">from</span><span style="color:#bbb"> </span>dual<span style="color:#bbb"> </span><span style="color:#666">2343063137</span><span style="color:#bbb"> </span><span style="color:#a2f;font-weight:bold">CURSOR</span><span style="color:#bbb">   </span><span style="color:#080;font-style:italic">-- child
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span><span style="color:#080;font-style:italic"></span><span style="color:#666">00000007735</span>E6808<span style="color:#bbb"> </span><span style="color:#666">00000007735</span>E6808<span style="color:#bbb"> </span><span style="color:#a2f;font-weight:bold">select</span><span style="color:#bbb"> </span>sysdate<span style="color:#bbb"> </span><span style="color:#a2f;font-weight:bold">from</span><span style="color:#bbb"> </span>dual<span style="color:#bbb"> </span><span style="color:#666">2343063137</span><span style="color:#bbb"> </span><span style="color:#a2f;font-weight:bold">CURSOR</span><span style="color:#bbb">   </span><span style="color:#080;font-style:italic">-- parent
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span><span style="color:#080;font-style:italic"></span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span><span style="color:#bbb"></span><span style="color:#080;font-style:italic">-- Library cache dump (handle address 
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span><span style="color:#080;font-style:italic"></span><span style="color:#a2f;font-weight:bold">SQL</span><span style="color:#666">&gt;</span><span style="color:#bbb"> </span>oradebug<span style="color:#bbb"> </span>setmypid<span style="color:#bbb"> 
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span><span style="color:#bbb"></span><span style="color:#a2f;font-weight:bold">SQL</span><span style="color:#666">&gt;</span><span style="color:#bbb"> </span>oradebug<span style="color:#bbb"> </span>dump<span style="color:#bbb"> </span>library_cache_object<span style="color:#bbb"> </span><span style="color:#666">16</span><span style="color:#bbb"> </span><span style="color:#666">0</span>x7735E6808<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span><span style="color:#bbb"></span><span style="color:#a2f;font-weight:bold">SQL</span><span style="color:#666">&gt;</span><span style="color:#bbb"> </span>oradebug<span style="color:#bbb"> </span>tracefile_name<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span><span style="color:#bbb"></span><span style="color:#666">#</span><span style="color:#bbb"> </span>Library<span style="color:#bbb"> </span><span style="color:#a2f;font-weight:bold">cache</span><span style="color:#bbb"> </span>dump<span style="color:#bbb"> </span>excerpt<span style="color:#bbb">
+</span></span></span><span style="display:flex; background-color:#dfdfdf"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span><span style="color:#bbb"></span>LibraryHandle:<span style="color:#bbb">  </span>Address<span style="color:#666">=</span><span style="color:#666">0</span>x7735e6808<span style="color:#bbb"> </span>Hash<span style="color:#666">=</span><span style="color:#666">8</span>ba84e61<span style="color:#bbb"> </span>LockMode<span style="color:#666">=</span><span style="color:#666">0</span><span style="color:#bbb"> </span>PinMode<span style="color:#666">=</span><span style="color:#666">0</span><span style="color:#bbb"> </span>LoadLockMode<span style="color:#666">=</span><span style="color:#666">0</span><span style="color:#bbb"> 
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span><span><span style="color:#bbb">            </span>Status<span style="color:#666">=</span>VALD<span style="color:#bbb"> </span>Subpool<span style="color:#666">=</span><span style="color:#666">2</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span><span><span style="color:#bbb">  </span>ObjectName:<span style="color:#bbb">  </span>Name<span style="color:#666">=</span><span style="color:#a2f;font-weight:bold">select</span><span style="color:#bbb"> </span>sysdate<span style="color:#bbb"> </span><span style="color:#a2f;font-weight:bold">from</span><span style="color:#bbb"> </span>dual<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span><span><span style="color:#bbb">    </span>FullHashValue<span style="color:#666">=</span>b3dbd4abf1156b09780cbaeb8ba84e61<span style="color:#bbb"> </span>Namespace<span style="color:#666">=</span><span style="color:#a2f;font-weight:bold">SQL</span><span style="color:#bbb"> </span>AREA(<span style="color:#666">00</span>)<span style="color:#bbb"> 
+</span></span></span><span style="display:flex; background-color:#dfdfdf"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20</span><span><span style="color:#bbb">    </span>SqlId<span style="color:#666">=</span><span style="color:#666">7</span>h35uxf5uhmm1<span style="color:#bbb"> </span><span style="color:#a2f;font-weight:bold">Type</span><span style="color:#666">=</span><span style="color:#a2f;font-weight:bold">CURSOR</span>(<span style="color:#666">00</span>)<span style="color:#bbb"> </span>ContainerId<span style="color:#666">=</span><span style="color:#666">1</span><span style="color:#bbb"> </span>ContainerUid<span style="color:#666">=</span><span style="color:#666">1</span><span style="color:#bbb"> </span>Identifier<span style="color:#666">=</span><span style="color:#666">2343063137</span><span style="color:#bbb"> 
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21</span><span><span style="color:#bbb">    </span>OwnerIdn<span style="color:#666">=</span><span style="color:#666">0</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22</span><span><span style="color:#bbb"></span>...</span></span></code></pre></div>
+<figcaption>Listing 3: Library cache dump parent cursor</figcaption>
+</figure>
+<p>In this case, the <code>Hash</code> value of <code>8ba84e61</code> (decimal <code>2343063137</code>, line 16) matches the <code>Identifier</code> value of <code>2343063137</code> (line 20). This is why using <code>WHERE</code> clauses like <code>HASH_VALUE = &amp;idn</code> works for cursors.</p>
+<blockquote class="tip">
+💡 <strong>Tip</strong><br>
+When using the x$ table <code>x$kglob</code> to look up library cache object details, parent cursors can be identified by identical parent and child handle addresses (i.e., <code>kglhdpar = kglhdadr</code>).
+<p>Similarly, child cursors can be identified by differing parent and child handle addresses (<code>kglhdpar != kglhdadr</code>).</p>
+</blockquote>
+<p>Let&rsquo;s dump the child cursor with handle address <code>0x757798298</code> next:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span><span>LibraryHandle:<span style="color:#bbb">  </span>Address<span style="color:#666">=</span><span style="color:#666">0</span>x757798298<span style="color:#bbb"> </span>Hash<span style="color:#666">=</span><span style="color:#666">0</span><span style="color:#bbb"> </span>LockMode<span style="color:#666">=</span><span style="color:#666">0</span><span style="color:#bbb"> </span>PinMode<span style="color:#666">=</span><span style="color:#666">0</span><span style="color:#bbb"> </span>LoadLockMode<span style="color:#666">=</span><span style="color:#666">0</span><span style="color:#bbb"> 
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span><span><span style="color:#bbb">            </span>Status<span style="color:#666">=</span>VALD<span style="color:#bbb"> </span>Subpool<span style="color:#666">=</span><span style="color:#666">2</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span><span><span style="color:#bbb">  </span>Name:<span style="color:#bbb">  </span>Namespace<span style="color:#666">=</span><span style="color:#a2f;font-weight:bold">SQL</span><span style="color:#bbb"> </span>AREA(<span style="color:#666">00</span>)<span style="color:#bbb"> </span><span style="color:#a2f;font-weight:bold">Type</span><span style="color:#666">=</span><span style="color:#a2f;font-weight:bold">CURSOR</span>(<span style="color:#666">00</span>)<span style="color:#bbb"> </span>ContainerId<span style="color:#666">=</span><span style="color:#666">1</span><span style="color:#bbb"> </span>ContainerUid<span style="color:#666">=</span><span style="color:#666">1</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4</span><span><span style="color:#bbb">  </span><span style="color:#a2f;font-weight:bold">Statistics</span>:<span style="color:#bbb">  </span>InvalidationCount<span style="color:#666">=</span><span style="color:#666">0</span><span style="color:#bbb"> </span>ExecutionCount<span style="color:#666">=</span><span style="color:#666">2</span><span style="color:#bbb"> </span>LoadCount<span style="color:#666">=</span><span style="color:#666">1</span><span style="color:#bbb"> </span>ActiveLocks<span style="color:#666">=</span><span style="color:#666">0</span><span style="color:#bbb"> </span>ActivePins<span style="color:#666">=</span><span style="color:#666">0</span><span style="color:#bbb"> 
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5</span><span><span style="color:#bbb">          </span>TotalLockCount<span style="color:#666">=</span><span style="color:#666">2</span><span style="color:#bbb"> </span>TotalPinCount<span style="color:#666">=</span><span style="color:#666">3</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6</span><span><span style="color:#bbb"></span>...</span></span></code></pre></div>
+<figcaption>Listing 4: Library cache dump child cursor</figcaption>
+</figure>
+<p>Interestingly, the child cursor object dump shows neither a hash nor an identifier value. This indicates that Oracle retrieves the hash value from the parent cursor. The next few paragraphs show how this can be observed using bpftrace.</p>
+<p>Behind the scenes, Oracle uses the function <code>kglHandleWaitPar3</code> to compute and encode the P3 wait event parameter, which in turn invokes several helper functions to collect additional wait event context information. Since simulating library cache lock contention takes some effort, I decided to conduct a simpler experiment by just manually invoking <code>kglHandleWaitPar3</code> from gdb and tracing its execution with the bpftrace script <a href="https://github.com/Christoph-Lutz/oracle/tree/main/bpftrace/kglHandleWaitPar3-pid.bt">kglHandleWaitPar3.bt</a>, as demonstrated below.</p>
+<p>Needless to say, this procedure is experimental and should only be performed in a lab environment.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span>1. Attach to pid 223187 with gdb
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>~# gdb -q -p 223187
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>2. Trace pid 223187 with bpftrace
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>~# ./kglHandleWaitPar3-pid.bt 223187
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>Tracing kglHandleWaitPar3 ... Hit ^C to stop.
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>3. Manually invoke kglHandleWaitPar3
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>(gdb) p/x (uint64_t) kglHandleWaitPar3(0x0, 0x757798298 , 0x0, 0x2)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>$1 = 0x8ba84e6100000002
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span>(gdb) quit
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span>4. Check the bpftrace output
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span>223187 oracle_223187_t -&gt; kglHandleWaitPar3: 0x0, 0x757798298, 0x0, 0x2
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span><span>223187 oracle_223187_t    -&gt; kglHandleParent: 0x0, 0x757798298
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span><span>223187 oracle_223187_t    &lt;- kglHandleParent: 0x7735e6808 (32000337928)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span><span>223187 oracle_223187_t    -&gt; kglHandleHash: 0x0, 0x7735e6808
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20</span><span>223187 oracle_223187_t    &lt;- kglHandleHash: 0x8ba84e61 (2343063137)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21</span><span>223187 oracle_223187_t &lt;- kglHandleWaitPar3: 0x8ba84e6100000002</span></span></code></pre></div>
+<figcaption>Listing 5: Tracing execution of function kglHandleWaitPar3 for a child cursor</figcaption>
+</figure>
+<p>On line 10, the <code>kglHandleWaitPar3</code> function is invoked with the second and fourth argument specifying the library cache handle address of the child cursor (<code>0x757798298</code>) and the requested lock mode (<code>0x2</code> = share mode), respectively. The first and third function arguments are not relevant, therefore supplied as <code>0x0</code>. Line 11 prints the encoded P3 return value, consisting of <code>idn</code>, <code>namespace</code>, and <code>mode</code>.</p>
+<p>The bpftrace output shows <code>kglHandleWaitPar3</code> calling the <code>kglHandleParent</code> and <code>kglHandleHash</code> helper functions on lines 15 and 17:</p>
+<ul>
+<li>
+<p><code>kglHandleParent</code> takes the child’s handle address as its second argument (<code>0x757798298</code>) and returns the parent handle address (<code>0x7735e6808</code>).</p>
+</li>
+<li>
+<p><code>kglHandleHash</code> takes the parent handle address returned by <code>kglHandleParent</code> (<code>0x7735e6808</code>) and returns the computed hash value <code>0x8ba84e61</code>, which in turn is encoded into the P3 before <code>kglHandleWaitPar3</code> completes.</p>
+</li>
+<li>
+<p><code>kglHandleParent</code> takes the child handle address as its second argument (<code>0x757798298</code>) and returns the parent handle address (<code>0x7735e6808</code>).</p>
+</li>
+<li>
+<p><code>kglHandleHash</code> takes the parent handle address returned by <code>kglHandleParent</code> (<code>0x7735e6808</code>) and returns the computed hash value <code>0x8ba84e61</code>, which is then encoded into the P3 parameter before <code>kglHandleWaitPar3</code> completes.</p>
+</li>
+</ul>
+<p>Compare this with a trace of <code>kglHandleWaitPar3</code> when the parent cursor’s handle address <code>0x7735e6808</code> is supplied:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span>1. Attach to pid 223187 with gdb
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>~# gdb -q -p 223187
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>2. Trace pid 223187 with bpftrace
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>~# ./kglHandleWaitPar3-pid.bt 223187
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>Tracing kglHandleWaitPar3 ... Hit ^C to stop.
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>3. Manually invoke kglHandleWaitPar3
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>(gdb) p/x (uint64_t) kglHandleWaitPar3(0x0, 0x7735e6808, 0x0, 0x2)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>$2 = 0x8ba84e6100000002
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span>(gdb) quit
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span>4. Check the bpftrace output
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span>223187 oracle_223187_t -&gt; kglHandleWaitPar3: 0x0, 0x7735e6808, 0x0, 0x2
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span><span>223187 oracle_223187_t    -&gt; kglHandleParent: 0x0, 0x7735e6808
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span><span>223187 oracle_223187_t    &lt;- kglHandleParent: 0x0 (0)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span><span>223187 oracle_223187_t    -&gt; kglHandleIdn: 0x0, 0x7735e6808
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20</span><span>223187 oracle_223187_t    &lt;- kglHandleIdn: 0x8ba84e61 (2343063137)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21</span><span>223187 oracle_223187_t &lt;- kglHandleWaitPar3: 0x8ba84e6100000002</span></span></code></pre></div>
+<figcaption>Listing 6: Tracing execution of kglHandleWaitPar3 for a parent cursor</figcaption>
+</figure>
+<p>For a parent cursor, the behavior of <code>kglHandleWaitPar3</code> slightly changes:</p>
+<ul>
+<li><code>kglHandleParent</code> doesn&rsquo;t find a parent cursor (apparently, a parent cursor cannot itself have a parent), and therefore returns 0.</li>
+<li>Unlike the child cursor case, <code>kglHandleHash</code> is not called; instead, <code>kglHandleIdn</code> with the parent cursor&rsquo;s handle address <code>0x7735e6808</code> as the second argument (line 20), but it does not return an identifier value but rather the parent cursor’s hash value.</li>
+</ul>
+<p>Finally, let&rsquo;s trace <code>kglHandleWaitPar3</code> for the <code>DUAL</code> object with handle address <code>0x7BDDCE488</code>:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span>1. Attach to pid 223187 with gdb
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>~# gdb -q -p 223187
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>2. Trace pid 223187 with bpftrace
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>~# ./kglHandleWaitPar3-pid.bt 223187
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>Tracing kglHandleWaitPar3 ... Hit ^C to stop.
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>3. Manually invoke kglHandleWaitPar3
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>(gdb)  p/x (uint64_t) kglHandleWaitPar3(0x0, 0x7bddce488 , 0x0, 0x2)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>$2 = 0x9400010002
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span>(gdb) quit
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span>4. Check the bpftrace output
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span>223187 oracle_223187_t -&gt; kglHandleWaitPar3: 0x0, 0x7bddce488, 0x0, 0x2
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span><span>223187 oracle_223187_t    -&gt; kglHandleParent: 0x0, 0x7bddce488
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span><span>223187 oracle_223187_t    &lt;- kglHandleParent: 0x0 (0)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span><span>223187 oracle_223187_t    -&gt; kglHandleIdn: 0x0, 0x7bddce488
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20</span><span>223187 oracle_223187_t    &lt;- kglHandleIdn: 0x94 (148)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21</span><span>223187 oracle_223187_t &lt;- kglHandleWaitPar3: 0x9400010002</span></span></code></pre></div>
+<figcaption>Listing 7: Tracing execution of kglHandleWaitPar3 for a table object</figcaption>
+</figure>
+<p>In this case, <code>kglHandleWaitPar3</code> calls <code>kglHandleParent</code>, which returns <code>0x0</code> since there is no parent object, and then calls <code>kglHandleIdn</code>, which returns the <code>idn</code> value <code>0x94</code> (decimal <code>148</code>).</p>
+<p>This experiment shows that the <code>idn</code> value encoded in the P3 wait event parameter of the library cache lock and library cache pin wait events reflects a library cache object’s hash value only when the object is a parent or child cursor. Therefore, the <code>idn</code> value decoded from the P3 wait event parameter should not be used to look up library cache object details; instead, the handle address exposed in the P1 parameter should be used.</p>
+<p>On a related note, the identifier and hash values are generated by different functions. The identifier value is computed in <code>kgghash</code>, whereas the hash value is generated by <code>kglComputeHash0</code>.</p>
+<h3 id="references">References</h3>
+<p>[1] <a href="/posts/2026-01-03-decoding-library-cache-lock-and-library-cache-pin-wait-event-parameters/">Christoph Lutz, Decoding Library Cache Lock and Library Cache Pin Wait Event Parameters, 2026-01-03</a></p>
+
+</main>
+
+  <footer>
+  
+  <hr/>
+  © <a href="https://www.0xChris.dev">Christoph Lutz</a> 2025 &ndash; 2026
+  
+  <hr/>
+  <script src="https://giscus.app/client.js"
+            data-repo="Christoph-Lutz/0xChris-Comments"
+            data-repo-id="R_kgDOQo-jcg"
+            data-category="Comments"
+            data-category-id="DIC_kwDOQo-jcs4Cz0NV"
+            data-mapping="pathname"
+            data-strict="1"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="light"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+        </script>
+    <script id="partials/analytics.html" 
+  data-goatcounter="https://0xchris.goatcounter.com/count"
+  async src="//gc.zgo.at/count.js"></script>
+
+  </footer>
+  </body>
+</html>
+
