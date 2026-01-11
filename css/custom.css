@@ -96,6 +96,10 @@ blockquote {
   background: #f9fafb;
 }
 
+blockquote p {
+  margin-bottom: 0.25rem !important; 
+}
+
 blockquote strong:first-child {
   font-weight: 600;
   margin-bottom: 0.25rem;

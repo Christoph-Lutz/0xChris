@@ -1,0 +1,14 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>0xChris</title>
+    <link>https://www.0xChris.dev/</link>
+    <description>0xChris updates</description>
+    <atom:link href="https://www.0xChris.dev/tags/ora-4021/" rel="self" type="application/rss+xml"/><item>
+      <title>Datapatch And The &#34;force_terminate_blocking_sessions&#34; Option — A Look Behind The Scenes</title>
+      <link>https://www.0xChris.dev/posts/2026-01-11-datapatch-and-the-force_terminate_blocking_sessions-option--a-look-behind-the-scenes/</link>
+      <pubDate>Sun, 11 Jan 2026 00:00:00 UTC</pubDate>
+      <guid>https://www.0xChris.dev/posts/2026-01-11-datapatch-and-the-force_terminate_blocking_sessions-option--a-look-behind-the-scenes/</guid>
+      <description>&lt;p&gt;If you’ve ever executed Datapatch on a busy system, chances are you’ve experienced intermittent delays or hangs, and in some situations maybe even errors such as ORA-4021 (&amp;ldquo;timeout occurred while waiting to lock object&amp;rdquo;) or ORA-4020 (&amp;ldquo;deadlock detected while trying to lock object&amp;rdquo;). In many cases, this is caused by concurrent modifications to database objects (tables, views, packages, etc.) while they are being accessed by other sessions (see also &lt;a href=&#34;https://dohdatabase.com/2022/10/27/can-i-run-datapatch-when-users-are-connected/&#34;&gt;1&lt;/a&gt;).&lt;/p&gt;
+&lt;p&gt;For that reason, Oracle recently announced support for a new Datapatch &amp;ldquo;kill switch&amp;rdquo; that attempts to address these kinds of problems by automatically killing blockers that get in the way of Datapatch (see &lt;a href=&#34;https://support.oracle.com/support/?anchorId=&amp;amp;kmContentId=1585822&amp;amp;page=sptemplate&amp;amp;sptemplate=km-article&#34;&gt;2&lt;/a&gt; and &lt;a href=&#34;https://mikedietrichde.com/2025/11/12/a-kill-switch-terminates-blocking-sessions-during-patching/&#34;&gt;3&lt;/a&gt;).&lt;/p&gt;</description>
+    </item></channel>
+</rss>

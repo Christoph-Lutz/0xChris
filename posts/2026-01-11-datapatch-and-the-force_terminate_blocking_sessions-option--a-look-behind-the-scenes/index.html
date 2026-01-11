@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Datapatch And The &#34;force_terminate_blocking_sessions&#34; Option — A Look Behind The Scenes | 0xChris</title>
+
+    
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="/css/custom.css" />
+
+    
+    
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Datapatch And The &#34;force_terminate_blocking_sessions&#34; Option — A Look Behind The Scenes">
+  <meta name="twitter:description" content="If you’ve ever executed Datapatch on a busy system, chances are you’ve experienced intermittent delays or hangs, and in some situations maybe even errors such as ORA-4021 (“timeout occurred while waiting to lock object”) or ORA-4020 (“deadlock detected while trying to lock object”). In many cases, this is caused by concurrent modifications to database objects (tables, views, packages, etc.) while they are being accessed by other sessions (see also 1).
+For that reason, Oracle recently announced support for a new Datapatch “kill switch” that attempts to address these kinds of problems by automatically killing blockers that get in the way of Datapatch (see 2 and 3).">
+
+
+<meta property="og:title" content="Datapatch And The &#34;force_terminate_blocking_sessions&#34; Option — A Look Behind The Scenes">
+<meta property="og:description" content="If you’ve ever executed Datapatch on a busy system, chances are you’ve experienced intermittent delays or hangs, and in some situations maybe even errors such as ORA-4021 (&amp;amp;ldquo;timeout occurred while waiting to lock object&amp;amp;rdquo;) or ORA-4020 (&amp;amp;ldquo;deadlock detected while trying to lock object&amp;amp;rdquo;). In many cases, this is caused by concurrent modifications to database objects (tables, views, packages, etc.) while they are being accessed by other sessions (see also 1).
+For that reason, Oracle recently announced support for a new Datapatch &amp;amp;ldquo;kill switch&amp;amp;rdquo; that attempts to address these kinds of problems by automatically killing blockers that get in the way of Datapatch (see 2 and 3).
+">
+<meta property="og:url" content="https://www.0xChris.dev/posts/2026-01-11-datapatch-and-the-force_terminate_blocking_sessions-option--a-look-behind-the-scenes/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="0xChris">
+
+
+
+<meta property="og:image" content="https://www.0xChris.dev/">
+
+
+  </head>
+
+  <body>
+    <nav>
+      <ul class="menu">
+        
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/posts/">Blog</a></li>
+        
+          <li><a href="/categories/">Categories</a></li>
+        
+          <li><a href="/tags/">Tags</a></li>
+        
+          <li><a href="/contact/">Contact</a></li>
+        
+          <li><a href="/index.xml">Subscribe</a></li>
+        
+
+        
+        
+          
+            <li class="icon">
+              <a href="https://github.com/Christoph-Lutz" aria-label="GitHub">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <title>GitHub</title>
+  <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" fill="currentColor"/>
+</svg>
+
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://x.com/chris_skyflier" aria-label="Twitter">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>X</title><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://bsky.app/profile/christophlutz.bsky.social" aria-label="Bluesky">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Bluesky</title><path d="M5.202 2.857C7.954 4.922 10.913 9.11 12 11.358c1.087-2.247 4.046-6.436 6.798-8.501C20.783 1.366 24 .213 24 3.883c0 .732-.42 6.156-.667 7.037-.856 3.061-3.978 3.842-6.755 3.37 4.854.826 6.089 3.562 3.422 6.299-5.065 5.196-7.28-1.304-7.847-2.97-.104-.305-.152-.448-.153-.327 0-.121-.05.022-.153.327-.568 1.666-2.782 8.166-7.847 2.97-2.667-2.737-1.432-5.473 3.422-6.3-2.777.473-5.899-.308-6.755-3.369C.42 10.04 0 4.615 0 3.883c0-3.67 3.217-2.517 5.202-1.026"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://sym42.org" aria-label="Sym42">
+                
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+  <path transform="scale(0.1004,0.1364) translate(11,1)" d="M0 0 C8.91 0 17.82 0 27 0 C27 32.01 27 64.02 27 97 C51.75 97 76.5 97 102 97 C102.33 118.78 102.66 140.56 103 163 C113.65023618 149.38741342 113.65023618 149.38741342 124 135.5625 C125.16793211 133.96872315 126.33590197 132.37497396 127.50390625 130.78125 C128.08156738 129.99105469 128.65922852 129.20085937 129.25439453 128.38671875 C132.14116363 124.43971809 135.0386119 120.50060445 137.9375 116.5625 C138.50952148 115.78430908 139.08154297 115.00611816 139.67089844 114.2043457 C143.34771065 109.21167043 147.06937462 104.25523259 150.81298828 99.3125 C170.98641999 74.34600723 170.98641999 74.34600723 177 44 C175.18481682 37.01549082 172.39314724 31.88945254 166.25390625 27.8515625 C158.52779633 23.46773353 150.43585329 23.37053009 141.8828125 25.125 C137.49428572 26.45701897 133.56042734 28.49182265 129.53125 30.66015625 C127 32 127 32 124 33 C124 23.76 124 14.52 124 5 C138.64493558 -0.63266753 138.64493558 -0.63266753 144.8828125 -0.62890625 C145.54860321 -0.63131821 146.21439392 -0.63373016 146.90036011 -0.63621521 C148.28308171 -0.63525162 149.66584937 -0.62222324 151.04833984 -0.59692383 C153.13124785 -0.56239643 155.20993568 -0.57639315 157.29296875 -0.59570312 C171.18361481 -0.58191047 181.8308422 3.34041929 192.00390625 12.87890625 C200.75379996 22.23354424 204.74719368 34.28009799 205.375 47 C204.41179837 64.52286038 196.17302926 80.08711875 186 94 C185.50757813 94.67724121 185.01515625 95.35448242 184.5078125 96.05224609 C180.97969681 100.89390965 177.41603046 105.70856193 173.84228516 110.51660156 C171.48040306 113.70041612 169.13374187 116.89527097 166.78710938 120.09033203 C159.52624187 129.97226581 152.18066843 139.78923387 144.81054688 149.58984375 C143.01140967 151.98481172 141.21597581 154.38250747 139.421875 156.78125 C138.8645166 157.52608643 138.3071582 158.27092285 137.73291016 159.03833008 C136.68515004 160.43879049 135.6379229 161.83964987 134.59130859 163.2409668 C131.11186653 167.88813347 131.11186653 167.88813347 130 169 C128.28134591 169.0935919 126.55884256 169.11744611 124.83764648 169.11352539 C123.73658066 169.11344986 122.63551483 169.11337433 121.50108337 169.11329651 C120.3031868 169.10813522 119.10529022 169.10297394 117.87109375 169.09765625 C116.65172623 169.0962413 115.4323587 169.09482635 114.17604065 169.09336853 C110.2631693 169.08774967 106.35035419 169.07519396 102.4375 169.0625 C99.79231853 169.05748743 97.14713617 169.0529241 94.50195312 169.04882812 C88.00126274 169.03862296 81.50069467 169.01905121 75 169 C75 154.15 75 139.3 75 124 C50.25 124 25.5 124 0 124 C0 83.08 0 42.16 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(155.8828125,0.37109375)" d="M0 0 C0.66579071 -0.00241196 1.33158142 -0.00482391 2.01754761 -0.00730896 C3.40026921 -0.00634537 4.78303687 0.00668301 6.16552734 0.03198242 C8.24843535 0.06650982 10.32712318 0.0525131 12.41015625 0.03320312 C26.30080231 0.04699578 36.9480297 3.96932554 47.12109375 13.5078125 C55.87098746 22.86245049 59.86438118 34.90900424 60.4921875 47.62890625 C59.52898587 65.15176663 51.29021676 80.716025 41.1171875 94.62890625 C40.62476563 95.30614746 40.13234375 95.98338867 39.625 96.68115234 C36.09688431 101.5228159 32.53321796 106.33746818 28.95947266 111.14550781 C26.59759056 114.32932237 24.25092937 117.52417722 21.90429688 120.71923828 C14.64342937 130.60117206 7.29785593 140.41814012 -0.07226562 150.21875 C-1.87140283 152.61371797 -3.66683669 155.01141372 -5.4609375 157.41015625 C-6.2969751 158.52741089 -6.2969751 158.52741089 -7.14990234 159.66723633 C-8.19766246 161.06769674 -9.2448896 162.46855612 -10.29150391 163.86987305 C-13.77094597 168.51703972 -13.77094597 168.51703972 -14.8828125 169.62890625 C-17.02840077 169.7166623 -19.17685671 169.73585844 -21.32421875 169.7265625 C-22.62939453 169.72333984 -23.93457031 169.72011719 -25.27929688 169.71679688 C-26.6679694 169.70844026 -28.05664127 169.6999753 -29.4453125 169.69140625 C-30.83788906 169.68639291 -32.23046731 169.68182972 -33.62304688 169.67773438 C-37.0430112 169.66590059 -40.46289094 169.64941505 -43.8828125 169.62890625 C-43.27097081 166.41918652 -42.20356776 164.38991326 -40.25 161.78515625 C-39.69892578 161.04394531 -39.14785156 160.30273438 -38.58007812 159.5390625 C-37.97873047 158.74371094 -37.37738281 157.94835937 -36.7578125 157.12890625 C-35.82098633 155.87400391 -35.82098633 155.87400391 -34.86523438 154.59375 C-32.87737817 151.93402615 -30.8807052 149.28109666 -28.8828125 146.62890625 C-27.62458729 144.95213253 -26.3667668 143.27505503 -25.109375 141.59765625 C-23.23806447 139.10192152 -21.36611031 136.60668841 -19.49169922 134.11328125 C-14.67303275 127.70001086 -9.90631899 121.24999876 -5.16113281 114.78222656 C-1.50429727 109.80538271 2.1987027 104.86635957 5.92797852 99.94360352 C26.10348636 74.9765367 26.10348636 74.9765367 32.1171875 44.62890625 C30.30200432 37.64439707 27.51033474 32.51835879 21.37109375 28.48046875 C13.64498383 24.09663978 5.55304079 23.99943634 -3 25.75390625 C-7.38852678 27.08592522 -11.32238516 29.1207289 -15.3515625 31.2890625 C-17.8828125 32.62890625 -17.8828125 32.62890625 -20.8828125 33.62890625 C-20.8828125 24.38890625 -20.8828125 15.14890625 -20.8828125 5.62890625 C-6.23787692 -0.00376128 -6.23787692 -0.00376128 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(171,143)" d="M0 0 C15.51 0 31.02 0 47 0 C47 8.91 47 17.82 47 27 C31.49 27 15.98 27 0 27 C0 18.09 0 9.18 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(135,6)" d="M0 0 C0.99 0.495 0.99 0.495 2 1 C1.67 8.92 1.34 16.84 1 25 C1.66 25 2.32 25 3 25 C2.67 25.99 2.34 26.98 2 28 C1.34 28 0.68 28 0 28 C0 18.76 0 9.52 0 0 Z"/>
+</svg>
+
+              </a>
+            </li>
+          
+        
+      </ul>
+      <hr/>
+    </nav>
+  </body>
+</html>
+<div class="article-meta">
+<h1><span class="title">Datapatch And The &ldquo;force_terminate_blocking_sessions&rdquo; Option — A Look Behind The Scenes</span></h1>
+
+<h2 class="date">2026/01/11</h2>
+</div>
+
+<main>
+<p>If you’ve ever executed Datapatch on a busy system, chances are you’ve experienced intermittent delays or hangs, and in some situations maybe even errors such as ORA-4021 (&ldquo;timeout occurred while waiting to lock object&rdquo;) or ORA-4020 (&ldquo;deadlock detected while trying to lock object&rdquo;). In many cases, this is caused by concurrent modifications to database objects (tables, views, packages, etc.) while they are being accessed by other sessions (see also <a href="https://dohdatabase.com/2022/10/27/can-i-run-datapatch-when-users-are-connected/">1</a>).</p>
+<p>For that reason, Oracle recently announced support for a new Datapatch &ldquo;kill switch&rdquo; that attempts to address these kinds of problems by automatically killing blockers that get in the way of Datapatch (see <a href="https://support.oracle.com/support/?anchorId=&amp;kmContentId=1585822&amp;page=sptemplate&amp;sptemplate=km-article">2</a> and <a href="https://mikedietrichde.com/2025/11/12/a-kill-switch-terminates-blocking-sessions-during-patching/">3</a>).</p>
+<p>This new option is named <code>force_terminate_blocking_sessions</code>, and MOS knowledge article <a href="https://support.oracle.com/support/?anchorId=&amp;kmContentId=1585822&amp;page=sptemplate&amp;sptemplate=km-article">KB148594</a> explains the following (see <a href="https://support.oracle.com/support/?anchorId=&amp;kmContentId=1585822&amp;page=sptemplate&amp;sptemplate=km-article">2</a>):</p>
+<blockquote class="note">
+<code>force_terminate_blocking_sessions</code>
+<p>In Oracle databases, the Kernel Global Lock (KGL) in exclusive (X) mode is used to manage library cache objects, such as SQL statements and PL/SQL procedures. At times, sessions may block each other due to these locks, which can prevent critical operations like schema changes or object recompilation.</p>
+<p>When you use the <code>force_terminate_blocking_sessions</code> option with Datapatch, it instructs catcon to terminate any session currently holding the requested KGL X lock, using the <code>kill_kgl_x_blocker</code> flag.</p>
+</blockquote>
+<p>Note that there is no &ldquo;Kernel Global Lock&rdquo; in Oracle. Instead, KGL stands for <strong>K</strong>ernel <strong>G</strong>eneric <strong>L</strong>ibrary cache and refers to the Oracle C module <code>kgl.c</code>, which implements the library cache.</p>
+<p>Objects in the library cache are protected by a two-tier locking mechanism consisting of library cache locks and library cache pins. At a high level, library cache locks are used to control access to an object and its dependencies, while pins keep objects in memory during use. This dual mechanism exists to allow as much fine-grained and concurrent access as possible.</p>
+<p>Locks and pins can be acquired in different modes, which may not be compatible with each other (see MOS <a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;documentId=KB830534&amp;page=sptemplate&amp;sptemplate=km-article">KB830534</a> for a compatibility matrix). If this occurs, sessions must wait until the requested lock or pin is granted, or until the timeout defined by <code>_kgl_time_to_wait_for_locks</code> expires (it defaults to 15 minutes in 19c and 26ai, and sessions raise an ORA-4021 error if it expires).</p>
+<p>This is why Datapatch can occasionally hang when other sessions hold incompatible locks or pins during patching. I was therefore wondering how the new <code>force_terminate_blocking_sessions</code> option works behind the scenes, and how Datapatch would detect and kill blocking sessions.</p>
+<p>Let’s start digging deeper by examining the <code>datapatch</code> script. It serves as a high-level entry point that delegates its work to the <code>sqlpatch</code> script, located in <code>$ORACLE_HOME/sqlpatch</code>:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#080;font-style:italic"># Call sqlpatch to do the real work</span>
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$ORACLE_HOME</span>/sqlpatch/sqlpatch <span style="color:#b8860b">$@</span></span></span></code></pre></div>
+<figcaption>Listing 1: Excerpt from the datapatch script</figcaption>
+</figure>
+<p>Similarly, there is not much to see in the <code>sqlpatch</code> script either, as it delegates the heavy lifting to the <code>sqlpatch.pl</code> script, located in <code>$ORACLE_HOME/sqlpatch</code>:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#080;font-style:italic"># Just call the Perl under $ORACLE_HOME with the arguments</span>
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">$ORACLE_HOME</span>/perl/bin/perl -I<span style="color:#b8860b">$ORACLE_HOME</span>/sqlpatch -I<span style="color:#b8860b">$ORACLE_HOME</span>/rdbms/admin -I<span style="color:#b8860b">$ORACLE_HOME</span>/sqlpatch/lib -I<span style="color:#b8860b">$ORACLE_HOME</span>/perl/lib <span style="color:#b8860b">$ORACLE_HOME</span>/sqlpatch/sqlpatch.pl <span style="color:#b8860b">$@</span>
+</span></span><span style="display:flex;"><span><span style="color:#b8860b">SP_RC</span><span style="color:#666">=</span><span style="color:#b8860b">$?</span></span></span></code></pre></div>
+<figcaption>Listing 2: Excerpt from the sqlpatch script</figcaption>
+</figure>
+<p>The <code>sqlpatch.pl</code> script contains little logic itself, as it mainly parses options and loads its functionality from the <code>sqlpatch.pm</code> Perl module in <code>$ORACLE_HOME/lib</code>. This excerpt shows that it specifically parses and checks the <code>kill_kgl_x_blocker</code> and <code>force_terminate_blocking_sessions</code> options (lines 7 and 8):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-perl" data-lang="perl"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span><span style="color:#080;font-style:italic"># Parse command line into parameters hash</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span><span style="color:#a2f;font-weight:bold">my</span> <span style="color:#b8860b">$parseError</span> <span style="color:#666">=</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>  GetOptions (<span style="color:#666">\</span><span style="color:#b8860b">%sqlpatch_parameters</span>,
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>              <span style="color:#b44">&#39;db=s&#39;</span>,
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>              <span style="color:#b44">&#39;apply=s&#39;</span>,
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>              <span style="color:#666">...</span>
+</span></span><span style="display:flex; background-color:#dfdfdf"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>              <span style="color:#b44">&#39;kill_kgl_x_blocker&#39;</span>,
+</span></span><span style="display:flex; background-color:#dfdfdf"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>              <span style="color:#b44">&#39;force_terminate_blocking_sessions:s&#39;</span>,
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>              <span style="color:#666">...</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>             <span style="color:#b44">&#39;disable_space_check&#39;</span>,
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>              <span style="color:#b44">&#39;purge_old_metadata&#39;</span>);</span></span></code></pre></div>
+<figcaption>Listing 3: Excerpt from the sqlpatch.pl script</figcaption>
+</figure>
+<p>Finally, after multiple levels of indirection, <code>sqlpatch.pm</code> reveals the actual implementation of the patching logic and how the <code>force_terminate_blocking_sessions</code> is handled:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-perl" data-lang="perl"><span style="display:flex;"><span>  <span style="color:#080;font-style:italic"># 33134853: Kill KGL X lock/pin blocker</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#a2f;font-weight:bold">if</span> (<span style="color:#a2f">defined</span>(<span style="color:#b8860b">$params_ref</span><span style="color:#666">-&gt;</span>{<span style="color:#b44">&#34;kill_kgl_x_blocker&#34;</span>})) {
+</span></span><span style="display:flex;"><span>    sqlpatch_log(LOG_INVOCATION, <span style="color:#b44">&#34;  kill_kgl_x_blocker: $kill_kgl_x_blocker\n&#34;</span>);
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#080;font-style:italic"># 37829731: -force_terminate_blocking_sessions is an alias for -kill_kgl_x_blocker</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#a2f;font-weight:bold">if</span> (<span style="color:#a2f">defined</span> <span style="color:#b8860b">$params_ref</span><span style="color:#666">-&gt;</span>{force_terminate_blocking_sessions}) {
+</span></span><span style="display:flex;"><span>      <span style="color:#a2f;font-weight:bold">my</span> <span style="color:#b8860b">$force_terminate</span> <span style="color:#666">=</span> <span style="color:#b8860b">$params_ref</span><span style="color:#666">-&gt;</span>{force_terminate_blocking_sessions};
+</span></span><span style="display:flex;"><span>      sqlpatch_log(LOG_INVOCATION, <span style="color:#b44">&#34;  force_terminate_blocking_sessions: $force_terminate\n&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      <span style="color:#080;font-style:italic"># 38414569: If false, disable kill KGL, otherwise, leave it enable by default.</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#a2f;font-weight:bold">if</span> (<span style="color:#a2f">lc</span>(<span style="color:#b8860b">$force_terminate</span>) <span style="color:#a2f;font-weight:bold">eq</span> <span style="color:#b44">&#39;false&#39;</span>) {
+</span></span><span style="display:flex;"><span>          <span style="color:#b8860b">$kill_kgl_x_blocker</span> <span style="color:#666">=</span> <span style="color:#666">0</span>;
+</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>  }</span></span></code></pre></div>
+<figcaption>Listing 4: Excerpt from the sqlpatch.pm Perl module (1/2)</figcaption>
+</figure>
+<p>The comments indicate that the <code>kill_kgl_x_blocker</code> and <code>force_terminate_blocking_sessions</code> options were introduced with fixes 33134853 and 37829731, respectively, and the latter option is just an alias for the first.</p>
+<p>A little later, the code checks if the <code>kill_kgl_x_blocker</code> option is enabled and, if so, emits a log message and calls the <code>catcon::catconKillKglXBlocker</code> subroutine (which is defined in the <code>catcon.pm</code> Perl module, see further below):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-perl" data-lang="perl"><span style="display:flex;"><span>  <span style="color:#080;font-style:italic"># Bug 33134853: Kill kgl X blocker</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#a2f;font-weight:bold">if</span> (<span style="color:#b8860b">$kill_kgl_x_blocker</span>) {
+</span></span><span style="display:flex;"><span>    sqlpatch_log(LOG_INVOCATION, <span style="color:#b44">&#34;passing force_terminate_blocking_sessions: $kill_kgl_x_blocker to catcon \n&#34;</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#00f;font-weight:bold">catcon::</span>catconKillKglXBlocker(<span style="color:#666">1</span>);
+</span></span><span style="display:flex;"><span>  }</span></span></code></pre></div>
+<figcaption>Listing 5: Excerpt from the sqlpatch.pm Perl Module (2/2)</figcaption>
+</figure>
+<p>The following code in the <code>catcon.pm</code> module shows that the <code>kill_kgl_x_blocker</code> flag decides whether Datapatch will enable two underscore parameters at session level (lines 6 and 13):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-perl" data-lang="perl"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span><span style="color:#080;font-style:italic"># Bug 33134853: Pass kill kgl X blocker flag.</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>catconKillKglXBlocker(<span style="color:#b8860b">$optKillKglXBlocker</span>);
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>      <span style="color:#a2f;font-weight:bold">if</span> (<span style="color:#b8860b">$KillKglXBlocker</span>) {
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>        printToSqlplus(<span style="color:#b44">&#34;start_processes&#34;</span>, <span style="color:#b8860b">$fh</span>,
+</span></span><span style="display:flex; background-color:#dfdfdf"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>                       <span style="color:#008000">qq#ALTER SESSION SET &#34;_KGL_KILL_FINAL_BLOCKER&#34;=TRUE#</span>,
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>                       <span style="color:#b44">&#34;\n/\n&#34;</span>, <span style="color:#b8860b">$LogLevel</span> <span style="color:#666">==</span> <span style="color:#666">&amp;</span>CATCON_LOG_LEVEL_DEBUG);
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>        log_msg_debug(<span style="color:#b44">&#34;_kgl_kill_final_blocker was set&#34;</span>);
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>        <span style="color:#080;font-style:italic"># Bug 32195781: Raise soft assert upon hitting ORA-4021 for Oracle</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>        <span style="color:#080;font-style:italic"># supplied objects</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span>        printToSqlplus(<span style="color:#b44">&#34;start_processes&#34;</span>, <span style="color:#b8860b">$fh</span>,
+</span></span><span style="display:flex; background-color:#dfdfdf"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span>                       <span style="color:#008000">qq#ALTER SESSION SET &#34;_KGL_4021_ASSERT_ON_OSO&#34;=TRUE#</span>,
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span>                       <span style="color:#b44">&#34;\n/\n&#34;</span>, <span style="color:#b8860b">$LogLevel</span> <span style="color:#666">==</span> <span style="color:#666">&amp;</span>CATCON_LOG_LEVEL_DEBUG);
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span>        log_msg_debug(<span style="color:#b44">&#34;_kgl_kill_final_blocker was set&#34;</span>);
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span>      }</span></span></code></pre></div>
+<figcaption>Listing 5: Excerpt from the catcon.pm Perl module</figcaption>
+</figure>
+<p>According to the <a href="https://oradiff.oracle.com/">oradiff</a> website, both of these parameters were introduced in Oracle 21c (21.3.0). So, the new Datapatch <code>force_terminate_blocking_sessions</code> option is not really a Datapatch feature, but merely a flag that enables undocumented rdbms features in the background.</p>
+<p>A check of other undocumented parameters reveals that additional ones were added related to terminating blockers holding library cache locks and pins (see excerpt below, with descriptions and defaults from release 23.26):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>_kgl_kill_final_blocker (default: FALSE):
+</span></span><span style="display:flex;"><span>controls feature to kill KGL X lock/pin blockers
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>_kgl_4021_assert_on_oso (default: FALSE):
+</span></span><span style="display:flex;"><span>Raise soft assert on hitting ORA-4021 for Oracle supplied object
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>_kgl_final_blocker_kill_begin_time (default: 2):
+</span></span><span style="display:flex;"><span>time to wait in minutes before start killing block
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>_kgl_max_wait_time_during_kill (default: 15):
+</span></span><span style="display:flex;"><span>max time to wait to get unblocked while killing blockers</span></span></code></pre></div>
+<figcaption>Listing 6: Underscore parameters related to killing KGL lock and pin holders</figcaption>
+</figure>
+<p>Knowing these parameters is useful, because it allows us to tweak them systematically and observe their effects. Let&rsquo;s start with a simple baseline test to establish expected behavior before making any changes in the new parameters.</p>
+<p>In the following test, session 1 invokes the <code>dbms_lock.sleep</code> procedure to sleep for three minutes. The second session then attempts to compile the <code>dbms_lock</code> package, setting <code>_kgl_time_to_wait_for_locks</code> to one minute so that the lock/pin acquisition timeout expires before the sleep in session 1 completes (with the default settings, the timeout would expire after 15 minutes).</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>-- Session 1
+</span></span><span style="display:flex;"><span>SQL&gt; exec dbms_lock.sleep(180)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>-- Session 2
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set &#34;_kgl_time_to_wait_for_locks&#34;=1;
+</span></span><span style="display:flex;"><span>Session altered.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL&gt; set timing on
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL&gt; alter package dbms_lock compile;
+</span></span><span style="display:flex;"><span>alter package dbms_lock compile
+</span></span><span style="display:flex;"><span>*
+</span></span><span style="display:flex;"><span>ERROR at line 1:
+</span></span><span style="display:flex;"><span>ORA-04021: timeout occurred while waiting to lock object SYS.DBMS_LOCK
+</span></span><span style="display:flex;"><span>Help: https://docs.oracle.com/error-help/db/ora-04021/</span></span></code></pre></div>
+<figcaption>Listing 7: Test case 1 - Baseline test details</figcaption>
+</figure>
+<p>The call to <code>dbms_lock.sleep</code> causes session 1 to pin the <code>dbms_lock</code> object in the library cache in share mode (S). This is not compatible with the pin request in exclusive mode (X) from session 2, which is needed to recompile the object. As a result, session 2 must wait and raises an ORA-4021 error after one minute, when the lock acquisition timeout expires (<code>_kgl_time_to_wait_for_locks=1</code>).</p>
+<p>This is confirmed by the following snapshot from <code>v$session</code> collected during the test. The last digit in the <code>P3</code> wait event parameter of sid <code>406</code> represents the exclusive-mode pin request (refer to this <a href="https://www.0xchris.dev/posts/2026-01-03-decoding-library-cache-lock-and-library-cache-pin-wait-event-parameters/">note</a> to learn more about decoding the library cache lock and pin wait event parameters):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>SQL&gt; select sid, event, to_char(p3, &#39;fm000000000000000X&#39;) p3, blocking_session from v$session;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>       SID EVENT                        P3                BLOCKING_SESSION
+</span></span><span style="display:flex;"><span>---------- ---------------------------- ----------------- ----------------
+</span></span><span style="display:flex;"><span>       406 library cache pin            0000225100010003               217   &lt;&lt;&lt; session 2
+</span></span><span style="display:flex;"><span>       217 PL/SQL lock timer            0000000000000000                     &lt;&lt;&lt; session 1</span></span></code></pre></div>
+<figcaption>Listing 8: Test case 1 - v$session output</figcaption>
+</figure>
+<p>Let&rsquo;s repeat the test, but this time with <code>_kgl_kill_final_blocker=true</code> at session level, similar to what Datapatch does when the <code>force_terminate_blocking_sessions</code> is used.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>-- Session 1
+</span></span><span style="display:flex;"><span>SQL&gt; set timing on
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL&gt; exec dbms_lock.sleep(180)
+</span></span><span style="display:flex;"><span>BEGIN dbms_lock.sleep(180); END;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>*
+</span></span><span style="display:flex;"><span>ERROR at line 1:
+</span></span><span style="display:flex;"><span>ORA-03113: end-of-file on communication channel
+</span></span><span style="display:flex;"><span>Process ID: 291220
+</span></span><span style="display:flex;"><span>Session ID: 217 Serial number: 54680
+</span></span><span style="display:flex;"><span>Help: https://docs.oracle.com/error-help/db/ora-03113/
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Elapsed: 00:02:02.85
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>-- Session 2
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set &#34;_kgl_kill_final_blocker&#34; = true;
+</span></span><span style="display:flex;"><span>Session altered.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL&gt; set timing on
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL&gt; alter package dbms_lock compile;
+</span></span><span style="display:flex;"><span>Package altered.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Elapsed: 00:02:00.56</span></span></code></pre></div>
+<figcaption>Listing 9: Test case 2 - "_kgl_kill_final_blocker"=true</figcaption>
+</figure>
+<p>The first session terminates with an ORA-3113 error after about two minutes, which matches the default two-minute setting of <code>_kgl_final_blocker_kill_begin_time</code>. The package compilation in session 2 also completes after about two minutes, because its exclusive-mode library cache pin request can be granted once session 1 has terminated.</p>
+<p>With <code>_kgl_final_blocker_kill_begin_time=1</code> set in the second session, the first session terminates after one minute (not shown). Note that one minute is the minimum value for this parameter and values lower than one minute are not possible.</p>
+<p>Interestingly, if <code>_kgl_final_blocker_kill_begin_time</code> and <code>_kgl_time_to_wait_for_locks</code> are set to the same value, the lock acquisition timeout appears to take precedence, and the second session fails with an ORA-4021 error. However, I haven’t investigated this case in great detail, so I don’t know whether this behavior is deterministic or caused by specific conditions in my test environment.</p>
+<p>Note that there are no alert log entries indicating when a blocking session is killed by this new feature. However, the default process trace file of the session issuing the kill does contain an entry like the following:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>Attempting to Kill Final Blocker blkr_sid: 217 blkr_ser: 54680 session_SO: 0x32cd8b650 sess_ser: 54680</span></span></code></pre></div>
+<figcaption>Listing 10: Trace file entry of session issuing the kill</figcaption>
+</figure>
+<p>In the background, the process executing the waiting session (session 2 in the examples above) uses the <code>tgkill</code> and <code>rt_tgsigqueueinfo</code> syscalls to send two signals to the blocker, as shown in the following strace output:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span>~# strace -k -e trace=tgkill,rt_tgsigqueueinfo -p 221855
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>
+</span></span><span style="display:flex; background-color:#dfdfdf"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>tgkill(291220, 291220, SIGTSTP)         = 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span> &gt; /usr/lib64/libc-2.28.so(syscall+0x1d) [0x3941d]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span> &gt; /u01/app/oracle/product/26.0.0.0/dbhome_260_1/bin/oracle(sskgp_tgkill+0x3a) [0x5f7154a]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span> &gt; /u01/app/oracle/product/26.0.0.0/dbhome_260_1/bin/oracle(skgpthrsig+0x23b) [0x5f4098b]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span> &gt; /u01/app/oracle/product/26.0.0.0/dbhome_260_1/bin/oracle(skgpnetintr+0x33) [0x166e8a03]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span> &gt; /u01/app/oracle/product/26.0.0.0/dbhome_260_1/bin/oracle(ksni_signal_cbk_send+0x5e) [0x896b34e]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span> &gt; /u01/app/oracle/product/26.0.0.0/dbhome_260_1/bin/oracle(ksni_signal+0x118) [0x1306e88]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span> &gt; /u01/app/oracle/product/26.0.0.0/dbhome_260_1/bin/oracle(ksusin_int+0x1ac) [0x1459a8c]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span> &gt; /u01/app/oracle/product/26.0.0.0/dbhome_260_1/bin/oracle(ksuklms_interrupt_int+0x7ef) [0x8a...]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span> &gt; /u01/app/oracle/product/26.0.0.0/dbhome_260_1/bin/oracle(ksuklms_init+0x2204) [0x8a53bb4]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span> &gt; /u01/app/oracle/product/26.0.0.0/dbhome_260_1/bin/oracle(ksuklms+0x33c) [0x1465a6c]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span> 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span> &gt; /u01/app/oracle/product/26.0.0.0/dbhome_260_1/bin/oracle(kqlFinalBlocker+0x578) [0xea295c8]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span><span> &gt; /u01/app/oracle/product/26.0.0.0/dbhome_260_1/bin/oracle(kqlpgCallback+0x1c46) [0x18b447e6]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span><span> &gt; /u01/app/oracle/product/26.0.0.0/dbhome_260_1/bin/oracle(kglpnal+0x1395) [0x190b7545]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span><span> &gt; /u01/app/oracle/product/26.0.0.0/dbhome_260_1/bin/oracle(kglpin+0x4c7) [0x1909efe7]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20</span><span>  ...
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21</span><span>
+</span></span><span style="display:flex; background-color:#dfdfdf"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22</span><span>rt_tgsigqueueinfo(291220, 291220, SIGTERM, {si_signo=291220, si_code=SI_QUEUE, si_pid=221855, 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23</span><span>    si_uid=50120, si_int=6, si_ptr=0x100000006}) = 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24</span><span> &gt; /usr/lib64/libc-2.28.so(syscall+0x1d) [0x3941d]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25</span><span> &gt; /u01/app/oracle/product/26.0.0.0/dbhome_260_1/bin/oracle(sskgp_tgkill+0x90) [0x5f715a0]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26</span><span> &gt; /u01/app/oracle/product/26.0.0.0/dbhome_260_1/bin/oracle(skgpthrsig+0x23b) [0x5f4098b]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27</span><span> 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28</span><span> &gt; /u01/app/oracle/product/26.0.0.0/dbhome_260_1/bin/oracle(ksopid_kill+0x7c) [0x130feec]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29</span><span> &gt; /u01/app/oracle/product/26.0.0.0/dbhome_260_1/bin/oracle(ksuptrm_int+0x79) [0x1478249]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30</span><span> &gt; /u01/app/oracle/product/26.0.0.0/dbhome_260_1/bin/oracle(ksupetrm_int+0xd0) [0x8a87b90]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31</span><span> &gt; /u01/app/oracle/product/26.0.0.0/dbhome_260_1/bin/oracle(ksuklms_kill+0xf09) [0x8a5a319]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">32</span><span> &gt; /u01/app/oracle/product/26.0.0.0/dbhome_260_1/bin/oracle(ksuklms+0x555) [0x1465c85]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">33</span><span> 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">34</span><span> &gt; /u01/app/oracle/product/26.0.0.0/dbhome_260_1/bin/oracle(kqlFinalBlocker+0x578) [0xea295c8]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">35</span><span> &gt; /u01/app/oracle/product/26.0.0.0/dbhome_260_1/bin/oracle(kqlpgCallback+0x1c46) [0x18b447e6]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">36</span><span> &gt; /u01/app/oracle/product/26.0.0.0/dbhome_260_1/bin/oracle(kglpnal+0x1395) [0x190b7545]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">37</span><span> &gt; /u01/app/oracle/product/26.0.0.0/dbhome_260_1/bin/oracle(kglpin+0x4c7) [0x1909efe7]
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">38</span><span>   ...</span></span></code></pre></div>
+<figcaption>Listing 11: Tracing process kill operations (strace)</figcaption>
+</figure>
+<p>First, the blocked process sends a <code>SIGTSTP</code> to the blocker (pid <code>291220</code>) using <code>tgkill</code>, which suspends the blocker’s execution (line 3). Next, the blocked process sends a <code>SIGTERM</code> to the blocker, requesting it to terminate (line 22). Unlike the <code>SIGKILL</code> signal (<code>kill -9</code>), <code>SIGTERM</code> politely asks a process to stop running, giving it a chance to clean up resources, close files, and release locks before terminating.</p>
+<p>The stack traces also nicely illustrate how execution flows through the various Oracle kernel layers. In this case, the library cache pin is requested and allocated in the library cache functions <code>kglpin</code> and <code>kglpnal</code>, but since it’s held in an incompatible mode by session 1, the library cache determines the final blocker (function <code>kglFinalBlocker</code>) and then calls into the kernel services layer (<code>ks</code>), requesting termination of the blocker using a VOS-specific handler function (vos = virtual operating system layer; function names are usually prefixed by <code>s</code>).</p>
+<p>Before closing, here are some observations and remarks about the underscore parameters <code>_kgl_max_wait_time_during_kill</code> and <code>_kgl_4021_assert_on_oso</code>.</p>
+<p>In my tests, changes to parameter <code>_kgl_max_wait_time_during_kill</code> did not result in any observable behavior changes, even when constructing more complex hang scenarios and multi-level hang chains.</p>
+<p>The parameter <code>_kgl_4021_assert_on_oso</code> slightly changes the ORA-4021 error behavior when an Oracle supplied object is involved (Oracle supplied objects are objects for which <code>dba_objects.oracle_maintained</code> shows <code>Y</code>). Usually, ORA-4021 errors are not logged to the alert log, but when <code>_kgl_4021_assert_on_oso</code> is enabled at session level, a session encountering an ORA-4021 on an Oracle supplied object, will create an indicent trace file and emit an alert log entry like the following:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>ORA-00700: soft internal error, arguments: [ORA-4021], [SYS], [DBMS_LOCK], [PIN], [0x7DD65BC08], [0x7BF39B150], [], [], [], [], [], []</span></span></code></pre></div>
+<figcaption>Listing 12: Trace file entry killing process</figcaption>
+</figure>
+<p>The ORA-700 error arguments expose the following detail information:</p>
+<ul>
+<li>arg1: ORA-4021</li>
+<li>arg2: the object owner</li>
+<li>arg3: the object name</li>
+<li>arg4: lock or pin (in this case a pin)</li>
+<li>arg5: kgl handle address (<code>x$kglob.kglhdradr</code>)</li>
+<li>arg6: lock or pin address (<code>x$kgllk.kgllkadr</code> or <code>x$kglpn.kglpnadr</code>)</li>
+</ul>
+<p>I assume Datapatch enables <code>_kgl_4021_assert_on_oso</code> when the <code>force_terminate_blocking_sessions</code> option is used, to make ORA-4021 errors on Oracle supplied objects during patching visible in the alert log (wrapped in ORA-700 soft errors).</p>
+<h3 id="summary">Summary</h3>
+<p>The Datapatch option <code>force_terminate_blocking_sessions</code> is essentially just a flag that makes Datapatch set the two undocumented parameters <code>_kgl_kill_final_blocker=true</code> and <code>_kgl_4021_assert_on_oso=true</code> at session level. The first setting enables a new library cache kill facility introduced in 21c, and the second logs ORA-4021 errors to the alert log when a library cache lock or pin request for an Oracle-supplied object runs into a timeout. Since this is not a Datapatch feature but rather a generic RDBMS capability, it could also be used in other scenarios not involving Datapatch.</p>
+<p>With the default settings, a session waiting for a library cache lock or pin will send a kill (using <code>SIGTERM</code>) to the blocker process after a timeout of 2 minutes, as defined by <code>_kgl_time_to_wait_for_locks</code>. When changing this parameter, ensure that <code>_kgl_time_to_wait_for_locks</code> is set to a value greater than <code>_kgl_max_wait_time_during_kill</code>; otherwise you may encounter ORA-4021 errors before a blocked session begins terminating the blocker.</p>
+<p>This note just covered very basic hang scenarios, and all observations and test results are from Oracle 26ai (23.26) in a single-instance, non-RAC environment (<code>cluster_database=false</code>). The reason for mentioning the single-instance configuration is that KGL kill behavior changes on RAC, because library cache locks and pins are global resources managed by the Global Enqueue Service (GES). These RAC effects are especially pronounced in more complex hang scenarios and hang chains involving multiple sessions stuck in library cache lock and pin waits. However, this is something to be covered in more detail in a follow-up note.</p>
+<h3 id="references">References</h3>
+<ol>
+<li><a href="https://dohdatabase.com/2022/10/27/can-i-run-datapatch-when-users-are-connected/">Daniel Overby Hansen, Can I Run Datapatch When Users Are Connected, 2022-10-27</a></li>
+<li><a href="https://support.oracle.com/support/?anchorId=&amp;kmContentId=1585822&amp;page=sptemplate&amp;sptemplate=km-article">My Oracle Support, Datapatch: Database 12c or later Post Patch SQL Automation, KB148594, 2025-11-27</a></li>
+<li><a href="https://mikedietrichde.com/2025/11/12/a-kill-switch-terminates-blocking-sessions-during-patching/">Mike Dietrich, A kill-switch terminates blocking sessions during patching, 2025-11-12</a></li>
+<li><a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;documentId=KB830534&amp;page=sptemplate&amp;sptemplate=km-article">My Oracle Support, WAITEVENT: &ldquo;library cache lock&rdquo; Reference Note (KB830534), 2025-11-28</a></li>
+<li><a href="https://www.0xchris.dev/posts/2026-01-03-decoding-library-cache-lock-and-library-cache-pin-wait-event-parameters/">Christoph Lutz, Decoding Library Cache Lock and Library Cache Pin Wait Event Parameters, 2026-01-03</a></li>
+</ol>
+
+</main>
+
+  <footer>
+  
+  <hr/>
+  © <a href="https://www.0xChris.dev">Christoph Lutz</a> 2025 &ndash; 2026
+  
+  <hr/>
+  <script src="https://giscus.app/client.js"
+            data-repo="Christoph-Lutz/0xChris-Comments"
+            data-repo-id="R_kgDOQo-jcg"
+            data-category="Comments"
+            data-category-id="DIC_kwDOQo-jcs4Cz0NV"
+            data-mapping="pathname"
+            data-strict="1"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="light"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+        </script>
+    <script id="partials/analytics.html" 
+  data-goatcounter="https://0xchris.goatcounter.com/count"
+  async src="//gc.zgo.at/count.js"></script>
+
+  </footer>
+  </body>
+</html>
+
