@@ -277,6 +277,49 @@ Oracle 23.7 introduced a new uuid() function, which generates 128-bit random UUI
 </figure>
 <h3 id="summary">Summary</h3>
 <p>Oracle 26ai generates UUIDs using OpenSSL code that is incorporated into its <code>libnnzsrv.so</code> shared library. The <code>uuid()</code> SQL function calls <code>ztuguid</code> in the background, which delegates the UUID generation to OpenSSL&rsquo;s <code>RAND_bytes</code> function. This produces a 128-bit random value (similar to <code>openssl rand -hex 16</code>), and <code>ztuguid</code> then adjusts bytes 6 and 8 so that the resulting UUID conforms to the UUIDv4 standard.</p>
+<h3 id="appendix-determining-the-openssl-version">Appendix: Determining the OpenSSL Version</h3>
+<p>The OpenSSL library provides the <code>OpenSSL_version_num</code> and <code>OpenSSL_version</code> functions to retrieve the exact version number, and both appear to be incorporated into Oracle&rsquo;s <code>libnnzsrv.so</code> shared library.</p>
+<p>While <code>OpenSSL_version</code> function returns a pointer to a formatted version string,  the <code>OpenSSL_version_num</code> function returns a pointer to an <code>unsigned long</code> that encodes the internal version information in the following way (see also <a href="https://docs.openssl.org/3.5/man3/OpenSSL_version/">9</a>):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>0xM NN FF PP S
+</span></span><span style="display:flex;"><span>  | |  |  |  |
+</span></span><span style="display:flex;"><span>  | |  |  |  +-- S : status (4 bits)
+</span></span><span style="display:flex;"><span>  | |  |  +----- PP: patch (8 bits)
+</span></span><span style="display:flex;"><span>  | |  +-------- FF: fix (8 bits)
+</span></span><span style="display:flex;"><span>  | +----------- NN: minor (8 bits)
+</span></span><span style="display:flex;"><span>  +------------- M : major (4 bits)</span></span></code></pre></div>
+<figcaption>Listing 11: Internal OpenSSL version information</figcaption>
+</figure>
+<p>Knowing the exact version number may be useful for determining whether the integrated OpenSSL library is affected by any known security issues, so let&rsquo;s see how to retrieve the internal version information using gdb. The example below attaches to the Oracle process with pid <code>368697</code>, invokes the <code>OpenSSL_version_num</code> function, and decodes the return value according to the <code>MNNFFPPS</code> version number format described above:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span>~# gdb -q -p 368697
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>(gdb) info symbol OpenSSL_version_num
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>OpenSSL_version_num in section .text of /u01/app/oracle/product/26.0.0.0/dbhome_260_1/lib/libnnzsrv.so
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>(gdb) set $ver = (unsigned long) OpenSSL_version_num()
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>(gdb) set $major  = ($ver &gt;&gt; 28) &amp; 0xf
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>(gdb) set $minor  = ($ver &gt;&gt; 20) &amp; 0xff
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>(gdb) set $fix    = ($ver &gt;&gt; 12) &amp; 0xff
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>(gdb) set $patch  = ($ver &gt;&gt;  4) &amp; 0xff
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>(gdb) set $status = ($ver      ) &amp; 0xf
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span>(gdb) printf &#34;Version: %d.%d.%d patch %d (status %d)\n&#34;, $major, $minor, $fix, $patch, $status
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span>Version: 3.5.0 patch 1 (status 0)</span></span></code></pre></div>
+<figcaption>Listing 12: Decoding the version information returned by OpenSSL_version_num</figcaption>
+</figure>
+<p>The next example calls <code>OpenSSL_version</code>, which returns a pointer to a string containing the formatted version number (the argument <code>0x0</code> passed to the function represents the value of the <code>OPENSSL_VERSION</code> constant):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span><span>~# gdb -q -p 368697
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span><span>(gdb) info symbol OpenSSL_version
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4</span><span>OpenSSL_version in section .text of /u01/app/oracle/product/26.0.0.0/dbhome_260_1/lib/libnnzsrv.so
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6</span><span>(gdb) call (char *) OpenSSL_version(0x0)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7</span><span>$1 = 0x7fa679d5245c &#34;OpenSSL 3.5.1 1 Jul 2025&#34;</span></span></code></pre></div>
+<figcaption>Listing 13: Printing the OpenSSL version information using OpenSSL_version</figcaption>
+</figure>
+<p>Note that the formatted version string returned by <code>OpenSSL_version</code> displays the version information in the format <code>major.minor.patch</code>, which is the official versioning scheme introduced in OpenSSL 3.0 (see also <a href="https://openssl-library.org/policies/releasestrat/index.html">10</a>).</p>
 <h3 id="references">References</h3>
 <p>[1] <a href="https://oracle-base.com/articles/23/uuid-function-23">Tim Hall, UUID() Function in Oracle Database 23ai/26ai, 2025-08-01</a><br>
 [2] <a href="https://enesi.no/2025/10/uuids-in-oracle-database/">Øyvind Isene, UUIDs in Oracle Database #JoelKallmanDay, 2025-10-15</a><br>
@@ -285,7 +328,9 @@ Oracle 23.7 introduced a new uuid() function, which generates 128-bit random UUI
 [5] <a href="https://enesi.no/2025/12/uuid-v7-in-oracle-database/">Øyvind Isene, UUID v7 in Oracle Database, 2025-12-22</a><br>
 [6] <a href="https://www.rfc-editor.org/rfc/rfc9562.html">RFC 9562, Universally Unique IDentifiers (UUIDs), May 2024</a><br>
 [7] <a href="https://docs.oracle.com/en/database/oracle/oracle-database/26/nfcoa/appdev_sql.html#GUID-102576-1">Oracle Corp.,Oracle AI Database New Features, Release 26ai, Section: Generate and Test UUID Using SQL, 2025-10-14</a><br>
-[8] <a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/ztuguid.bt">Christoph Lutz, oracle GitHub Repository, Script: ztuguid.bt, 2025-11-01</a></p>
+[8] <a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/ztuguid.bt">Christoph Lutz, oracle GitHub Repository, Script: ztuguid.bt, 2025-11-01</a><br>
+[9] <a href="https://docs.openssl.org/3.5/man3/OpenSSL_version/">OpenSSL 3.5 Documentation, OpenSSL_version Manual Page, undated</a><br>
+[10] <a href="https://openssl-library.org/policies/releasestrat/index.html">OpenSSL Software Foundation, OpenSSL Release Strategy, 2025-12-17</a></p>
 
 </main>
 
