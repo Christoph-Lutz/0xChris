@@ -1,0 +1,13 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>0xChris</title>
+    <link>https://www.0xChris.dev/</link>
+    <description>0xChris updates</description>
+    <atom:link href="https://www.0xChris.dev/categories/adaptive-scalable-lgwr/" rel="self" type="application/rss+xml"/><item>
+      <title>Adaptive Scalable LGWR Mode Switch Threshold Single-&gt;Scalable</title>
+      <link>https://www.0xChris.dev/posts/2026-03-03-adaptive-scalable-lgwr-mode-switch-threshold-single-scalable/</link>
+      <pubDate>Tue, 03 Mar 2026 00:00:00 UTC</pubDate>
+      <guid>https://www.0xChris.dev/posts/2026-03-03-adaptive-scalable-lgwr-mode-switch-threshold-single-scalable/</guid>
+      <description>&lt;p&gt;Oracle fundamentally reworked and redesigned the LGWR architecture in 12c. In earlier versions, LGWR ran as a single process, whereas Oracle 12c and later can dynamically switch between a single LGWR process and multiple LG worker processes operating concurrently and in parallel. That is, the LG worker processes can handle different redo write requests in an overlapping fashion, work on a single redo write request in parallel, or do both at the same time — though the LGWR write mechanics are a topic for another post.&lt;/p&gt;</description>
+    </item></channel>
+</rss>

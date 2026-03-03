@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Adaptive Scalable LGWR Mode Switch Threshold Single-&gt;Scalable | 0xChris</title>
+
+    
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="/css/custom.css" />
+
+    
+    
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Adaptive Scalable LGWR Mode Switch Threshold Single-&gt;Scalable">
+  <meta name="twitter:description" content="Oracle fundamentally reworked and redesigned the LGWR architecture in 12c. In earlier versions, LGWR ran as a single process, whereas Oracle 12c and later can dynamically switch between a single LGWR process and multiple LG worker processes operating concurrently and in parallel. That is, the LG worker processes can handle different redo write requests in an overlapping fashion, work on a single redo write request in parallel, or do both at the same time — though the LGWR write mechanics are a topic for another post.">
+
+
+<meta property="og:title" content="Adaptive Scalable LGWR Mode Switch Threshold Single-&gt;Scalable">
+<meta property="og:description" content="Oracle fundamentally reworked and redesigned the LGWR architecture in 12c. In earlier versions, LGWR ran as a single process, whereas Oracle 12c and later can dynamically switch between a single LGWR process and multiple LG worker processes operating concurrently and in parallel. That is, the LG worker processes can handle different redo write requests in an overlapping fashion, work on a single redo write request in parallel, or do both at the same time — though the LGWR write mechanics are a topic for another post.
+">
+<meta property="og:url" content="https://www.0xChris.dev/posts/2026-03-03-adaptive-scalable-lgwr-mode-switch-threshold-single-scalable/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="0xChris">
+
+
+
+<meta property="og:image" content="https://www.0xChris.dev/">
+
+
+  </head>
+
+  <body>
+    <nav>
+      <ul class="menu">
+        
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/posts/">Blog</a></li>
+        
+          <li><a href="/categories/">Categories</a></li>
+        
+          <li><a href="/tags/">Tags</a></li>
+        
+          <li><a href="/contact/">Contact</a></li>
+        
+          <li><a href="/index.xml">Subscribe</a></li>
+        
+
+        
+        
+          
+            <li class="icon">
+              <a href="https://github.com/Christoph-Lutz" aria-label="GitHub">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <title>GitHub</title>
+  <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" fill="currentColor"/>
+</svg>
+
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://x.com/chris_skyflier" aria-label="Twitter">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>X</title><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://bsky.app/profile/christophlutz.bsky.social" aria-label="Bluesky">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Bluesky</title><path d="M5.202 2.857C7.954 4.922 10.913 9.11 12 11.358c1.087-2.247 4.046-6.436 6.798-8.501C20.783 1.366 24 .213 24 3.883c0 .732-.42 6.156-.667 7.037-.856 3.061-3.978 3.842-6.755 3.37 4.854.826 6.089 3.562 3.422 6.299-5.065 5.196-7.28-1.304-7.847-2.97-.104-.305-.152-.448-.153-.327 0-.121-.05.022-.153.327-.568 1.666-2.782 8.166-7.847 2.97-2.667-2.737-1.432-5.473 3.422-6.3-2.777.473-5.899-.308-6.755-3.369C.42 10.04 0 4.615 0 3.883c0-3.67 3.217-2.517 5.202-1.026"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://sym42.org" aria-label="Sym42">
+                
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+  <path transform="scale(0.1004,0.1364) translate(11,1)" d="M0 0 C8.91 0 17.82 0 27 0 C27 32.01 27 64.02 27 97 C51.75 97 76.5 97 102 97 C102.33 118.78 102.66 140.56 103 163 C113.65023618 149.38741342 113.65023618 149.38741342 124 135.5625 C125.16793211 133.96872315 126.33590197 132.37497396 127.50390625 130.78125 C128.08156738 129.99105469 128.65922852 129.20085937 129.25439453 128.38671875 C132.14116363 124.43971809 135.0386119 120.50060445 137.9375 116.5625 C138.50952148 115.78430908 139.08154297 115.00611816 139.67089844 114.2043457 C143.34771065 109.21167043 147.06937462 104.25523259 150.81298828 99.3125 C170.98641999 74.34600723 170.98641999 74.34600723 177 44 C175.18481682 37.01549082 172.39314724 31.88945254 166.25390625 27.8515625 C158.52779633 23.46773353 150.43585329 23.37053009 141.8828125 25.125 C137.49428572 26.45701897 133.56042734 28.49182265 129.53125 30.66015625 C127 32 127 32 124 33 C124 23.76 124 14.52 124 5 C138.64493558 -0.63266753 138.64493558 -0.63266753 144.8828125 -0.62890625 C145.54860321 -0.63131821 146.21439392 -0.63373016 146.90036011 -0.63621521 C148.28308171 -0.63525162 149.66584937 -0.62222324 151.04833984 -0.59692383 C153.13124785 -0.56239643 155.20993568 -0.57639315 157.29296875 -0.59570312 C171.18361481 -0.58191047 181.8308422 3.34041929 192.00390625 12.87890625 C200.75379996 22.23354424 204.74719368 34.28009799 205.375 47 C204.41179837 64.52286038 196.17302926 80.08711875 186 94 C185.50757813 94.67724121 185.01515625 95.35448242 184.5078125 96.05224609 C180.97969681 100.89390965 177.41603046 105.70856193 173.84228516 110.51660156 C171.48040306 113.70041612 169.13374187 116.89527097 166.78710938 120.09033203 C159.52624187 129.97226581 152.18066843 139.78923387 144.81054688 149.58984375 C143.01140967 151.98481172 141.21597581 154.38250747 139.421875 156.78125 C138.8645166 157.52608643 138.3071582 158.27092285 137.73291016 159.03833008 C136.68515004 160.43879049 135.6379229 161.83964987 134.59130859 163.2409668 C131.11186653 167.88813347 131.11186653 167.88813347 130 169 C128.28134591 169.0935919 126.55884256 169.11744611 124.83764648 169.11352539 C123.73658066 169.11344986 122.63551483 169.11337433 121.50108337 169.11329651 C120.3031868 169.10813522 119.10529022 169.10297394 117.87109375 169.09765625 C116.65172623 169.0962413 115.4323587 169.09482635 114.17604065 169.09336853 C110.2631693 169.08774967 106.35035419 169.07519396 102.4375 169.0625 C99.79231853 169.05748743 97.14713617 169.0529241 94.50195312 169.04882812 C88.00126274 169.03862296 81.50069467 169.01905121 75 169 C75 154.15 75 139.3 75 124 C50.25 124 25.5 124 0 124 C0 83.08 0 42.16 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(155.8828125,0.37109375)" d="M0 0 C0.66579071 -0.00241196 1.33158142 -0.00482391 2.01754761 -0.00730896 C3.40026921 -0.00634537 4.78303687 0.00668301 6.16552734 0.03198242 C8.24843535 0.06650982 10.32712318 0.0525131 12.41015625 0.03320312 C26.30080231 0.04699578 36.9480297 3.96932554 47.12109375 13.5078125 C55.87098746 22.86245049 59.86438118 34.90900424 60.4921875 47.62890625 C59.52898587 65.15176663 51.29021676 80.716025 41.1171875 94.62890625 C40.62476563 95.30614746 40.13234375 95.98338867 39.625 96.68115234 C36.09688431 101.5228159 32.53321796 106.33746818 28.95947266 111.14550781 C26.59759056 114.32932237 24.25092937 117.52417722 21.90429688 120.71923828 C14.64342937 130.60117206 7.29785593 140.41814012 -0.07226562 150.21875 C-1.87140283 152.61371797 -3.66683669 155.01141372 -5.4609375 157.41015625 C-6.2969751 158.52741089 -6.2969751 158.52741089 -7.14990234 159.66723633 C-8.19766246 161.06769674 -9.2448896 162.46855612 -10.29150391 163.86987305 C-13.77094597 168.51703972 -13.77094597 168.51703972 -14.8828125 169.62890625 C-17.02840077 169.7166623 -19.17685671 169.73585844 -21.32421875 169.7265625 C-22.62939453 169.72333984 -23.93457031 169.72011719 -25.27929688 169.71679688 C-26.6679694 169.70844026 -28.05664127 169.6999753 -29.4453125 169.69140625 C-30.83788906 169.68639291 -32.23046731 169.68182972 -33.62304688 169.67773438 C-37.0430112 169.66590059 -40.46289094 169.64941505 -43.8828125 169.62890625 C-43.27097081 166.41918652 -42.20356776 164.38991326 -40.25 161.78515625 C-39.69892578 161.04394531 -39.14785156 160.30273438 -38.58007812 159.5390625 C-37.97873047 158.74371094 -37.37738281 157.94835937 -36.7578125 157.12890625 C-35.82098633 155.87400391 -35.82098633 155.87400391 -34.86523438 154.59375 C-32.87737817 151.93402615 -30.8807052 149.28109666 -28.8828125 146.62890625 C-27.62458729 144.95213253 -26.3667668 143.27505503 -25.109375 141.59765625 C-23.23806447 139.10192152 -21.36611031 136.60668841 -19.49169922 134.11328125 C-14.67303275 127.70001086 -9.90631899 121.24999876 -5.16113281 114.78222656 C-1.50429727 109.80538271 2.1987027 104.86635957 5.92797852 99.94360352 C26.10348636 74.9765367 26.10348636 74.9765367 32.1171875 44.62890625 C30.30200432 37.64439707 27.51033474 32.51835879 21.37109375 28.48046875 C13.64498383 24.09663978 5.55304079 23.99943634 -3 25.75390625 C-7.38852678 27.08592522 -11.32238516 29.1207289 -15.3515625 31.2890625 C-17.8828125 32.62890625 -17.8828125 32.62890625 -20.8828125 33.62890625 C-20.8828125 24.38890625 -20.8828125 15.14890625 -20.8828125 5.62890625 C-6.23787692 -0.00376128 -6.23787692 -0.00376128 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(171,143)" d="M0 0 C15.51 0 31.02 0 47 0 C47 8.91 47 17.82 47 27 C31.49 27 15.98 27 0 27 C0 18.09 0 9.18 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(135,6)" d="M0 0 C0.99 0.495 0.99 0.495 2 1 C1.67 8.92 1.34 16.84 1 25 C1.66 25 2.32 25 3 25 C2.67 25.99 2.34 26.98 2 28 C1.34 28 0.68 28 0 28 C0 18.76 0 9.52 0 0 Z"/>
+</svg>
+
+              </a>
+            </li>
+          
+        
+      </ul>
+      <hr/>
+    </nav>
+  </body>
+</html>
+<div class="article-meta">
+<h1><span class="title">Adaptive Scalable LGWR Mode Switch Threshold Single-&gt;Scalable</span></h1>
+
+<h2 class="date">2026/03/03</h2>
+</div>
+
+<main>
+<p>Oracle fundamentally reworked and redesigned the LGWR architecture in 12c. In earlier versions, LGWR ran as a single process, whereas Oracle 12c and later can dynamically switch between a single LGWR process and multiple LG worker processes operating concurrently and in parallel. That is, the LG worker processes can handle different redo write requests in an overlapping fashion, work on a single redo write request in parallel, or do both at the same time — though the LGWR write mechanics are a topic for another post.</p>
+<p>This architectural enhancement primarily aims to increase redo write throughput and goes by the rather tongue-twisting name Adaptive Scalable LGWR, sometimes also referred to as &ldquo;Multiple LGWR&rdquo;. When multiple LGWR processes are active, the LGWR process acts as a log write coordinator and delegates all I/O work to multiple LGnn worker processes. For further information on this aspect of LGWR, refer to <a href="https://fritshoogland.wordpress.com/2018/04/30/a-look-into-oracle-redo-part-11-log-writer-worker-processes/">this investigation</a> carried out by Frits Hoogland (see <a href="https://fritshoogland.wordpress.com/2018/04/30/a-look-into-oracle-redo-part-11-log-writer-worker-processes/">1</a>), which covers LGWR and LG interaction in great detail.</p>
+<p>This post focuses on the heuristics and conditions that determine when exactly LGWR decides to switch from &ldquo;single mode&rdquo; to &ldquo;scalable mode&rdquo; (using multiple concurrent/parallel worker processes), which are not officially documented by Oracle.</p>
+<p>Information about LGWR mode switches can be found in the LGWR trace file, showing entries like the following when multiple LGWR processes are enabled or disabled:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>*** 2025-12-10T10:54:02.195174+01:00 (CDB$ROOT(1))
+</span></span><span style="display:flex;"><span>kcrfw_slave_adaptive_updatemode: single-&gt;scalable redorate=1912371 switch=423934
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>*** 2025-12-10T10:54:02.195234+01:00 (CDB$ROOT(1))
+</span></span><span style="display:flex;"><span>Adaptive scalable LGWR enabling workers
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>*** 2025-12-10T11:03:57.466895+01:00 (CDB$ROOT(1))
+</span></span><span style="display:flex;"><span>kcrfw_slave_adaptive_updatemode: scalable-&gt;single group0=5627 all=5646 rw=214 single=376 scalable_nopipe=428 scalable_pipe=321 scalable=427
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>*** 2025-12-10T11:03:57.466959+01:00 (CDB$ROOT(1))
+</span></span><span style="display:flex;"><span>Adaptive scalable LGWR disabling workers</span></span></code></pre></div>
+<figcaption>Listing 1: LGWR trace file excerpt</figcaption>
+</figure>
+<p>The excerpt above shows the exact timestamps of when LGWR mode switches occurred, along with a set of undocumented statistical numbers that play a role in the decision-making to enable and disable LG worker processes. The goal of this post is to explain what this all means in detail.</p>
+<p>Besides the LGWR trace file, the following sysstat counters also provide clues about whether multiple LGWR processes are active or not:</p>
+<ul>
+<li><code>redo writes adaptive worker</code>: total number of redo writes in adaptive scalable mode</li>
+<li><code>redo writes adaptive all</code>: total number of redo writes in single and adaptive scalable mode</li>
+</ul>
+<p>The difference between <code>redo writes adaptive all</code> and <code>redo writes adaptive worker</code> represents the number of redo writes issued in single mode.</p>
+<p>Now that the stage is set, let’s examine the LGWR decision-making heuristics in more detail.</p>
+<h3 id="mode-switch-threshold-single-scalable">Mode Switch Threshold Single-&gt;Scalable</h3>
+<p>Before going into the gory details, two points should be noted. First, what follows describes internal behavior that is not officially documented by Oracle and is therefore subject to future change. All investigations were performed on Oracle 19.26 in a RAC environment on Exadata X8M and X9M systems with Exadata software version 25.1.7.</p>
+<p>Second, a great difficulty in explaining internal Oracle behavior is that it can feel like falling down a rabbit hole, branching off in all directions — but we’ve got to start somewhere. So, let’s assume a system running in steady state, meaning there have already been a number of mode transitions from single to scalable mode and back.</p>
+<p>In that case, covering the basic scenario, the LGWR switch heuristics transition from single to scalable mode when the current average redo rate exceeds twice the average redo rate recorded at the time of the last switch from scalable mode back to single mode.</p>
+<p>This was a bit of a long-winded explanation. Let’s put the decision criteria into a formula and systematically work through its components, branching off where necessary:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>redorate &gt; (switch * _adaptive_scalable_log_writer_enable_worker_threshold / 100)</span></span></code></pre></div>
+<figcaption>Formula 1: Decision criteria for switching from single to scalable mode</figcaption>
+</figure>
+<p>The <code>redorate</code> is a smoothed moving average of the <code>redo size</code> system statistic and is computed by the CKPT process every three seconds (in function <code>kcrfw_slave_adaptive_cronjob</code>, which calls <code>kcrfw_slave_adaptive_saveredorate</code> to compute the average).</p>
+<p>It is computed as follows:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>delta = curr - prev
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>deviation = delta - redorate
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>redorate += deviation * 2/129</span></span></code></pre></div>
+<figcaption>Formula 2: Redorate smoothed moving average</figcaption>
+</figure>
+<p>Breaking down the formula:</p>
+<ul>
+<li><code>delta</code>: difference in <code>redo size</code> between the current and previous measurement, representing the redo generated since the last check</li>
+<li><code>curr</code>:  current value of the <code>redo size</code> sysstat counter</li>
+<li><code>prev</code>:  previous value of the <code>redo size</code> sysstat counter (from the last measurement)</li>
+<li><code>deviation</code>: difference between the latest measurement and the current moving average, can be positive or negative (upward or downward adjustment)</li>
+<li><code>redorate</code>: smoothed moving average of the redo rate</li>
+<li><code>2/129</code>: correction factor</li>
+</ul>
+<p>The formula incrementally updates the <code>redorate</code> moving average using the deviation between the latest measurement and the current average, and applies a small correction factor of 2/129 (~0.0155) on each update. Note that the <code>redorate</code> update can be positive or negative, allowing the moving average to adjust both upward and downward. The smoothing factor controls how quickly the moving average adapts to changes in redo generation rate and ensures gradual convergence toward current conditions while dampening short-term volatility.</p>
+<p>The <code>switch</code> value represents the <code>redorate</code> that was measured and recorded at the time of the last transition from scalable mode back to single mode.</p>
+<p>Note that all internal counters, such as <code>redorate</code> and <code>switch</code>, are stored in the SGA structure <code>kcrf_slave_info_</code>, which is not exposed through any V$ view or X$ table.</p>
+<p><code>_adaptive_scalable_log_writer_enable_worker_threshold</code> is an underscore parameter with a default value of <code>200</code>. According to its description the parameter value is expressed as a percentage  (see <code>x$ksppi.ksppdesc</code>), which explains the division by <code>100</code> in Formula 1 above.</p>
+<p>So, to summarize, LGWR switches from single to scalable mode when the current redo rate moving average exceeds twice the value measured at the last transition from scalable back to single mode. Let&rsquo;s examine the numbers from the trace excerpt shown in Listing 1 to verify this:</p>
+<ul>
+<li><code>redorate=1912371</code></li>
+<li><code>switch=423934</code></li>
+</ul>
+<p>The redo rate of <code>1912371</code> is greater than the threshold of <code>switch * 200/100 = 423934 * 2 = 847868</code> and therefore, LGWR decides to transition from single to scalable mode as indicated by the <code>single-&gt;scalable</code> trace file entry. Also note that the decision-making logic is evaluated in the Oracle kernel function <code>kcrfw_slave_adaptive_updatemode</code>.</p>
+<p>This concludes the basic scenario. Exadata X8M and X9M systems using the PMEM log feature exhibit a special-case behavior, which will be explained later.</p>
+<h3 id="mode-switch-safety-checks">Mode Switch Safety Checks</h3>
+<p>Oracle has built-in guardrails to prevent LGWR from constantly switching and oscillating between different modes, as this could introduce unpredictable behavior. Therefore, a mode switch is only evaluated if the following preconditions are met.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>_adaptive_scalable_log_writer_sampling_time &gt; 3    &amp;&amp;
+</span></span><span style="display:flex;"><span>_adaptive_scalable_log_writer_sampling_count &gt; 128 &amp;&amp;
+</span></span><span style="display:flex;"><span>arbiter == 0</span></span></code></pre></div>
+<figcaption>Listing 2: Guardrails preventing overly frequent mode switches</figcaption>
+</figure>
+<p>The parameter <code>_adaptive_scalable_log_writer_sampling_time</code> defines the minimum interval, in seconds, between evaluations for a mode switch. It defaults to 3, meaning LGWR evaluates whether to switch modes at most once every 3 seconds.</p>
+<p>The parameter <code>_adaptive_scalable_log_writer_sampling_count</code> defines the minimum number of log writes between evaluations for a mode switch. Its default value is 128, meaning LGWR evaluates a mode switch at most once every 128 log writes.</p>
+<p><code>arbiter</code> is a counter initialized to 3 and is decremented each time the mode switch condition is met; that is, when the redo rate exceeds the switch threshold, as defined in Formula 1. The value 3 is hard-coded in function <code>kcrfw_slave_adaptive_updatemode</code> and cannot be changed or configured.</p>
+<p>Considering these checks, mode switches cannot occur more frequently than roughly every 9 seconds (3 seconds × 3 arbiter decrements), provided that redo log write activity is sufficient to meet the sampling count condition of 128 redo writes per evaluation.</p>
+<p>Technically, these preconditions are implemented as guard clauses in function <code>kcrfw_slave_adaptive_updatemode</code>, which, if not met, result in an early return from the function.</p>
+<h3 id="mode-switch-threshold-aging">Mode Switch Threshold Aging</h3>
+<p>While we now understand the heuristic that decides about a switch from single to scalable mode, the story isn’t complete yet, as there is another dynamic at play.</p>
+<p>The <code>switch</code> threshold is not static, LGWR gradually ages and decreases it over time when running in single mode, making a transition from single to scalable mode increasingly likely as time passes.</p>
+<p>The reason for this isn’t obvious, because we haven’t yet covered the reverse heuristic that switches from scalable mode back to single mode (I’ll write about that in another post). For now, just note that switching back from scalable to single mode considers the average redo write time rather than the average redo rate and in short, LGWR switches back to single mode when it determines that redo writes are faster in single mode than in scalable mode.</p>
+<p>So, LGWR still records the average redo rate in <code>switch</code> when transitioning from scalable mode back to single mode, but the switch-back decision is not influenced by the redo rate at all. As a result, there can be cases where the redo rate in scalable mode is relatively high, yet LGWR still switches back to single mode because the decision is driven solely by the redo write time. If the redo rate happens to be exceptionally high at that moment, future transitions from single to scalable mode may become unlikely or, in extreme cases, could be prevented entirely. This situation can be mitigated by gradually aging the <code>switch</code> threshold over time.</p>
+<p>The <code>switch</code> threshold aging is controlled by the parameter <code>_adaptive_scalable_log_writer_enable_worker_aging</code>, which has a default value of 999,900. The parameter description explains that the value is expressed in &ldquo;per millionth&rdquo; units (see also <code>x$ksppi.ksppdesc</code>).</p>
+<p>Mathematically, the <code>switch</code> threshold aging is computed as follows:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>switch = (switch * _adaptive_scalable_log_writer_enable_worker_aging / 1000000)</span></span></code></pre></div>
+<figcaption>Formula 3: Switch threshold aging</figcaption>
+</figure>
+<p>The formula shows that each time threshold aging is applied, <code>switch</code> is multiplied by 0.9999, effectively reducing it by 0.01% (or 0.1‰) per update. Note that an update occurs only when a mode switch evaluation is performed, which is, when both, the minimum sample time (3 seconds) and sample count (128 redo writes) conditions have been met, as explained in the previous section.</p>
+<h3 id="exadata-x8m-and-x9m-special-case--pmem-log-and-fast-log-file-sync">Exadata X8M and X9M Special Case — PMEM LOG and Fast Log File Sync</h3>
+<p>Exadata X8M and X9M systems feature a special commit optimization, the Fast Log File Sync (sometimes also referred to as the &ldquo;Fast Sync&rdquo;). The Fast Log File Sync was developed for use with PMEM devices, which provide I/O latencies in the range of a few microseconds. These devices are so fast that committing FG processes do not wait for LGWR to notify them of redo write completion. Instead, they put themselves to sleep for a very short duration (slightly longer than the expected LGWR redo write time) and then actively and fairly aggressively poll LGWR&rsquo;s redo write progress. For further background information, see [2].</p>
+<p>Intel discontinued the production of PMEM and therefore, newer Exadata X10M and X11M systems are no longer equipped with PMEM devices. However, some of the older X8M and X9M systems are still around, which is why it’s useful to understand their behavior in detail.</p>
+<p>On Exadata X8M and X9M, Oracle checks at instance startup whether the Fast Log File Sync optimization and the Exadata PMEM log are enabled and, if so, sets <code>max_log_write_parallelism</code> to a fixed value of 1. The parameter <code>_max_log_write_parallelism</code> defines the number of <code>LGnn</code> worker processes that can work on a redo write request in parallel. Its default value is derived from the maximum number of public redo strands using <code>ceil(_log_parallelism / 4)</code>.</p>
+<p>The check and the change to <code>max_log_write_parallelism</code> are both carried out in the function <code>kcrfw_dax_is_smart_log</code>, as can be observed with the bpftrace script <a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/kcrfw_dax_is_smart_log-max-lwp.bt">kcrfw_dax_is_smart_log-max-lwp.bt</a>(start the script before restarting the instance):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span> # BPFTRACE_CACHE_USER_SYMBOLS=1 ./kcrfw_dax_is_smart_log.bt MYSID
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span> Attaching 6 probes...
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span> Tracing ... Hit Ctrl + C to stop.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span> 301172 ora_lgwr_mysid -&gt; kcrf_determine_storage: 0x600218c8, 0x1
+</span></span><span style="display:flex;"><span> 301172 ora_lgwr_mysid -&gt; kcrfw_dax_is_smart_log: 0x7ffc9c8dc8b8
+</span></span><span style="display:flex;"><span> 301172 ora_lgwr_mysid    max_log_write_parallelism: start=4, end=1
+</span></span><span style="display:flex;"><span> 301172 ora_lgwr_mysid &lt;- kcrfw_dax_is_smart_log: 1
+</span></span><span style="display:flex;"><span> 301172 ora_lgwr_mysid &lt;- kcrf_determine_storage: 0x0 (0)</span></span></code></pre></div>
+<figcaption>Listing 3: Output bpftrace script kcrfw_dax_is_smart_log-max-lwp.bt</figcaption>
+</figure>
+<p>In this example, <code>max_log_write_parallelism</code> was set to 4 on entry to the function <code>kcrfw_dax_is_smart_log</code> (due to the default of parameter <code>_max_log_write_parallelism = 4</code> on my test system), but when the function returned, the value had changed to 1.</p>
+<p>Why is this all relevant in the context of Adaptive Scalable LGWR? The reason is that LGWR’s decision-making heuristic includes a special check: it looks at the runtime value of <code>_max_log_write_parallelism</code> (stored in the SGA structure <code>kcrf_slave_info_</code>) and, if it is 1, applies a special adjustment factor to the <code>switch</code> threshold calculation.</p>
+<p>Here&rsquo;s what LGWR does:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>adj = (max_log_write_parallelism == 1) ? 2 : 1
+</span></span><span style="display:flex;"><span>   
+</span></span><span style="display:flex;"><span>redorate &gt; (switch * _adaptive_scalable_log_writer_enable_worker_threshold / 100 * adj) </span></span></code></pre></div>
+<figcaption>Formula 4: Switch threshold adjustment factor</figcaption>
+</figure>
+<p>With <code>max_log_write_parallelism</code> set to 1, it applies an adjustment factor of 2 and this effectively doubles the threshold in the decision making logic:</p>
+<ul>
+<li><code>max_log_write_parallelism == 1 ?</code> → <code>redorate &gt; switch * 200/100 * 2</code> →  <code>redorate &gt; switch * 4</code></li>
+<li><code>max_log_write_parallelism &gt; 1 ?</code>  → <code>redorate &gt; switch * 200/100 * 1</code> →  <code>redorate &gt; switch * 2</code></li>
+</ul>
+<p>This means, with the Exadata PMEM log enabled and <code>max_log_write_parallelism</code> set to 1, the average redo rate must be 4 times greater than the <code>switch</code> threshold before LGWR transitions from single to scalable mode.</p>
+<h3 id="references">References</h3>
+<p>[1] <a href="https://fritshoogland.wordpress.com/2018/04/30/a-look-into-oracle-redo-part-11-log-writer-worker-processes/">Frits Hoogland, Frits Hoogland, A look into oracle redo, part 11: log writer worker processes, 2018-04-30</a><br>
+[2] <a href="https://tanelpoder.com/posts/testing-oracles-use-of-optane-persistent-memory-log-file-sync/">Tanel Poder, Testing Oracle&rsquo;s Use of Optane Persistent Memory, Part 2 - Fast Log File Sync Waits, 2022-07-15</a></p>
+
+</main>
+
+  <footer>
+  
+  <hr/>
+  © <a href="https://www.0xChris.dev">Christoph Lutz</a> 2025 &ndash; 2026
+  
+  <hr/>
+  <script src="https://giscus.app/client.js"
+            data-repo="Christoph-Lutz/0xChris-Comments"
+            data-repo-id="R_kgDOQo-jcg"
+            data-category="Comments"
+            data-category-id="DIC_kwDOQo-jcs4Cz0NV"
+            data-mapping="pathname"
+            data-strict="1"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="light"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+        </script>
+    <script id="partials/analytics.html" 
+  data-goatcounter="https://0xchris.goatcounter.com/count"
+  async src="//gc.zgo.at/count.js"></script>
+
+  </footer>
+  </body>
+</html>
+
