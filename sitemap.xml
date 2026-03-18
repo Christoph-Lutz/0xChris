@@ -3,7 +3,10 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://www.0xChris.dev/</loc>
-    <lastmod>2026-03-03T00:00:00+00:00</lastmod>
+    <lastmod>2026-03-04T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/posts/</loc>
+    <lastmod>2026-03-04T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/tags/adaptive/</loc>
     <lastmod>2026-03-03T00:00:00+00:00</lastmod>
@@ -30,9 +33,6 @@
     <lastmod>2026-03-03T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/tags/lgwr/</loc>
-    <lastmod>2026-03-03T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/posts/</loc>
     <lastmod>2026-03-03T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/tags/rdbms/</loc>
