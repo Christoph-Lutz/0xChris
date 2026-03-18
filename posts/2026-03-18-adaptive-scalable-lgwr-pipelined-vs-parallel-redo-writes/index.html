@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Adaptive Scalable LGWR Pipelined vs Parallel Redo Writes | 0xChris</title>
+
+    
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="/css/custom.css" />
+
+    
+    
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Adaptive Scalable LGWR Pipelined vs Parallel Redo Writes">
+  <meta name="twitter:description" content="An earlier post explained the decision-making heuristics when LGWR transitions from single to scalable mode. Here, we examine how it handles redo writes in scalable mode with multiple LG worker processes. Note that all observations are based on Oracle 19.26 with Exadata software 25.2.6, but as Oracle’s internal LGWR mechanics are not publicly documented, behavior may change or vary in other versions.
+In scalable mode, LGWR can assign redo writes to multiple LG worker processes in the following ways:">
+
+
+<meta property="og:title" content="Adaptive Scalable LGWR Pipelined vs Parallel Redo Writes">
+<meta property="og:description" content="An earlier post explained the decision-making heuristics when LGWR transitions from single to scalable mode. Here, we examine how it handles redo writes in scalable mode with multiple LG worker processes. Note that all observations are based on Oracle 19.26 with Exadata software 25.2.6, but as Oracle&amp;amp;rsquo;s internal LGWR mechanics are not publicly documented, behavior may change or vary in other versions.
+In scalable mode, LGWR can assign redo writes to multiple LG worker processes in the following ways:
+">
+<meta property="og:url" content="https://www.0xChris.dev/posts/2026-03-18-adaptive-scalable-lgwr-pipelined-vs-parallel-redo-writes/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="0xChris">
+
+
+
+<meta property="og:image" content="https://www.0xChris.dev/">
+
+
+  </head>
+
+  <body>
+    <nav>
+      <ul class="menu">
+        
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/posts/">Blog</a></li>
+        
+          <li><a href="/categories/">Categories</a></li>
+        
+          <li><a href="/tags/">Tags</a></li>
+        
+          <li><a href="/contact/">Contact</a></li>
+        
+          <li><a href="/index.xml">Subscribe</a></li>
+        
+
+        
+        
+          
+            <li class="icon">
+              <a href="https://github.com/Christoph-Lutz" aria-label="GitHub">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <title>GitHub</title>
+  <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" fill="currentColor"/>
+</svg>
+
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://x.com/chris_skyflier" aria-label="Twitter">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>X</title><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://bsky.app/profile/christophlutz.bsky.social" aria-label="Bluesky">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Bluesky</title><path d="M5.202 2.857C7.954 4.922 10.913 9.11 12 11.358c1.087-2.247 4.046-6.436 6.798-8.501C20.783 1.366 24 .213 24 3.883c0 .732-.42 6.156-.667 7.037-.856 3.061-3.978 3.842-6.755 3.37 4.854.826 6.089 3.562 3.422 6.299-5.065 5.196-7.28-1.304-7.847-2.97-.104-.305-.152-.448-.153-.327 0-.121-.05.022-.153.327-.568 1.666-2.782 8.166-7.847 2.97-2.667-2.737-1.432-5.473 3.422-6.3-2.777.473-5.899-.308-6.755-3.369C.42 10.04 0 4.615 0 3.883c0-3.67 3.217-2.517 5.202-1.026"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://sym42.org" aria-label="Sym42">
+                
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+  <path transform="scale(0.1004,0.1364) translate(11,1)" d="M0 0 C8.91 0 17.82 0 27 0 C27 32.01 27 64.02 27 97 C51.75 97 76.5 97 102 97 C102.33 118.78 102.66 140.56 103 163 C113.65023618 149.38741342 113.65023618 149.38741342 124 135.5625 C125.16793211 133.96872315 126.33590197 132.37497396 127.50390625 130.78125 C128.08156738 129.99105469 128.65922852 129.20085937 129.25439453 128.38671875 C132.14116363 124.43971809 135.0386119 120.50060445 137.9375 116.5625 C138.50952148 115.78430908 139.08154297 115.00611816 139.67089844 114.2043457 C143.34771065 109.21167043 147.06937462 104.25523259 150.81298828 99.3125 C170.98641999 74.34600723 170.98641999 74.34600723 177 44 C175.18481682 37.01549082 172.39314724 31.88945254 166.25390625 27.8515625 C158.52779633 23.46773353 150.43585329 23.37053009 141.8828125 25.125 C137.49428572 26.45701897 133.56042734 28.49182265 129.53125 30.66015625 C127 32 127 32 124 33 C124 23.76 124 14.52 124 5 C138.64493558 -0.63266753 138.64493558 -0.63266753 144.8828125 -0.62890625 C145.54860321 -0.63131821 146.21439392 -0.63373016 146.90036011 -0.63621521 C148.28308171 -0.63525162 149.66584937 -0.62222324 151.04833984 -0.59692383 C153.13124785 -0.56239643 155.20993568 -0.57639315 157.29296875 -0.59570312 C171.18361481 -0.58191047 181.8308422 3.34041929 192.00390625 12.87890625 C200.75379996 22.23354424 204.74719368 34.28009799 205.375 47 C204.41179837 64.52286038 196.17302926 80.08711875 186 94 C185.50757813 94.67724121 185.01515625 95.35448242 184.5078125 96.05224609 C180.97969681 100.89390965 177.41603046 105.70856193 173.84228516 110.51660156 C171.48040306 113.70041612 169.13374187 116.89527097 166.78710938 120.09033203 C159.52624187 129.97226581 152.18066843 139.78923387 144.81054688 149.58984375 C143.01140967 151.98481172 141.21597581 154.38250747 139.421875 156.78125 C138.8645166 157.52608643 138.3071582 158.27092285 137.73291016 159.03833008 C136.68515004 160.43879049 135.6379229 161.83964987 134.59130859 163.2409668 C131.11186653 167.88813347 131.11186653 167.88813347 130 169 C128.28134591 169.0935919 126.55884256 169.11744611 124.83764648 169.11352539 C123.73658066 169.11344986 122.63551483 169.11337433 121.50108337 169.11329651 C120.3031868 169.10813522 119.10529022 169.10297394 117.87109375 169.09765625 C116.65172623 169.0962413 115.4323587 169.09482635 114.17604065 169.09336853 C110.2631693 169.08774967 106.35035419 169.07519396 102.4375 169.0625 C99.79231853 169.05748743 97.14713617 169.0529241 94.50195312 169.04882812 C88.00126274 169.03862296 81.50069467 169.01905121 75 169 C75 154.15 75 139.3 75 124 C50.25 124 25.5 124 0 124 C0 83.08 0 42.16 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(155.8828125,0.37109375)" d="M0 0 C0.66579071 -0.00241196 1.33158142 -0.00482391 2.01754761 -0.00730896 C3.40026921 -0.00634537 4.78303687 0.00668301 6.16552734 0.03198242 C8.24843535 0.06650982 10.32712318 0.0525131 12.41015625 0.03320312 C26.30080231 0.04699578 36.9480297 3.96932554 47.12109375 13.5078125 C55.87098746 22.86245049 59.86438118 34.90900424 60.4921875 47.62890625 C59.52898587 65.15176663 51.29021676 80.716025 41.1171875 94.62890625 C40.62476563 95.30614746 40.13234375 95.98338867 39.625 96.68115234 C36.09688431 101.5228159 32.53321796 106.33746818 28.95947266 111.14550781 C26.59759056 114.32932237 24.25092937 117.52417722 21.90429688 120.71923828 C14.64342937 130.60117206 7.29785593 140.41814012 -0.07226562 150.21875 C-1.87140283 152.61371797 -3.66683669 155.01141372 -5.4609375 157.41015625 C-6.2969751 158.52741089 -6.2969751 158.52741089 -7.14990234 159.66723633 C-8.19766246 161.06769674 -9.2448896 162.46855612 -10.29150391 163.86987305 C-13.77094597 168.51703972 -13.77094597 168.51703972 -14.8828125 169.62890625 C-17.02840077 169.7166623 -19.17685671 169.73585844 -21.32421875 169.7265625 C-22.62939453 169.72333984 -23.93457031 169.72011719 -25.27929688 169.71679688 C-26.6679694 169.70844026 -28.05664127 169.6999753 -29.4453125 169.69140625 C-30.83788906 169.68639291 -32.23046731 169.68182972 -33.62304688 169.67773438 C-37.0430112 169.66590059 -40.46289094 169.64941505 -43.8828125 169.62890625 C-43.27097081 166.41918652 -42.20356776 164.38991326 -40.25 161.78515625 C-39.69892578 161.04394531 -39.14785156 160.30273438 -38.58007812 159.5390625 C-37.97873047 158.74371094 -37.37738281 157.94835937 -36.7578125 157.12890625 C-35.82098633 155.87400391 -35.82098633 155.87400391 -34.86523438 154.59375 C-32.87737817 151.93402615 -30.8807052 149.28109666 -28.8828125 146.62890625 C-27.62458729 144.95213253 -26.3667668 143.27505503 -25.109375 141.59765625 C-23.23806447 139.10192152 -21.36611031 136.60668841 -19.49169922 134.11328125 C-14.67303275 127.70001086 -9.90631899 121.24999876 -5.16113281 114.78222656 C-1.50429727 109.80538271 2.1987027 104.86635957 5.92797852 99.94360352 C26.10348636 74.9765367 26.10348636 74.9765367 32.1171875 44.62890625 C30.30200432 37.64439707 27.51033474 32.51835879 21.37109375 28.48046875 C13.64498383 24.09663978 5.55304079 23.99943634 -3 25.75390625 C-7.38852678 27.08592522 -11.32238516 29.1207289 -15.3515625 31.2890625 C-17.8828125 32.62890625 -17.8828125 32.62890625 -20.8828125 33.62890625 C-20.8828125 24.38890625 -20.8828125 15.14890625 -20.8828125 5.62890625 C-6.23787692 -0.00376128 -6.23787692 -0.00376128 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(171,143)" d="M0 0 C15.51 0 31.02 0 47 0 C47 8.91 47 17.82 47 27 C31.49 27 15.98 27 0 27 C0 18.09 0 9.18 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(135,6)" d="M0 0 C0.99 0.495 0.99 0.495 2 1 C1.67 8.92 1.34 16.84 1 25 C1.66 25 2.32 25 3 25 C2.67 25.99 2.34 26.98 2 28 C1.34 28 0.68 28 0 28 C0 18.76 0 9.52 0 0 Z"/>
+</svg>
+
+              </a>
+            </li>
+          
+        
+      </ul>
+      <hr/>
+    </nav>
+  </body>
+</html>
+<div class="article-meta">
+<h1><span class="title">Adaptive Scalable LGWR Pipelined vs Parallel Redo Writes</span></h1>
+
+<h2 class="date">2026/03/18</h2>
+</div>
+
+<main>
+<p>An earlier <a href="/posts/2026-03-03-adaptive-scalable-lgwr-mode-switch-threshold-single-scalable/">post</a> explained the decision-making heuristics when LGWR transitions from single to scalable mode. Here, we examine how it handles redo writes in scalable mode with multiple LG worker processes. Note that all observations are based on Oracle 19.26 with Exadata software 25.2.6, but as Oracle&rsquo;s internal LGWR mechanics are not publicly documented, behavior may change or vary in other versions.</p>
+<p>In scalable mode, LGWR can assign redo writes to multiple LG worker processes in the following ways:</p>
+<ul>
+<li>
+<p><strong>Parallel writes:</strong> Multiple LGWR worker processes (LGnn) cooperate on the <em>same</em> redo write in parallel. The maximum number of workers that can participate in a single redo write is determined by <code>_max_log_write_parallelism</code>.</p>
+</li>
+<li>
+<p><strong>Pipelined (overlapped) writes:</strong> Multiple LG worker groups process <em>different</em> redo writes concurrently. The maximum number of outstanding redo writes is determined by <code>_max_outstanding_log_writes</code>.</p>
+</li>
+<li>
+<p><strong>Pipelined (overlapped) parallel writes:</strong> A combination of both mechanisms; that is, multiple worker groups process <em>different</em> redo writes concurrently, and each individual redo write is processed in parallel by multiple LG worker processes.</p>
+</li>
+</ul>
+<p><strong>Note:</strong> Strictly speaking, LGWR always assigns a redo write to a worker group, which consists of one or more LG worker processes. However, in this post, I use the terms &ldquo;worker group&rdquo; and &ldquo;LG worker&rdquo; somewhat loosely and interchangeably.</p>
+<p>The figures below graphically illustrate how LGWR can assign a redo write to multiple workers:</p>
+<div class="image-row">  
+<figure>  
+<a href="/images/Scalable-LGWR-Parallel-Write.png" target="_blank">  
+<img src="/images/Scalable-LGWR-Parallel-Write.png" alt="Parallel redo write">  
+</a>  
+<figcaption>Figure 1: Parallel redo write</figcaption>  
+</figure>  
+<figure>  
+<a href="/images/Scalable-LGWR-Overlapped-Write.png" target="_blank">  
+<img src="/images/Scalable-LGWR-Overlapped-Write.png" alt="Pipelined redo write">  
+</a>  
+<figcaption>Figure 2: Pipelined redo write</figcaption>  
+</figure>  
+<figure>  
+<a href="/images/Scalable-LGWR-Overlapped-Parallel-Write.png" target="_blank">  
+<img src="/images/Scalable-LGWR-Overlapped-Parallel-Write.png" alt="Pipelined parallel redo write">  
+</a>  
+<figcaption>Figure 3: Pipelined parallel redo write</figcaption>  
+</figure>  
+</div>
+<p>It is important to note that LGWR first collects (&ldquo;gathers&rdquo;) the redo buffers from the active public redo strands, organizes them into a batch of work, and then assigns an LWN to that batch before distributing the work to worker processes.</p>
+<p>The official meaning of LWN is not publicly documented by Oracle. However, investigations by Frits Hoogland describe it as a &ldquo;Log Write Number&rdquo;, which identifies a batch of redo buffers to be flushed to disk by LGWR (see also <a href="">1</a> and [2]).</p>
+<p>LGWR increments the LWN for every redo write and also tracks an associated LWN SCN. Since LGWR can split a batch of work and assign portions to different worker processes (which may then further split the redo write into multiple physical I/O requests at the syscall layer), you can also think of the LWN as a &ldquo;Logical Write Number&rdquo;.</p>
+<p>With the fundamentals outlined, let&rsquo;s examine the following questions:</p>
+<ol>
+<li>What is the default redo write mode when LGWR operates in scalable mode — pipelined or parallel?</li>
+<li>How does LGWR decide whether to pipeline (overlap) or parallelize a redo write?</li>
+<li>How can we observe LGWR&rsquo;s redo write behavior in scalable mode?</li>
+</ol>
+<p>The short answer to the first question is that, in scalable mode, LGWR uses pipelined writes by default and performs parallel writes only when specific conditions are met.</p>
+<p>The following conditions determine whether LGWR assigns a redo write to multiple LG workers for parallel processing:</p>
+<ul>
+<li>
+<p>The size of the redo write must exceed the maximum I/O size defined by <code>_max_io_size</code>, which is 1 MB (1048576 bytes) on most platforms. Internally, Oracle evaluates the redo write size in redo blocks, meaning LGWR checks whether the redo write size exceeds 2048 redo blocks (assuming a redo block size of 512 bytes, since 2048 x 512 bytes = 1MB); therefore, the condition is: <code>redo write size &gt; 1 MB</code>.</p>
+</li>
+<li>
+<p>There must be more than one active public redo strand. Note that Oracle only activates additional public redo strands when there is pressure on the redo allocation latches (the exact activation mechanics are a topic for another post). Internally, the number of active public redo strands is tracked in the SGA variable <code>kcrf_actv_strands_</code>, so the condition is <code>kcrf_actv_strands_ &gt; 1</code>.</p>
+</li>
+<li>
+<p><code>_max_log_write_parallelism</code> must be greater than 1. This may appear obvious, but keep in mind that on Exadata X8M and X9M systems using the PMEM log feature, Oracle automatically sets <code>_max_log_write_parallelism=1</code>, which effectively disables parallel redo writes on these systems (see also [3] for further information on how Oracle adjusts <code>_max_log_write_parallelism</code> on Exadata X8M and X9M).</p>
+</li>
+</ul>
+<p>When all preconditions are met, LGWR computes the number of workers for processing a redo write in parallel using the following formula (in function <code>kcrfw_redo_write_driver</code>):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>strands_per_worker = ceil(max_strands / max_log_write_parallelism) 
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>active_strands = highest_actv_strand + 1
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>workers = ceil(active_strands / strands_per_worker)</span></span></code></pre></div>
+<figcaption>Formula 1: Number of workers processing a redo write in parallel</figcaption>
+</figure>
+<p><code>strands_per_worker</code> represents the number of public redo strands assigned to each worker, assuming all strands are active and evenly distributed across the maximum number of workers allowed to process a redo write in parallel.</p>
+<p><code>active_strands</code> is the number of active public redo strands, derived from the highest active strand number. Since strand numbering starts at 0, the number of active strands is equal to the highest active strand number plus one.</p>
+<p><code>workers</code> determines how many workers are assigned to process a redo write in parallel, considering all currently active strands (represented by <code>highest_actv_strand + 1</code>) and assuming each worker processes up to <code>strands_per_worker</code> strands.</p>
+<p>To provide an example, let&rsquo;s assume a system with 16 public redo strands, of which 8 strands are active (so strand number 7 is the highest active strand), and <code>_max_log_write_parallelism</code> is set to 4. In that case, the number of workers assigned to process a redo write in parallel is 2:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>max_strands = 16
+</span></span><span style="display:flex;"><span>max_log_write_parallelism = 4
+</span></span><span style="display:flex;"><span>highest_actv_strand = 7
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>strands_per_worker = ceil(max_strands / max_log_write_parallelism) = ceil(16 / 4) = 4
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>active_strands = highest_actv_strand + 1 = 7 + 1 = 8
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>workers = ceil(active_strands / strands_per_worker) = ceil(8 / 4) = 2</span></span></code></pre></div>
+<figcaption>Listing 1: Example calculation of the number of workers assigned to a parallel redo write</figcaption>
+</figure>
+<p>The heat map below shows how many parallel workers LGWR assigns based on the number of active public redo strands and the log write parallelism, assuming a maximum of 16 public redo strands.</p>
+<figure style="text-align: center; margin: 0 auto;">
+  <img src="/images/Scalable-LGWR-Parallel-Workers-Heatmap.png" alt="Heat map with number of parallel workers" style="width: 100%; height: auto; display: block;">
+  <figcaption>
+    Figure 4: Number of parallel workers as a function of active public strands and log write parallelism
+  </figcaption>
+</figure>
+<p>To summarize, in scalable mode, LGWR uses multiple LG worker processes to process a redo write in parallel only when more than one public redo strand is active, the redo write size exceeds 1 MB (2,048 redo blocks of 512 bytes), and <code>_max_log_write_parallelism</code> is greater than 1. If any of these conditions is not met, LGWR uses pipelined redo writes instead.</p>
+<p>While Oracle&rsquo;s scalable LGWR design improves redo write throughput, it also introduces certain architectural trade-offs and drawbacks:</p>
+<p><strong>Recovery</strong> must ensure that redo log entries are applied in LWN order. However, the change records in an LWN batch are not ordered in SCN order, and therefore, recovery must first sort and order all change records in an LWN batch by SCN (change records in an LWN are only partially ordered, since every public redo strand maintains SCN order, but there is no guaranteed global SCN order across strands).</p>
+<p><strong>Worker coordination and synchronization</strong>: Pipelined redo writes allow a new logical write (LWN batch) to begin before a previous logical write completes. Therefore, a logical redo write with a higher LWN may complete before a redo write with a lower LWN; in other words, write ordering is not guaranteed for pipelined redo writes submitted consecutively to different LG workers. Similarly, there is no guaranteed write ordering for different portions of a redo write processed by multiple workers in parallel, and they may reach the storage subsystem in an order different from the logical sequence of the original redo buffers.</p>
+<p>This means LGWR must coordinate and synchronize redo writes between worker groups, and worker groups must coordinate and synchronize the workers within their group (which explains the various LGWR inter-group and intra-group wait events in Oracle, though these are a topic for another post). If, for instance, a second logical write completes before a first logical write, Oracle cannot advance the on-disk SCN and notify committing sessions to proceed while the first write is incomplete, as this would leave holes in the redo log in the event of an instance crash (all change records with an SCN lower than the on-disk SCN are guaranteed to be written to disk). Synchronization must therefore enforce ordered updates to the on-disk SCN to guarantee transactional correctness.</p>
+<p><strong>Write size variation and pipeline stalls:</strong> If pipelined log writes vary significantly in size, the likelihood increases that smaller, subsequent logical writes complete before a larger, preceding one. If, for instance, a large amount of redo data has accumulated in the log buffer, LGWR assigns a large logical write to a worker. If a second write request arrives shortly after, the accumulated data in the log buffer may be much smaller, resulting in a smaller logical write that is very likely to complete before the earlier logical write processing a larger amount of redo. As explained in the previous paragraph, such situations require coordination to guarantee transactional correctness, so variations in write size can cause stalls in the write pipeline, severely limiting redo write throughput.</p>
+<p>The following diagram provides a graphical illustration of the problem:</p>
+<figure style="text-align: center; margin: 0 auto;">
+  <img src="/images/Scalable-LGWR-Pipeline-Stall-Example.png" alt="Pipeline stall" style="width: 100%; height: auto; display: block;">
+  <figcaption>
+    Figure 5: Pipeline stall during pipelined log writes
+  </figcaption>
+</figure>
+<p>In this example, five chunks of redo data reside in the redo log buffer and LGWR pipelines these chunks so they are written by workers LG00, LG01, LG02, LG03, and LG04 in an overlapping manner. Write 1, processed by LG00, is a large write that incurs high latency. As a result, the smaller writes processed by the remaining workers (Write 2, Write 3, Write 4, and Write 5) all complete before Write 1.</p>
+<p>This situation stalls the LGWR write pipeline, since LGWR cannot assign new logical writes to LG01, LG02, LG03, or LG04 until LG00 has completed the large write and updated the on-disk SCN (indicated by &ldquo;S&rdquo; in the diagram). Consequently, LG01, LG02, LG03, and LG04 remain unavailable for new logical writes, severely limiting redo write throughput and thereby increasing commit latency for foreground (FG) processes.</p>
+<blockquote class="note">
+📝 <strong>Exadata Pipelined Log Writes</strong><br><br>
+On Exadata models X10M and newer, Oracle addresses pipeline stalls with the <a href="[https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/foreground-processes.html](https://docs.oracle.com/en/engineered-systems/exadata-database-machine/dbmso/pipelined-log-writes.html)" target="_blank" rel="noopener">Pipelined Log Writes</a> feature, introduced with Oracle 19.22+, Oracle 26ai, and Exadata System Software release 24.1.0 and newer. The marketing name is somewhat misleading, since LGWR has been performing pipelined writes in scalable mode for a long time.
+<p>The new Exadata-only feature would be more accurately called &ldquo;Pipelined Log Writes with Size Regulation,&rdquo; since LGWR no longer unconditionally pipelines new logical writes to workers, but only allows a new write if any of the following conditions are met:</p>
+<ol>
+<li>No logical write is currently in progress.</li>
+<li>The size of a new logical write meets a minimum write size threshold (dynamically computed by LGWR at runtime).</li>
+<li>A timeout is reached while waiting for a logical write to meet the size threshold (the timeout threshold is also dynamically computed by LGWR at runtime).</li>
+</ol>
+<p>If neither of these conditions is met, LGWR defers the logical write and actively spins on the CPU (busy looping) until either a sufficiently large write size accumulates in the redo log buffer or the timeout expires.</p>
+<p>LGWR dynamically tunes the write size threshold at runtime based on redo workload demands. Under light and moderate redo load, it aims to optimize commit latency by maintaining a small and consistent redo write size while distributing logical writes across as many workers as possible. Once all workers are busy, LGWR begins to step-wise increase the redo write size, optimizing for redo write throughput at the expense of commit latency.</p>
+<p>The timeout threshold acts as a deadline to maintain reasonable commit latency when insufficient redo data accumulates in the redo log buffer to meet the write size threshold. The detailed mechanics and threshold calculation formulas are a topic for another post, though.</p>
+</blockquote>
+Interestingly, Oracle provides no instrumentation to indicate whether a redo write is processed in pipelined or parallel manner. So, we need to develop our own, and bpftrace is the perfect tool for this kind of job. However, in order to observe pipelined and parallel redo writes accurately, we need to first understand the low-level mechanism and kernel functions LGWR uses to assign redo writes to multiple workers.
+<p>Behind the scenes, LGWR calls the Oracle kernel function <code>kcrfw_slave_queue_insert</code> to assign redo write tasks to worker processes in scalable mode (kcrfw = Kernel Cache Recovery File Write). The function takes eight arguments, of which only the last three are relevant to our analysis (arg5, arg6, and arg7, named <code>lwn_scn_p</code>, <code>workers</code>, and <code>pic</code>, respectively):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span> <span style="color:#00a000">kcrfw_slave_queue_insert</span>(arg0, arg1, arg2, arg3, arg4, lwn_scn_p, workers, pic);</span></span></code></pre></div>
+<figcaption>Listing 2: Function prototype kcrfw_slave_queue_insert</figcaption>
+</figure>
+<p>The arguments have the following meanings (based on my understanding, as these are not necessarily the names used in the Oracle source code):</p>
+<ul>
+<li><code>lwn_scn_p (arg5)</code>:  Pointer (on the stack) referencing the LWN SCN</li>
+<li><code>workers (arg6)</code>: The number of LG workers assigned to work on a redo write in parallel</li>
+<li><code>pic (arg7)</code>: Pointer to a pending I/O context, an internal structure used by LGWR to track redo write requests and their status</li>
+</ul>
+<p>The <code>workers</code> parameter shows the number of workers assigned to process a logical write. When set to 1 in scalable mode, LGWR issues a pipelined write; when set to a value greater than 1, it issues a parallel write. The other parameters provide additional context information, but are not relevant here, as the value of the <code>workers</code> parameter alone is sufficient to determine whether LGWR issues a pipelined or a parallel redo write. We can read its runtime value using bpftrace with a uprobe on function <code>kcrfw_slave_queue_insert</code>, as shown below:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span><span style="color:#a0a000">uprobe</span>:<span style="color:#666">/</span>u01<span style="color:#666">/</span>app<span style="color:#666">/</span>oracle<span style="color:#666">/</span>product<span style="color:#666">/</span><span style="color:#666">19.0.0.0</span><span style="color:#666">/</span>dbhome_1926_1<span style="color:#666">/</span>bin<span style="color:#666">/</span><span style="color:#a0a000">oracle</span>:kcrfw_slave_queue_insert
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span><span style="color:#666">/</span> <span style="color:#00a000">str</span>(<span style="color:#00a000">uptr</span>(KSPSSIDST)) <span style="color:#666">==</span> <span style="color:#00a000">str</span>(<span style="">$</span><span style="color:#666">1</span>) <span style="color:#666">/</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>{
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>    <span style="color:#080;font-style:italic">/*
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span><span style="color:#080;font-style:italic">     * Note: The number of parallel workers
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span><span style="color:#080;font-style:italic">     * is passed via the stack (&#34;arg6&#34;).
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span><span style="color:#080;font-style:italic">     */</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>    <span style="">$</span>rsp <span style="color:#666">=</span> (uint64) <span style="color:#00a000">reg</span>(<span style="color:#b44">&#34;sp&#34;</span>);
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>    <span style="">$</span>workers <span style="color:#666">=</span> <span style="color:#666">*</span>(uint64 <span style="color:#666">*</span>) (<span style="">$</span>rsp <span style="color:#666">+</span> <span style="color:#666">0x8</span>);
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>    <span style="">@</span>workers_hist[pid] <span style="color:#666">=</span> <span style="color:#00a000">lhist</span>(<span style="">$</span>workers, <span style="color:#666">0</span>, <span style="color:#666">16</span>, <span style="color:#666">1</span>);
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>}</span></span></code></pre></div>
+<figcaption>Listing 3: Probe kcrfw_slave_queue_insert</figcaption>
+</figure>
+<p>When the uprobe fires, it retrieves the <code>workers</code> argument (arg6) from the stack at offset <code>%rsp + 0x8</code> (lines 8-9). The reason is that in the x86-64 calling convention, only the first six arguments (arg0 – arg5) are passed via registers; remaining arguments (arg6 and beyond) are passed on the stack. Once retrieved, the <code>workers</code> value is stored in a bpftrace linear histogram called <code>@workers_hist</code> (line 10). This histogram displays the distribution of <code>workers</code> with buckets ranging from 0 to 16 in steps of 1.</p>
+<p>You can download the complete script <a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/kcrfw_redo_write-parallel-workers-hist-sid.bt">here</a>. To run it, provide the Oracle SID and a user-defined interval in seconds. The script then emits a histogram showing the distribution of the <code>workers</code> value every N seconds.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span><span><span style="color:#666">~</span><span style="">#</span> .<span style="color:#666">/</span>kcrfw_redo_write<span style="color:#666">-</span>parallel<span style="color:#666">-</span>workers<span style="color:#666">-</span>hist<span style="color:#666">-</span>sid.bt MYSID <span style="color:#666">1</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span><span><span style="color:#666">*****</span> <span style="color:#666">20</span><span style="color:#666">:</span><span style="color:#666">27</span><span style="color:#666">:</span><span style="color:#666">02</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4</span><span><span style="">@</span>workers_hist[<span style="color:#666">390895</span>]<span style="color:#666">:</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5</span><span>[<span style="color:#666">1</span>, <span style="color:#666">2</span>)                <span style="color:#666">56</span> <span style="color:#666">|</span><span style="">@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@</span><span style="color:#666">|</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6</span><span>[<span style="color:#666">2</span>, <span style="color:#666">3</span>)                <span style="color:#666">16</span> <span style="color:#666">|</span><span style="">@@@@@@@@@@@@@@</span>                                      <span style="color:#666">|</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7</span><span>[<span style="color:#666">3</span>, <span style="color:#666">4</span>)                 <span style="color:#666">1</span> <span style="color:#666">|</span>                                                    <span style="color:#666">|</span></span></span></code></pre></div>
+<figcaption>Listing 4: Output bpftrace script kcrfw_redo_write-parallel-workers-hist-sid.bt</figcaption>
+</figure>
+<p>The example output above shows that the majority of redo writes at 20:27:02 were pipelined: 56 redo writes used a single worker (line 5), while 16 writes used two workers (line 6) and one write used three workers (line 7).</p>
+<p>If you want to try the script yourself, note that it accesses raw memory addresses in the SGA, which are not stable and may change across Oracle RUs. Therefore, if you are using an Oracle version other than 19.26, it may not function correctly.</p>
+<h3 id="references">References</h3>
+<p>[1] <a href="https://fritshoogland.wordpress.com/2015/09/29/how-the-log-writer-and-foreground-processes-work-together-on-commit/">Frits Hoogland, How the log writer and foreground processes work together on commit, 2015-09-29</a><br>
+[2] <a href="https://fritshoogland.wordpress.com/2018/02/20/a-look-into-into-oracle-redo-part-4-the-log-writer-null-write/">Frits Hoogland, A look into into Oracle redo, part 4: the log writer null write, 2018-02-02</a><br>
+[3] <a href="/posts/2026-03-03-adaptive-scalable-lgwr-mode-switch-threshold-single-scalable/">Christoph Lutz, Adaptive Scalable LGWR Mode Switch Threshold Single-&gt;Scalable, 2026-03-03</a></p>
+
+</main>
+
+  <footer>
+  
+  <hr/>
+  © <a href="https://www.0xChris.dev">Christoph Lutz</a> 2025 &ndash; 2026
+  
+  <hr/>
+  <script src="https://giscus.app/client.js"
+            data-repo="Christoph-Lutz/0xChris-Comments"
+            data-repo-id="R_kgDOQo-jcg"
+            data-category="Comments"
+            data-category-id="DIC_kwDOQo-jcs4Cz0NV"
+            data-mapping="pathname"
+            data-strict="1"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="light"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+        </script>
+    <script id="partials/analytics.html" 
+  data-goatcounter="https://0xchris.goatcounter.com/count"
+  async src="//gc.zgo.at/count.js"></script>
+
+  </footer>
+  </body>
+</html>
+

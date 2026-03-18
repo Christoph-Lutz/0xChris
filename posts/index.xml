@@ -4,6 +4,13 @@
     <link>https://www.0xChris.dev/</link>
     <description>0xChris updates</description>
     <atom:link href="https://www.0xChris.dev/posts/" rel="self" type="application/rss+xml"/><item>
+      <title>Adaptive Scalable LGWR Pipelined vs Parallel Redo Writes</title>
+      <link>https://www.0xChris.dev/posts/2026-03-18-adaptive-scalable-lgwr-pipelined-vs-parallel-redo-writes/</link>
+      <pubDate>Wed, 18 Mar 2026 00:00:00 UTC</pubDate>
+      <guid>https://www.0xChris.dev/posts/2026-03-18-adaptive-scalable-lgwr-pipelined-vs-parallel-redo-writes/</guid>
+      <description>&lt;p&gt;An earlier &lt;a href=&#34;https://www.0xChris.dev/posts/2026-03-03-adaptive-scalable-lgwr-mode-switch-threshold-single-scalable/&#34;&gt;post&lt;/a&gt; explained the decision-making heuristics when LGWR transitions from single to scalable mode. Here, we examine how it handles redo writes in scalable mode with multiple LG worker processes. Note that all observations are based on Oracle 19.26 with Exadata software 25.2.6, but as Oracle&amp;rsquo;s internal LGWR mechanics are not publicly documented, behavior may change or vary in other versions.&lt;/p&gt;
+&lt;p&gt;In scalable mode, LGWR can assign redo writes to multiple LG worker processes in the following ways:&lt;/p&gt;</description>
+    </item><item>
       <title>Adaptive Scalable LGWR Mode Switch Threshold Single-&gt;Scalable</title>
       <link>https://www.0xChris.dev/posts/2026-03-03-adaptive-scalable-lgwr-mode-switch-threshold-single-scalable/</link>
       <pubDate>Tue, 03 Mar 2026 00:00:00 UTC</pubDate>

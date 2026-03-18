@@ -3,45 +3,51 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://www.0xChris.dev/</loc>
-    <lastmod>2026-03-04T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/posts/</loc>
-    <lastmod>2026-03-04T00:00:00+00:00</lastmod>
+    <lastmod>2026-03-18T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/tags/adaptive/</loc>
-    <lastmod>2026-03-03T00:00:00+00:00</lastmod>
+    <lastmod>2026-03-18T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/categories/adaptive-scalable-lgwr/</loc>
-    <lastmod>2026-03-03T00:00:00+00:00</lastmod>
+    <lastmod>2026-03-18T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/posts/2026-03-18-adaptive-scalable-lgwr-pipelined-vs-parallel-redo-writes/</loc>
+    <lastmod>2026-03-18T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/adaptivescalablelgwr/</loc>
+    <lastmod>2026-03-18T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/categories/</loc>
+    <lastmod>2026-03-18T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/categories/internal/</loc>
+    <lastmod>2026-03-18T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/internals/</loc>
+    <lastmod>2026-03-18T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/categories/lgwr/</loc>
+    <lastmod>2026-03-18T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/lgwr/</loc>
+    <lastmod>2026-03-18T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/posts/</loc>
+    <lastmod>2026-03-18T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/rdbms/</loc>
+    <lastmod>2026-03-18T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/</loc>
+    <lastmod>2026-03-18T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/threshold/</loc>
+    <lastmod>2026-03-18T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/posts/2026-03-03-adaptive-scalable-lgwr-mode-switch-threshold-single-scalable/</loc>
     <lastmod>2026-03-03T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://www.0xChris.dev/tags/adaptivescalablelgwr/</loc>
-    <lastmod>2026-03-03T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/categories/</loc>
-    <lastmod>2026-03-03T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://www.0xChris.dev/categories/internals/</loc>
-    <lastmod>2026-03-03T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/tags/internals/</loc>
-    <lastmod>2026-03-03T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/categories/lgwr/</loc>
-    <lastmod>2026-03-03T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/tags/lgwr/</loc>
-    <lastmod>2026-03-03T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/tags/rdbms/</loc>
-    <lastmod>2026-03-03T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/tags/</loc>
-    <lastmod>2026-03-03T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/tags/threshold/</loc>
     <lastmod>2026-03-03T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/tags/26ai/</loc>
