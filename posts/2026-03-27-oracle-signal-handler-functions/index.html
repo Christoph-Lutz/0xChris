@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Oracle Signal Handler Functions | 0xChris</title>
+
+    
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="/css/custom.css" />
+
+    
+    
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Oracle Signal Handler Functions">
+  <meta name="twitter:description" content="Signal handlers are programmer-defined functions that a process can register to respond to signals such as SIGINT, SIGTERM, or SIGSEGV.
+When a signal is delivered, the operating system interrupts the normal execution flow and invokes the registered handler function, allowing the program to react and to clean up resources, log additional information, or terminate gracefully.
+If no custom handler is registered, the system uses a default action, which in many cases means terminating the process or ignoring the signal.">
+
+
+<meta property="og:title" content="Oracle Signal Handler Functions">
+<meta property="og:description" content="Signal handlers are programmer-defined functions that a process can register to respond to signals such as SIGINT, SIGTERM, or SIGSEGV.
+When a signal is delivered, the operating system interrupts the normal execution flow and invokes the registered handler function, allowing the program to react and to clean up resources, log additional information, or terminate gracefully.
+If no custom handler is registered, the system uses a default action, which in many cases means terminating the process or ignoring the signal.
+">
+<meta property="og:url" content="https://www.0xChris.dev/posts/2026-03-27-oracle-signal-handler-functions/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="0xChris">
+
+
+
+<meta property="og:image" content="https://www.0xChris.dev/">
+
+
+  </head>
+
+  <body>
+    <nav>
+      <ul class="menu">
+        
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/posts/">Blog</a></li>
+        
+          <li><a href="/categories/">Categories</a></li>
+        
+          <li><a href="/tags/">Tags</a></li>
+        
+          <li><a href="/contact/">Contact</a></li>
+        
+          <li><a href="/index.xml">Subscribe</a></li>
+        
+
+        
+        
+          
+            <li class="icon">
+              <a href="https://github.com/Christoph-Lutz" aria-label="GitHub">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <title>GitHub</title>
+  <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" fill="currentColor"/>
+</svg>
+
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://x.com/chris_skyflier" aria-label="Twitter">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>X</title><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://bsky.app/profile/christophlutz.bsky.social" aria-label="Bluesky">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Bluesky</title><path d="M5.202 2.857C7.954 4.922 10.913 9.11 12 11.358c1.087-2.247 4.046-6.436 6.798-8.501C20.783 1.366 24 .213 24 3.883c0 .732-.42 6.156-.667 7.037-.856 3.061-3.978 3.842-6.755 3.37 4.854.826 6.089 3.562 3.422 6.299-5.065 5.196-7.28-1.304-7.847-2.97-.104-.305-.152-.448-.153-.327 0-.121-.05.022-.153.327-.568 1.666-2.782 8.166-7.847 2.97-2.667-2.737-1.432-5.473 3.422-6.3-2.777.473-5.899-.308-6.755-3.369C.42 10.04 0 4.615 0 3.883c0-3.67 3.217-2.517 5.202-1.026"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://sym42.org" aria-label="Sym42">
+                
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+  <path transform="scale(0.1004,0.1364) translate(11,1)" d="M0 0 C8.91 0 17.82 0 27 0 C27 32.01 27 64.02 27 97 C51.75 97 76.5 97 102 97 C102.33 118.78 102.66 140.56 103 163 C113.65023618 149.38741342 113.65023618 149.38741342 124 135.5625 C125.16793211 133.96872315 126.33590197 132.37497396 127.50390625 130.78125 C128.08156738 129.99105469 128.65922852 129.20085937 129.25439453 128.38671875 C132.14116363 124.43971809 135.0386119 120.50060445 137.9375 116.5625 C138.50952148 115.78430908 139.08154297 115.00611816 139.67089844 114.2043457 C143.34771065 109.21167043 147.06937462 104.25523259 150.81298828 99.3125 C170.98641999 74.34600723 170.98641999 74.34600723 177 44 C175.18481682 37.01549082 172.39314724 31.88945254 166.25390625 27.8515625 C158.52779633 23.46773353 150.43585329 23.37053009 141.8828125 25.125 C137.49428572 26.45701897 133.56042734 28.49182265 129.53125 30.66015625 C127 32 127 32 124 33 C124 23.76 124 14.52 124 5 C138.64493558 -0.63266753 138.64493558 -0.63266753 144.8828125 -0.62890625 C145.54860321 -0.63131821 146.21439392 -0.63373016 146.90036011 -0.63621521 C148.28308171 -0.63525162 149.66584937 -0.62222324 151.04833984 -0.59692383 C153.13124785 -0.56239643 155.20993568 -0.57639315 157.29296875 -0.59570312 C171.18361481 -0.58191047 181.8308422 3.34041929 192.00390625 12.87890625 C200.75379996 22.23354424 204.74719368 34.28009799 205.375 47 C204.41179837 64.52286038 196.17302926 80.08711875 186 94 C185.50757813 94.67724121 185.01515625 95.35448242 184.5078125 96.05224609 C180.97969681 100.89390965 177.41603046 105.70856193 173.84228516 110.51660156 C171.48040306 113.70041612 169.13374187 116.89527097 166.78710938 120.09033203 C159.52624187 129.97226581 152.18066843 139.78923387 144.81054688 149.58984375 C143.01140967 151.98481172 141.21597581 154.38250747 139.421875 156.78125 C138.8645166 157.52608643 138.3071582 158.27092285 137.73291016 159.03833008 C136.68515004 160.43879049 135.6379229 161.83964987 134.59130859 163.2409668 C131.11186653 167.88813347 131.11186653 167.88813347 130 169 C128.28134591 169.0935919 126.55884256 169.11744611 124.83764648 169.11352539 C123.73658066 169.11344986 122.63551483 169.11337433 121.50108337 169.11329651 C120.3031868 169.10813522 119.10529022 169.10297394 117.87109375 169.09765625 C116.65172623 169.0962413 115.4323587 169.09482635 114.17604065 169.09336853 C110.2631693 169.08774967 106.35035419 169.07519396 102.4375 169.0625 C99.79231853 169.05748743 97.14713617 169.0529241 94.50195312 169.04882812 C88.00126274 169.03862296 81.50069467 169.01905121 75 169 C75 154.15 75 139.3 75 124 C50.25 124 25.5 124 0 124 C0 83.08 0 42.16 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(155.8828125,0.37109375)" d="M0 0 C0.66579071 -0.00241196 1.33158142 -0.00482391 2.01754761 -0.00730896 C3.40026921 -0.00634537 4.78303687 0.00668301 6.16552734 0.03198242 C8.24843535 0.06650982 10.32712318 0.0525131 12.41015625 0.03320312 C26.30080231 0.04699578 36.9480297 3.96932554 47.12109375 13.5078125 C55.87098746 22.86245049 59.86438118 34.90900424 60.4921875 47.62890625 C59.52898587 65.15176663 51.29021676 80.716025 41.1171875 94.62890625 C40.62476563 95.30614746 40.13234375 95.98338867 39.625 96.68115234 C36.09688431 101.5228159 32.53321796 106.33746818 28.95947266 111.14550781 C26.59759056 114.32932237 24.25092937 117.52417722 21.90429688 120.71923828 C14.64342937 130.60117206 7.29785593 140.41814012 -0.07226562 150.21875 C-1.87140283 152.61371797 -3.66683669 155.01141372 -5.4609375 157.41015625 C-6.2969751 158.52741089 -6.2969751 158.52741089 -7.14990234 159.66723633 C-8.19766246 161.06769674 -9.2448896 162.46855612 -10.29150391 163.86987305 C-13.77094597 168.51703972 -13.77094597 168.51703972 -14.8828125 169.62890625 C-17.02840077 169.7166623 -19.17685671 169.73585844 -21.32421875 169.7265625 C-22.62939453 169.72333984 -23.93457031 169.72011719 -25.27929688 169.71679688 C-26.6679694 169.70844026 -28.05664127 169.6999753 -29.4453125 169.69140625 C-30.83788906 169.68639291 -32.23046731 169.68182972 -33.62304688 169.67773438 C-37.0430112 169.66590059 -40.46289094 169.64941505 -43.8828125 169.62890625 C-43.27097081 166.41918652 -42.20356776 164.38991326 -40.25 161.78515625 C-39.69892578 161.04394531 -39.14785156 160.30273438 -38.58007812 159.5390625 C-37.97873047 158.74371094 -37.37738281 157.94835937 -36.7578125 157.12890625 C-35.82098633 155.87400391 -35.82098633 155.87400391 -34.86523438 154.59375 C-32.87737817 151.93402615 -30.8807052 149.28109666 -28.8828125 146.62890625 C-27.62458729 144.95213253 -26.3667668 143.27505503 -25.109375 141.59765625 C-23.23806447 139.10192152 -21.36611031 136.60668841 -19.49169922 134.11328125 C-14.67303275 127.70001086 -9.90631899 121.24999876 -5.16113281 114.78222656 C-1.50429727 109.80538271 2.1987027 104.86635957 5.92797852 99.94360352 C26.10348636 74.9765367 26.10348636 74.9765367 32.1171875 44.62890625 C30.30200432 37.64439707 27.51033474 32.51835879 21.37109375 28.48046875 C13.64498383 24.09663978 5.55304079 23.99943634 -3 25.75390625 C-7.38852678 27.08592522 -11.32238516 29.1207289 -15.3515625 31.2890625 C-17.8828125 32.62890625 -17.8828125 32.62890625 -20.8828125 33.62890625 C-20.8828125 24.38890625 -20.8828125 15.14890625 -20.8828125 5.62890625 C-6.23787692 -0.00376128 -6.23787692 -0.00376128 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(171,143)" d="M0 0 C15.51 0 31.02 0 47 0 C47 8.91 47 17.82 47 27 C31.49 27 15.98 27 0 27 C0 18.09 0 9.18 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(135,6)" d="M0 0 C0.99 0.495 0.99 0.495 2 1 C1.67 8.92 1.34 16.84 1 25 C1.66 25 2.32 25 3 25 C2.67 25.99 2.34 26.98 2 28 C1.34 28 0.68 28 0 28 C0 18.76 0 9.52 0 0 Z"/>
+</svg>
+
+              </a>
+            </li>
+          
+        
+      </ul>
+      <hr/>
+    </nav>
+  </body>
+</html>
+<div class="article-meta">
+<h1><span class="title">Oracle Signal Handler Functions</span></h1>
+
+<h2 class="date">2026/03/27</h2>
+</div>
+
+<main>
+<p>Signal handlers are programmer-defined functions that a process can register to respond to signals such as <code>SIGINT</code>, <code>SIGTERM</code>, or <code>SIGSEGV</code>.</p>
+<p>When a signal is delivered, the operating system interrupts the normal execution flow and invokes the registered handler function, allowing the program to react and to clean up resources, log additional information, or terminate gracefully.</p>
+<p>If no custom handler is registered, the system uses a default action, which in many cases means terminating the process or ignoring the signal.</p>
+<p>I was interested in understanding which signal handlers Oracle processes use and how to identify the handler functions registered for each signal within an Oracle process. The following is a summary of this investigation.</p>
+<p>The first finding is that Oracle uses the <code>sigaction</code> system call to register signal handler functions within a process. This can be observed by tracing a new database connection in SQL*Plus:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>1. Identify the sqlplus pid
+</span></span><span style="display:flex;"><span>#~ ps -aef | grep sqlplus
+</span></span><span style="display:flex;"><span>oracle   248845 248844  0 09:38 pts/3    00:00:00 sqlplus
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>2. Run strace against the sqlplus process
+</span></span><span style="display:flex;"><span>#~ strace -e trace=rt_sigaction -f -p 248845
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>3. Open a new database connection in sqlplus
+</span></span><span style="display:flex;"><span>SQL&gt; connect / as sysdba</span></span></code></pre></div>
+<figcaption>Listing 1: Tracing a new database connection with strace</figcaption>
+</figure>
+<p>Note that the strace <code>trace</code> filter traces the <code>rt_sigaction</code> system call rather than the <code>sigaction</code> system call. The reason for this is that the glibc <code>sigaction</code> syscall wrapper function transparently calls <code>rt_sigaction</code> behind the scenes, as explained in the Linux <code>sigaction</code> man page (see [1]).</p>
+<p>The strace output looks similar to the following. The example excerpt is formatted for readability and shows how Oracle calls <code>rt_sigaction</code> to register a handler function for the <code>SIGTERM</code> signal (signal 15):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>[pid 254825] rt_sigaction(SIGTERM, 
+</span></span><span style="display:flex;"><span>                    {sa_handler=0x3f27640, 
+</span></span><span style="display:flex;"><span>                     sa_mask=~[ILL TRAP ABRT BUS FPE SEGV USR2 TERM XCPU XFSZ SYS RTMIN RT_1], 
+</span></span><span style="display:flex;"><span>                     sa_flags=SA_RESTORER|SA_RESTART|SA_SIGINFO, 
+</span></span><span style="display:flex;"><span>                     sa_restorer=0x7f5a046949f0
+</span></span><span style="display:flex;"><span>                    }, 
+</span></span><span style="display:flex;"><span>                    {sa_handler=SIG_DFL, 
+</span></span><span style="display:flex;"><span>                     sa_mask=[], 
+</span></span><span style="display:flex;"><span>                     sa_flags=0
+</span></span><span style="display:flex;"><span>                    }, 
+</span></span><span style="display:flex;"><span>                    8) = 0</span></span></code></pre></div>
+<figcaption>Listing 2: Oracle process registering a custom SIGTERM handler</figcaption>
+</figure>
+<p>To interpret the strace output, we need to understand the <code>sigaction</code> system call, which takes the following arguments (see also [1]):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span><span style="color:#080">#include</span> <span style="color:#080">&lt;signal.h&gt;</span><span style="color:#080">
+</span></span></span><span style="display:flex;"><span><span style="color:#080"></span>
+</span></span><span style="display:flex;"><span><span style="color:#0b0;font-weight:bold">int</span> <span style="color:#00a000">sigaction</span>(<span style="color:#0b0;font-weight:bold">int</span> signum,
+</span></span><span style="display:flex;"><span>                    <span style="color:#a2f;font-weight:bold">const</span> <span style="color:#a2f;font-weight:bold">struct</span> sigaction <span style="color:#666">*</span>_Nullable <span style="color:#a2f;font-weight:bold">restrict</span> act,
+</span></span><span style="display:flex;"><span>                    <span style="color:#a2f;font-weight:bold">struct</span> sigaction <span style="color:#666">*</span>_Nullable <span style="color:#a2f;font-weight:bold">restrict</span> oldact);</span></span></code></pre></div>
+<figcaption>Listing 3: Signature of sigaction system call</figcaption>
+</figure>
+<p>The first argument, <code>signum</code>, specifies the signal. The second argument, <code>act</code>, points to the new signal action to be installed, while the third argument, <code>oldact</code>, is an optional pointer where the previous signal action will be stored (provided it is not <code>NULL</code>). Note that the <code>rt_sigaction</code> syscall, which glibc transparently calls behind the scenes, takes an additional fourth argument <code>sigsetsize</code> (not shown above), which specifies the size in bytes of the signal sets in <code>act.sa_mask</code> and <code>oldact.sa_mask</code>.</p>
+<p>The second and third arguments are both pointers to <code>struct sigaction</code>, which contains an <code>sa_handler</code> field holding the address of the programmer-defined signal handler function. The definition of <code>struct sigaction</code> is shown below:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">struct</span> sigaction {
+</span></span><span style="display:flex;"><span>    <span style="color:#0b0;font-weight:bold">void</span>     (<span style="color:#666">*</span>sa_handler)(<span style="color:#0b0;font-weight:bold">int</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#0b0;font-weight:bold">void</span>     (<span style="color:#666">*</span>sa_sigaction)(<span style="color:#0b0;font-weight:bold">int</span>, <span style="color:#0b0;font-weight:bold">siginfo_t</span> <span style="color:#666">*</span>, <span style="color:#0b0;font-weight:bold">void</span> <span style="color:#666">*</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#0b0;font-weight:bold">sigset_t</span>   sa_mask;
+</span></span><span style="display:flex;"><span>    <span style="color:#0b0;font-weight:bold">int</span>        sa_flags;
+</span></span><span style="display:flex;"><span>    <span style="color:#0b0;font-weight:bold">void</span>     (<span style="color:#666">*</span>sa_restorer)(<span style="color:#0b0;font-weight:bold">void</span>);
+</span></span><span style="display:flex;"><span>};</span></span></code></pre></div>
+<figcaption>Listing 4: Definition of struct sigaction</figcaption>
+</figure>
+<p>In the strace excerpt above, the <code>sa_handler</code> field in the <code>struct sigaction</code> pointed to by the <code>act</code> argument, contains the value <code>0x3f27640</code>. This corresponds to the address of Oracle&rsquo;s <code>sspterm</code> function and can be verified by examining the Oracle binary with <code>nm</code>, as shown in Listing 5. This means that when the Oracle process receives a <code>SIGTERM</code>, it will call the handler function <code>sspterm</code>.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>$ nm $ORACLE_HOME/bin/oracle | grep 3f27640
+</span></span><span style="display:flex;"><span>0000000003f27640 T sspterm</span></span></code></pre></div>
+<figcaption>Listing 5: Oracle signal handler function for SIGTERM</figcaption>
+</figure>
+<p>So now we know how to identify and translate signal handler addresses using strace. A drawback of this approach is that we must trace the creation of a new Oracle process, since the signal handlers are registered when an Oracle process starts. Moreover, manually resolving signal handler addresses to symbols is tedious, so it’s worth exploring ways to script this and examine the signal handler functions in a running Oracle process.</p>
+<p>Unfortunately, there is no sigaction array or equivalent structure in user space that exposes a process’s signal handler addresses. They are stored and managed within the kernel and kernel structures cannot be accessed directly from user space (in kernel space, they would be accessible via the <code>task_struct</code> structure).</p>
+<p>However, a running process can retrieve the current handler for any signal using the <code>sigaction</code> system call by providing the signal number as the first argument, setting <code>act</code> to <code>NULL</code> (second argument), and passing a pointer to <code>oldact</code> (third argument) to receive the current handler:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span><span style="color:#0b0;font-weight:bold">int</span> ret;
+</span></span><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">struct</span> sigaction oldact;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>ret <span style="color:#666">=</span> <span style="color:#00a000">sigaction</span>(sig, <span style="color:#a2f">NULL</span>, <span style="color:#666">&amp;</span>oldact);</span></span></code></pre></div>
+<figcaption>Listing 6: Retrieve current handler for a signal using the sigaction system call</figcaption>
+</figure>
+<p>The problem is that we have no control over running Oracle processes from the outside&hellip; unless we bring gdb into play. With gdb, we can attach to a running process and invoke any function or system call, such as <code>sigaction</code>. However, this comes with some prerequisites. We need debug symbols to examine the <code>struct sigaction</code> structure fields more easily and we need to temporarily allocate memory for holding <code>struct sigaction</code> data.</p>
+<p>Debug symbols for <code>struct sigaction</code> can be created and loaded into gdb as shown below:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>1. Create a new file sigaction.c
+</span></span><span style="display:flex;"><span>#include &lt;signal.h&gt;
+</span></span><span style="display:flex;"><span>struct sigaction sa;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>2. Compile sigaction.c into an object file with debug symbols
+</span></span><span style="display:flex;"><span>gcc -c -g sigaction.c -o sigaction.o
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>3. Load the sigaction.o object file in gdb
+</span></span><span style="display:flex;"><span>(gdb) set confirm off
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>(gdb) add-symbol-file sigaction.o 0
+</span></span><span style="display:flex;"><span>Reading symbols from sigaction.o...done.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>4. Print the struct sigaction type definition
+</span></span><span style="display:flex;"><span>(gdb) ptype struct sigaction
+</span></span><span style="display:flex;"><span>type = struct sigaction {
+</span></span><span style="display:flex;"><span>    union {
+</span></span><span style="display:flex;"><span>        __sighandler_t sa_handler;
+</span></span><span style="display:flex;"><span>        void (*sa_sigaction)(int, siginfo_t *, void *);
+</span></span><span style="display:flex;"><span>    } __sigaction_handler;
+</span></span><span style="display:flex;"><span>    __sigset_t sa_mask;
+</span></span><span style="display:flex;"><span>    int sa_flags;
+</span></span><span style="display:flex;"><span>    void (*sa_restorer)(void);
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<figcaption>Listing 7: Loading sigaction symbol file in gdb</figcaption>
+</figure>
+<p>Note that the type definition of <code>struct sigaction</code> printed by gdb looks different from the one in the man page and in Listing 4. An explanation for this is found in the man page, which states: &ldquo;On some architectures a union is involved [&hellip;]&rdquo; (see also [1]). This low-level detail is usually abstracted by the glibc syscall wrapper, so we don&rsquo;t need to worry about it. However, when accessing memory structures with gdb, we must take it into account.</p>
+<blockquote class="note">
+📝 <strong>Note</strong><br><br>
+The <code>sigaction</code> structure supports two types of signal handler functions:
+<p>Simple handler: <code>void (*sa_handler)(int);</code><br>
+Extended handler: <code>void (*sa_sigaction)(int, siginfo_t *, void *);</code><br></p>
+<p>When the <code>SA_SIGINFO</code> flag is not specified in <code>sa_flags</code>, the kernel calls the simple handler; when <code>SA_SIGINFO</code> is specified, it calls the extended handler, which provides additional information in the <code>siginfo_t</code> structure, such as the source and cause of a signal.</p>
+<p>A union allows multiple members to occupy the same memory location, which is useful in <code>struct sigaction</code> because only one of the two function pointers, <code>sa_handler</code> or <code>sa_sigaction</code>, is used at a time. By using a union, memory is saved and it is made explicit that the two fields are mutually exclusive. Without a union, space would have to be allocated for both pointers, resulting in unnecessary memory usage.</p>
+</blockquote>
+<p>With these subtleties clarified, we can now examine signal handlers in a running Oracle process. The following example demonstrates how to attach to a running process with <code>gdb</code>, load the <code>sigaction.o</code> symbol file, allocate memory for a new <code>struct sigaction</code>, and invoke the <code>sigaction</code> system call to retrieve the signal disposition of <code>SIGTERM</code> (signal 15):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>#~ gdb -q -p &lt;pid&gt;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>(gdb) set confirm off
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>(gdb) add-symbol-file sigaction.o 
+</span></span><span style="display:flex;"><span>Reading symbols from sigaction.o...done.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>(gdb) set $sa = (struct sigaction *) malloc(sizeof(struct sigaction))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>(gdb) p (int) sigaction(15, 0, $sa)
+</span></span><span style="display:flex;"><span>$1 = 0
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>(gdb) p $sa-&gt;__sigaction_handler
+</span></span><span style="display:flex;"><span>$2 = {sa_handler = 0x3f27640 &lt;sspterm&gt;, sa_sigaction = 0x3f27640 &lt;sspterm&gt;}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>(gdb) p (void) free($sa)
+</span></span><span style="display:flex;"><span>$3 = void</span></span></code></pre></div>
+<figcaption>Listing 8: Invoking sigaction in a running process</figcaption>
+</figure>
+<p>The script <code>print-signal-handlers.gdb</code> wraps the gdb commands into a reusable script and automates the retrieval and symbolic resolution of registered signal handler functions. You can download it <a href="https://github.com/Christoph-Lutz/oracle/blob/main/gdb/print-signal-handlers.gdb">here</a> and use it as shown below:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>1. Print single signal handler
+</span></span><span style="display:flex;"><span>#~ gdb -q -ex &#39;set $p_signal=15&#39; -x print-signal-handlers.gdb -p &lt;pid&gt;
+</span></span><span style="display:flex;"><span>Signal 15: sspterm
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>2. Print all signal handlers
+</span></span><span style="display:flex;"><span>#~ gdb -q -x print-signal-handlers.gdb  -p &lt;pid&gt;
+</span></span><span style="display:flex;"><span>Signal  1: ignored (SIG_IGN)
+</span></span><span style="display:flex;"><span>Signal  2: ignored (SIG_IGN)
+</span></span><span style="display:flex;"><span>Signal  3: ignored (SIG_IGN)
+</span></span><span style="display:flex;"><span>Signal  4: sslsshandler
+</span></span><span style="display:flex;"><span>Signal  5: sslsshandler
+</span></span><span style="display:flex;"><span>Signal  6: sslsshandler
+</span></span><span style="display:flex;"><span>Signal  7: sslsshandler
+</span></span><span style="display:flex;"><span>Signal  8: sslsshandler
+</span></span><span style="display:flex;"><span>Signal  9: default (SIG_DFL)
+</span></span><span style="display:flex;"><span>Signal 10: ignored (SIG_IGN)
+</span></span><span style="display:flex;"><span>Signal 11: sslsshandler
+</span></span><span style="display:flex;"><span>Signal 12: sspuser
+</span></span><span style="display:flex;"><span>Signal 13: sslsshandler
+</span></span><span style="display:flex;"><span>Signal 14: sslsshandler
+</span></span><span style="display:flex;"><span>Signal 15: sspterm
+</span></span><span style="display:flex;"><span>... </span></span></code></pre></div>
+<figcaption>Listing 9: Gdb script print-signal-handlers.gdb</figcaption>
+</figure>
+<p>In closing, attaching to and allocating memory in running Oracle processes is highly experimental and dangerous. Never attempt this on production systems; use this technique only for research and investigation purposes.</p>
+<h3 id="references">References</h3>
+<p>[1] <a href="https://man7.org/linux/man-pages/man2/sigaction.2.html">sigaction(2) — Linux manual page</a><br>
+[2] <a href="https://github.com/Christoph-Lutz/oracle/blob/main/gdb/print-signal-handlers.gdb">Christoph Lutz, oracle GitHub Repository, Script: print-signal-handlers.gdb</a></p>
+
+</main>
+
+  <footer>
+  
+  <hr/>
+  © <a href="https://www.0xChris.dev">Christoph Lutz</a> 2025 &ndash; 2026
+  
+  <hr/>
+  <script src="https://giscus.app/client.js"
+            data-repo="Christoph-Lutz/0xChris-Comments"
+            data-repo-id="R_kgDOQo-jcg"
+            data-category="Comments"
+            data-category-id="DIC_kwDOQo-jcs4Cz0NV"
+            data-mapping="pathname"
+            data-strict="1"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="light"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+        </script>
+    <script id="partials/analytics.html" 
+  data-goatcounter="https://0xchris.goatcounter.com/count"
+  async src="//gc.zgo.at/count.js"></script>
+
+  </footer>
+  </body>
+</html>
+
