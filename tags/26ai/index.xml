@@ -4,6 +4,13 @@
     <link>https://www.0xChris.dev/</link>
     <description>0xChris updates</description>
     <atom:link href="https://www.0xChris.dev/tags/26ai/" rel="self" type="application/rss+xml"/><item>
+      <title>Bypassing oradebug Restrictions</title>
+      <link>https://www.0xChris.dev/posts/2026-04-14-bypassing-oradebug-restrictions/</link>
+      <pubDate>Tue, 14 Apr 2026 00:00:00 UTC</pubDate>
+      <guid>https://www.0xChris.dev/posts/2026-04-14-bypassing-oradebug-restrictions/</guid>
+      <description>&lt;p&gt;In Oracle 26ai, the execution of certain oradebug commands and actions is no longer possible, as Oracle has changed the default value of the undocumented parameter &lt;code&gt;_disable_oradebug_commands&lt;/code&gt; from &lt;code&gt;none&lt;/code&gt; to &lt;code&gt;restricted&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;This change causes some oradebug functionality to stop working, as previously discussed by &lt;a href=&#34;https://jonathanlewis.wordpress.com/&#34;&gt;Jonathan Lewis&lt;/a&gt; in &lt;a href=&#34;https://jonathanlewis.wordpress.com/2024/03/12/disable-oradebug/&#34;&gt;this blog post&lt;/a&gt;. Moreover, &lt;a href=&#34;https://mvelikikh.blogspot.com/&#34;&gt;Mikhail Velikikh&lt;/a&gt; noted in a &lt;a href=&#34;https://jonathanlewis.wordpress.com/2024/03/12/disable-oradebug/#comments&#34;&gt;comment&lt;/a&gt; on the blog post that the parameter change from &lt;code&gt;none&lt;/code&gt; to &lt;code&gt;restricted&lt;/code&gt; was already introduced in RU 19.24.&lt;/p&gt;</description>
+    </item><item>
       <title>Datapatch And The &#34;force_terminate_blocking_sessions&#34; Option — A Look Behind The Scenes</title>
       <link>https://www.0xChris.dev/posts/2026-01-11-datapatch-and-the-force_terminate_blocking_sessions-option--a-look-behind-the-scenes/</link>
       <pubDate>Sun, 11 Jan 2026 00:00:00 UTC</pubDate>

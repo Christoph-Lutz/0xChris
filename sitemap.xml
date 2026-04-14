@@ -3,18 +3,48 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://www.0xChris.dev/</loc>
-    <lastmod>2026-03-27T00:00:00+00:00</lastmod>
+    <lastmod>2026-04-14T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/categories/26ai/</loc>
+    <lastmod>2026-04-14T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/26ai/</loc>
+    <lastmod>2026-04-14T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/posts/2026-04-14-bypassing-oradebug-restrictions/</loc>
+    <lastmod>2026-04-14T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/categories/</loc>
+    <lastmod>2026-04-14T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/categories/gdb/</loc>
+    <lastmod>2026-04-14T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/gdb/</loc>
+    <lastmod>2026-04-14T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/categories/internals/</loc>
+    <lastmod>2026-04-14T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/internals/</loc>
+    <lastmod>2026-04-14T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/categories/oradebug/</loc>
+    <lastmod>2026-04-14T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/oradebug/</loc>
+    <lastmod>2026-04-14T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/posts/</loc>
+    <lastmod>2026-04-14T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/</loc>
+    <lastmod>2026-04-14T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/categories/c/</loc>
     <lastmod>2026-03-27T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/tags/c/</loc>
-    <lastmod>2026-03-27T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/categories/</loc>
-    <lastmod>2026-03-27T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/tags/gdb/</loc>
     <lastmod>2026-03-27T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/categories/gdb/</loc>
@@ -26,9 +56,6 @@
     <loc>https://www.0xChris.dev/posts/2026-03-27-oracle-signal-handler-functions/</loc>
     <lastmod>2026-03-27T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://www.0xChris.dev/posts/</loc>
-    <lastmod>2026-03-27T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://www.0xChris.dev/tags/signals/</loc>
     <lastmod>2026-03-27T00:00:00+00:00</lastmod>
   </url><url>
@@ -36,9 +63,6 @@
     <lastmod>2026-03-27T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/categories/systemcalls/</loc>
-    <lastmod>2026-03-27T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/tags/</loc>
     <lastmod>2026-03-27T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/tags/adaptive/</loc>
@@ -56,9 +80,6 @@
     <loc>https://www.0xChris.dev/categories/internal/</loc>
     <lastmod>2026-03-18T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://www.0xChris.dev/tags/internals/</loc>
-    <lastmod>2026-03-18T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://www.0xChris.dev/categories/lgwr/</loc>
     <lastmod>2026-03-18T00:00:00+00:00</lastmod>
   </url><url>
@@ -73,12 +94,6 @@
   </url><url>
     <loc>https://www.0xChris.dev/posts/2026-03-03-adaptive-scalable-lgwr-mode-switch-threshold-single-scalable/</loc>
     <lastmod>2026-03-03T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/categories/internals/</loc>
-    <lastmod>2026-03-03T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/tags/26ai/</loc>
-    <lastmod>2026-01-11T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/posts/2026-01-11-datapatch-and-the-force_terminate_blocking_sessions-option--a-look-behind-the-scenes/</loc>
     <lastmod>2026-01-11T00:00:00+00:00</lastmod>
@@ -118,9 +133,6 @@
   </url><url>
     <loc>https://www.0xChris.dev/posts/2026-01-03-decoding-library-cache-lock-and-library-cache-pin-wait-event-parameters/</loc>
     <lastmod>2026-01-03T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/categories/26ai/</loc>
-    <lastmod>2026-01-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/tags/openssl/</loc>
     <lastmod>2026-01-02T00:00:00+00:00</lastmod>
@@ -187,9 +199,6 @@
   </url><url>
     <loc>https://www.0xChris.dev/tags/uek/</loc>
     <lastmod>2025-12-28T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/categories/gdb/</loc>
-    <lastmod>2025-12-23T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/posts/2025-12-23-printing-non-null-terminated-strings-with-gdb/</loc>
     <lastmod>2025-12-23T00:00:00+00:00</lastmod>
