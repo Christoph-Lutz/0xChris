@@ -6,7 +6,7 @@
     <atom:link href="https://www.0xChris.dev/categories/26ai/" rel="self" type="application/rss+xml"/><item>
       <title>SGA Changes in Oracle 26ai - Subpools and Durations</title>
       <link>https://www.0xChris.dev/posts/2026-05-01-sga-changes-in-oracle-26ai---subpools-and-durations/</link>
-      <pubDate>Thu, 30 Apr 2026 00:00:00 UTC</pubDate>
+      <pubDate>Fri, 01 May 2026 00:00:00 UTC</pubDate>
       <guid>https://www.0xChris.dev/posts/2026-05-01-sga-changes-in-oracle-26ai---subpools-and-durations/</guid>
       <description>&lt;p&gt;Oracle’s SGA memory pools have undergone regular changes over the years and across different versions. Oracle 26ai is no exception and introduces another redesign of SGA memory pools, such as the shared pool.&lt;/p&gt;
 &lt;p&gt;This first part of this post explains how Oracle 26ai changes the number of subpools and durations in various SGA memory pools compared to Oracle 19c, while the second part shows how to trace and observe them using low-level probes. For additional background information on this subject, refer to sources &lt;a href=&#34;#source1&#34;&gt;1&lt;/a&gt;, &lt;a href=&#34;#source2&#34;&gt;2&lt;/a&gt;, and &lt;a href=&#34;#source3&#34;&gt;3&lt;/a&gt;.&lt;/p&gt;</description>
