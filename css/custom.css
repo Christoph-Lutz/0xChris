@@ -203,4 +203,27 @@ code {
   }
 }
 
+/* Table format */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 6px 10px;
+}
+
+table th,
+table td {
+  text-align: left;
+}
+
+table caption {
+  caption-side: bottom;   /* or top */
+  text-align: left;
+  font-size: 0.9em;
+  color: #666;
+  margin-bottom: 6px;
+}
+
 

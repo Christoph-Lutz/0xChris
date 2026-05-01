@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SGA Changes in Oracle 26ai - Subpools and Durations | 0xChris</title>
+
+    
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="/css/custom.css" />
+
+    
+    
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="SGA Changes in Oracle 26ai - Subpools and Durations">
+  <meta name="twitter:description" content="SGA changes in Oracle 26ai - subpools and durations">
+
+
+<meta property="og:title" content="SGA Changes in Oracle 26ai - Subpools and Durations">
+<meta property="og:description" content="SGA changes in Oracle 26ai - subpools and durations">
+<meta property="og:url" content="https://www.0xChris.dev/posts/2026-05-01-sga-changes-in-oracle-26ai---subpools-and-durations/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="0xChris">
+
+
+
+<meta property="og:image" content="https://www.0xChris.dev/">
+
+
+  </head>
+
+  <body>
+    <nav>
+      <ul class="menu">
+        
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/posts/">Blog</a></li>
+        
+          <li><a href="/categories/">Categories</a></li>
+        
+          <li><a href="/tags/">Tags</a></li>
+        
+          <li><a href="/contact/">Contact</a></li>
+        
+          <li><a href="/index.xml">Subscribe</a></li>
+        
+
+        
+        
+          
+            <li class="icon">
+              <a href="https://github.com/Christoph-Lutz" aria-label="GitHub">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <title>GitHub</title>
+  <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" fill="currentColor"/>
+</svg>
+
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://x.com/chris_skyflier" aria-label="Twitter">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>X</title><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://bsky.app/profile/christophlutz.bsky.social" aria-label="Bluesky">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Bluesky</title><path d="M5.202 2.857C7.954 4.922 10.913 9.11 12 11.358c1.087-2.247 4.046-6.436 6.798-8.501C20.783 1.366 24 .213 24 3.883c0 .732-.42 6.156-.667 7.037-.856 3.061-3.978 3.842-6.755 3.37 4.854.826 6.089 3.562 3.422 6.299-5.065 5.196-7.28-1.304-7.847-2.97-.104-.305-.152-.448-.153-.327 0-.121-.05.022-.153.327-.568 1.666-2.782 8.166-7.847 2.97-2.667-2.737-1.432-5.473 3.422-6.3-2.777.473-5.899-.308-6.755-3.369C.42 10.04 0 4.615 0 3.883c0-3.67 3.217-2.517 5.202-1.026"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://sym42.org" aria-label="Sym42">
+                
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+  <path transform="scale(0.1004,0.1364) translate(11,1)" d="M0 0 C8.91 0 17.82 0 27 0 C27 32.01 27 64.02 27 97 C51.75 97 76.5 97 102 97 C102.33 118.78 102.66 140.56 103 163 C113.65023618 149.38741342 113.65023618 149.38741342 124 135.5625 C125.16793211 133.96872315 126.33590197 132.37497396 127.50390625 130.78125 C128.08156738 129.99105469 128.65922852 129.20085937 129.25439453 128.38671875 C132.14116363 124.43971809 135.0386119 120.50060445 137.9375 116.5625 C138.50952148 115.78430908 139.08154297 115.00611816 139.67089844 114.2043457 C143.34771065 109.21167043 147.06937462 104.25523259 150.81298828 99.3125 C170.98641999 74.34600723 170.98641999 74.34600723 177 44 C175.18481682 37.01549082 172.39314724 31.88945254 166.25390625 27.8515625 C158.52779633 23.46773353 150.43585329 23.37053009 141.8828125 25.125 C137.49428572 26.45701897 133.56042734 28.49182265 129.53125 30.66015625 C127 32 127 32 124 33 C124 23.76 124 14.52 124 5 C138.64493558 -0.63266753 138.64493558 -0.63266753 144.8828125 -0.62890625 C145.54860321 -0.63131821 146.21439392 -0.63373016 146.90036011 -0.63621521 C148.28308171 -0.63525162 149.66584937 -0.62222324 151.04833984 -0.59692383 C153.13124785 -0.56239643 155.20993568 -0.57639315 157.29296875 -0.59570312 C171.18361481 -0.58191047 181.8308422 3.34041929 192.00390625 12.87890625 C200.75379996 22.23354424 204.74719368 34.28009799 205.375 47 C204.41179837 64.52286038 196.17302926 80.08711875 186 94 C185.50757813 94.67724121 185.01515625 95.35448242 184.5078125 96.05224609 C180.97969681 100.89390965 177.41603046 105.70856193 173.84228516 110.51660156 C171.48040306 113.70041612 169.13374187 116.89527097 166.78710938 120.09033203 C159.52624187 129.97226581 152.18066843 139.78923387 144.81054688 149.58984375 C143.01140967 151.98481172 141.21597581 154.38250747 139.421875 156.78125 C138.8645166 157.52608643 138.3071582 158.27092285 137.73291016 159.03833008 C136.68515004 160.43879049 135.6379229 161.83964987 134.59130859 163.2409668 C131.11186653 167.88813347 131.11186653 167.88813347 130 169 C128.28134591 169.0935919 126.55884256 169.11744611 124.83764648 169.11352539 C123.73658066 169.11344986 122.63551483 169.11337433 121.50108337 169.11329651 C120.3031868 169.10813522 119.10529022 169.10297394 117.87109375 169.09765625 C116.65172623 169.0962413 115.4323587 169.09482635 114.17604065 169.09336853 C110.2631693 169.08774967 106.35035419 169.07519396 102.4375 169.0625 C99.79231853 169.05748743 97.14713617 169.0529241 94.50195312 169.04882812 C88.00126274 169.03862296 81.50069467 169.01905121 75 169 C75 154.15 75 139.3 75 124 C50.25 124 25.5 124 0 124 C0 83.08 0 42.16 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(155.8828125,0.37109375)" d="M0 0 C0.66579071 -0.00241196 1.33158142 -0.00482391 2.01754761 -0.00730896 C3.40026921 -0.00634537 4.78303687 0.00668301 6.16552734 0.03198242 C8.24843535 0.06650982 10.32712318 0.0525131 12.41015625 0.03320312 C26.30080231 0.04699578 36.9480297 3.96932554 47.12109375 13.5078125 C55.87098746 22.86245049 59.86438118 34.90900424 60.4921875 47.62890625 C59.52898587 65.15176663 51.29021676 80.716025 41.1171875 94.62890625 C40.62476563 95.30614746 40.13234375 95.98338867 39.625 96.68115234 C36.09688431 101.5228159 32.53321796 106.33746818 28.95947266 111.14550781 C26.59759056 114.32932237 24.25092937 117.52417722 21.90429688 120.71923828 C14.64342937 130.60117206 7.29785593 140.41814012 -0.07226562 150.21875 C-1.87140283 152.61371797 -3.66683669 155.01141372 -5.4609375 157.41015625 C-6.2969751 158.52741089 -6.2969751 158.52741089 -7.14990234 159.66723633 C-8.19766246 161.06769674 -9.2448896 162.46855612 -10.29150391 163.86987305 C-13.77094597 168.51703972 -13.77094597 168.51703972 -14.8828125 169.62890625 C-17.02840077 169.7166623 -19.17685671 169.73585844 -21.32421875 169.7265625 C-22.62939453 169.72333984 -23.93457031 169.72011719 -25.27929688 169.71679688 C-26.6679694 169.70844026 -28.05664127 169.6999753 -29.4453125 169.69140625 C-30.83788906 169.68639291 -32.23046731 169.68182972 -33.62304688 169.67773438 C-37.0430112 169.66590059 -40.46289094 169.64941505 -43.8828125 169.62890625 C-43.27097081 166.41918652 -42.20356776 164.38991326 -40.25 161.78515625 C-39.69892578 161.04394531 -39.14785156 160.30273438 -38.58007812 159.5390625 C-37.97873047 158.74371094 -37.37738281 157.94835937 -36.7578125 157.12890625 C-35.82098633 155.87400391 -35.82098633 155.87400391 -34.86523438 154.59375 C-32.87737817 151.93402615 -30.8807052 149.28109666 -28.8828125 146.62890625 C-27.62458729 144.95213253 -26.3667668 143.27505503 -25.109375 141.59765625 C-23.23806447 139.10192152 -21.36611031 136.60668841 -19.49169922 134.11328125 C-14.67303275 127.70001086 -9.90631899 121.24999876 -5.16113281 114.78222656 C-1.50429727 109.80538271 2.1987027 104.86635957 5.92797852 99.94360352 C26.10348636 74.9765367 26.10348636 74.9765367 32.1171875 44.62890625 C30.30200432 37.64439707 27.51033474 32.51835879 21.37109375 28.48046875 C13.64498383 24.09663978 5.55304079 23.99943634 -3 25.75390625 C-7.38852678 27.08592522 -11.32238516 29.1207289 -15.3515625 31.2890625 C-17.8828125 32.62890625 -17.8828125 32.62890625 -20.8828125 33.62890625 C-20.8828125 24.38890625 -20.8828125 15.14890625 -20.8828125 5.62890625 C-6.23787692 -0.00376128 -6.23787692 -0.00376128 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(171,143)" d="M0 0 C15.51 0 31.02 0 47 0 C47 8.91 47 17.82 47 27 C31.49 27 15.98 27 0 27 C0 18.09 0 9.18 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(135,6)" d="M0 0 C0.99 0.495 0.99 0.495 2 1 C1.67 8.92 1.34 16.84 1 25 C1.66 25 2.32 25 3 25 C2.67 25.99 2.34 26.98 2 28 C1.34 28 0.68 28 0 28 C0 18.76 0 9.52 0 0 Z"/>
+</svg>
+
+              </a>
+            </li>
+          
+        
+      </ul>
+      <hr/>
+    </nav>
+  </body>
+</html>
+<div class="article-meta">
+<h1><span class="title">SGA Changes in Oracle 26ai - Subpools and Durations</span></h1>
+
+<h2 class="date">2026/04/30</h2>
+</div>
+
+<main>
+<p>Oracle’s SGA memory pools have undergone regular changes over the years and across different versions. Oracle 26ai is no exception and introduces another redesign of SGA memory pools, such as the shared pool.</p>
+<p>This first part of this post explains how Oracle 26ai changes the number of subpools and durations in various SGA memory pools compared to Oracle 19c, while the second part shows how to trace and observe them using low-level probes. For additional background information on this subject, refer to sources <a href="#source1">1</a>, <a href="#source2">2</a>, and <a href="#source3">3</a>.</p>
+<p>All investigations described in this post were carried out on Oracle versions 23.26.0.0 and 23.26.1.0.</p>
+<h2 id="subpools-and-durations-in-oracle-26ai">Subpools and Durations in Oracle 26ai</h2>
+<p>Oracle 26ai introduces the following changes to subpools and durations:</p>
+<ul>
+<li>The shared pool can be divided into 31 subpools (in Oracle 19c, the limit was 7 subpools).</li>
+<li>The large pool, streams pool and NUMA pool can also be divided into subpools (in Oracle 19c, this was only possible for the shared pool).</li>
+<li>The number of subpools in the shared pool, large pool, streams pool, and NUMA pool can be configured via underscore parameters (in Oracle 19c, this was only possible for the shared pool via <code>_kghdsidx</code>).</li>
+<li>There are now 3 durations per shared pool subpool (in Oracle 19c there were only 2).</li>
+<li>The streams pool can also be divided into multiple subpools if <code>_enable_streams_pool_subpools=true</code> (default is <code>false</code>). This functionality was backported to 19.16 in fix 34010877, where it can be enabled by setting <code>_bug34010877_enable_streams_pool_subpools=true</code> (see also source <a href="#source4">4</a>).</li>
+</ul>
+<p>Table 1 provides an overview of the new underscore parameters and their associated internal callback functions that Oracle invokes at instance startup. These callback functions compute the number of subpools and initialize the corresponding underscore parameters with their default values when automatic memory management is enabled (that is, when either <code>sga_target</code> or <code>memory_target</code> is set). In addition, the primary factors influencing how Oracle determines the number of subpools are <code>cpu_count</code> and the SGA size; the detailed mechanics and formulas are discussed later.</p>
+<p>Note that the number of durations per subpool is hard-coded and cannot be configured via underscore parameters. Moreover, each subpool is protected by a separate shared pool latch. Since Oracle 26ai can use a higher total number of subpools, this also explains why it may have more shared pool latches than earlier versions</p>
+<table>  
+<thead>  
+<tr>  
+<th>Pool<br></th>  
+<th>Max Subpools<br></th>  
+<th>Durations<br>per Subpool</th>  
+<th>Parameter<br>(Callback Function)</th>
+</tr>  
+</thead>  
+<tbody>  
+<tr>  
+<td>Shared Pool<br></td>  
+<td>31<br></td>  
+<td>3<br></td>
+<td>_kghdsidx_sp_count<br>(ksmcspsdxchk)</td>
+</tr>  
+<tr>
+<td>Large Pool<br></td>
+<td>7<br></td>
+<td>None<br></td>
+<td>_kghdsidx_lp_count<br>(ksmclpsdxchk)</td>
+</tr>
+<tr>
+<td>Streams Pool<br></td>
+<td>1 by default<br>(7 if <code>_enable_streams_pool_subpools=true</code>)</td>
+<td>2<br></td>
+<td>_kghdsidx_streams_count<br>(ksmcstrsdxch)</td>
+</tr>
+<tr>
+<td>NUMA pool<br></td>
+<td>8<br></td>
+<td>None<br></td>
+<td>_kghdsidx_numa_count<br>(ksmcnumasdxchk)</td>
+</tr>
+</tbody>
+<caption>Table 1: Number of subpools and durations in Oracle 26ai</caption>  
+</table>
+<p>The underscore parameters and callback functions have rather cryptic names and, as with many internal Oracle constructs, follow a naming logic that is not publicly disclosed, but which I assume, reflects the following mnemonic scheme:</p>
+<ul>
+<li>kghdsidx: Kernel Generic Heap Descriptor Index(es)</li>
+<li>ksmc&lt;pool&gt;sdxchk: Kernel Service Memory Create &lt;pool&gt; Subpools Descriptor indeX Check, where pool identifies the target memory pool: sp = shared pool, lp = large pool, str = streams pool, numa = NUMA pool</li>
+</ul>
+<blockquote class="note">
+📝 <strong>Java Pool</strong><br><br>
+Unlike the other pools, Oracle 26ai introduces no new underscore parameter for the java pool. While I have not investigated this further, the parameter descriptions (see `<code>x$ksppi.ksppdesc</code>`) suggest that the shared pool latches used for the shared pool and large pool are also shared with the java pool. However, I am not aware of any structural changes in the java pool in Oracle 26ai compared to earlier releases.
+</blockquote>
+<p>Unless explicitly overridden by the underscore parameters listed in Table 1, Oracle uses a default sizing formula to derive the number of subpools in each pool. This value is determined as the minimum of three constraints: a CPU cap, a memory cap, and the pool-specific maximum limit, as shown in Table 1 (column &ldquo;Max Subpools&rdquo;):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>subpools = min(cpu_cap, mem_cap, max_subpools_limit)</span></span></code></pre></div>
+<figcaption>Formula 1: Calculating the number of subpools per pool</figcaption>
+</figure>
+<p>The CPU cap is defined as follows (this is the same formula provided in My Oracle Support note <a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=45517">KB141686</a>; see also source <a href="#source5">5</a>):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>cpu_cap = (cpu_count - 1)/4 + 1</span></span></code></pre></div>
+<figcaption>Formula 2: Calculating the CPU cap</figcaption>
+</figure>
+<p>The memory cap depends on whether or not explicit pool size settings have been specified in the spfile. If no pool size is specified, Oracle computes a pool-specific minimum size for each pool derived from the SGA size; if a pool size is specified, Oracle uses it, provided that it exceeds the pool-specific minimum size.</p>
+<p>In other words, the pool size used for the memory cap is determined as the maximum of either the calculated default pool size or the pool size explicitly specified in the spfile:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>Shared Pool:
+</span></span><span style="display:flex;"><span>pool_sz = max(sga_sz_nonimc * 25/100, shared_pool_size_from_spfile)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Large Pool:
+</span></span><span style="display:flex;"><span>pool_sz = max(sga_sz_nonimc * 20/100, large_pool_size_from_spfile)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Streams Pool:
+</span></span><span style="display:flex;"><span>pool_sz = max(sga_sz_nonimc * 10/100, streams_pool_size_from_spfile)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>NUMA Pool:
+</span></span><span style="display:flex;"><span>pool_sz = max(sga_sz_nonimc * 15/100, shared_pool_size_from_spfile)</span></span></code></pre></div>
+<figcaption>Formula 3: Calculating the minimum pool size for the memory cap</figcaption>
+</figure>
+<p>A few things worth noting: The SGA size used in the minimum pool size computation does not include the size of the in-memory column store (IMC). Moreover, the pool-specific minimum sizes are internal, hard-coded percentages that are passed as arguments to the parameter callback functions listed in Table 1, meaning they cannot be changed or configured. Finally, unlike the other pools, the size of the NUMA pool is not controlled by a &ldquo;pool_size&rdquo; parameter, but is instead derived from the <code>shared_pool_size</code> parameter.</p>
+<p>Ultimately, the memory cap is computed by normalizing the pool size into gigabytes (2^30 bytes):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>mem_cap = pool_sz/2^30</span></span></code></pre></div>
+<figcaption>Formula 4: Calculating the memory cap</figcaption>
+</figure>
+<p>To illustrate this, let&rsquo;s work through an example showing how Oracle computes the number of shared pool subpools in Oracle 26ai based on the following system configuration:</p>
+<ul>
+<li>cpu_count = 30</li>
+<li>sga_target = 140G</li>
+<li>shared_pool_size = 28G (explicitly specified in spfile)</li>
+<li>No in-memory column store configured</li>
+</ul>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>cpu_cap = (cpu_count - 1)/4 + 1 = 
+</span></span><span style="display:flex;"><span>          (30 - 1)/4 + 1 = 
+</span></span><span style="display:flex;"><span>          29/4 + 1 = 8
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>pool_sz = max(sga_sz_nonimc * 25/100, shared_pool_size_from_spfile) = 
+</span></span><span style="display:flex;"><span>          max(150323855360 * 25/100, 30064771072) =
+</span></span><span style="display:flex;"><span>          max(37580963840, 30064771072) =
+</span></span><span style="display:flex;"><span>          37580963840
+</span></span><span style="display:flex;"><span>          
+</span></span><span style="display:flex;"><span>mem_cap = (pool_sz/2^30) =
+</span></span><span style="display:flex;"><span>          37580963840/2^30 =
+</span></span><span style="display:flex;"><span>          37580963840/1073741824 = 35
+</span></span><span style="display:flex;"><span>          
+</span></span><span style="display:flex;"><span>subpools = min(cpu_cap, mem_cap, 31) = 
+</span></span><span style="display:flex;"><span>           min(8, 35, 31) = 
+</span></span><span style="display:flex;"><span>           8</span></span></code></pre></div>
+<figcaption>Example 1: Determining the number of shared pool subpools in Oracle 26ai</figcaption>
+</figure>
+<p>With this system configuration, Oracle 26ai creates 8 shared pool subpools, whereas Oracle 19c capped this at 7, as this was the limit imposed by the undocumented parameter <code>_kghdsidx_count</code> in Oracle 19c.</p>
+<blockquote class="note">
+📝 <strong>Parameter _kghdsidx_count</strong><br><br>
+The underscore parameter `_kghdsidx_count` still exists in Oracle 26ai and is backed by the callback function <code>ksmcsdxchk</code>. However, in Oracle 26ai this function appears to be a placeholder that simply returns the value 1. 
+<p>Interestingly, the <code>_kghdsidx_count</code> parameter can still be used in Oracle 26ai and, when set, it divides the shared pool into the specified number of subpools, with the same upper limit of 7 as in Oracle 19c. However, it does not change the number of durations per shared pool subpool (which remains three), nor does it affect the number of subpools in the other memory pools.</p>
+<p>I suspect the <code>_kghdsidx_count</code> parameter remains for backward compatibility, but I have not investigated its purpose and behavior further in Oracle 26ai.</p>
+</blockquote>
+<p>What are the advantages and disadvantages of a higher number of subpools in Oracle 26ai compared to earlier versions? Generally speaking, a higher number of subpools improves concurrency, as contention for shared pool latches can be distributed across multiple subpools. The drawback, however, is that a higher number of subpools results in smaller average subpool sizes, assuming equally sized subpools. Furthermore, non-uniform subpool sizes may lead to memory allocation and free space imbalances across subpools. Both scenarios can increase memory pressure on individual subpools, potentially triggering expensive memory resize operations during which Oracle reallocates granules from the buffer cache to the shared pool as part of automatic SGA resizing. Such operations can temporarily stall a busy system. Additionally, smaller or imbalanced subpools may also lead to ORA-4031 errors.</p>
+<h2 id="tracing-how-oracle-26ai-determines-the-number-of-subpools">Tracing How Oracle 26ai Determines the Number of Subpools</h2>
+<p>In Oracle 26ai, the new underscore parameters that determine the number of subpools in the shared pool, large pool, streams pool, and NUMA pool are backed by the callback functions listed in Table 1, which are invoked when an Oracle instance starts.</p>
+<p>The callback functions are essentially just small wrapper functions that delegate the computation to the common helper function <code>ksmcpoolsdxchk</code> (Kernel Service Memory Create Pool Subpool Descriptor Index Check), which has the following signature:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>uint32 ksmcpoolsdxchk(uint64 *unk, uint32 sga_min_pct, uint32 pool_prm_idx, uint32 max_subpools)</span></span></code></pre></div>
+<figcaption>Listing 1: Function signature ksmcpoolsdxchk</figcaption>
+</figure>
+<p>The function arguments have the following meaning (based on my interpretation and understanding; the actual argument names in the Oracle source code may differ):</p>
+<ul>
+<li><code>unk</code>: pointer to a memory address, the exact purpose is unclear to me.</li>
+<li><code>sga_min_pct</code>: percentage of the SGA size used to derive the default minimum pool size (excluding the IMC size and used only if no pool size is specified in the spfile or if the specified value in the spfile is below the computed default minimum).</li>
+<li><code>pool_prm_idx</code>: spfile pool_size parameter used to determine whether a minimum pool size is defined; it is specified as an index into the parameter table, corresponding to <code>x$ksppi.indx - 1</code> (Oracle 26ai maps pools to pool_size parameters as follows: shared pool → <code>shared_pool_size</code>, large pool → <code>large_pool_size</code>, streams pool → <code>streams_pool_size</code>, and NUMA pool → <code>shared_pool_size</code>).</li>
+<li><code>max_subpools</code>: the maximum possible number of subpools.</li>
+</ul>
+<p>Based on this, we can use uprobes to instrument the <code>ksmcpoolsdxchk</code> helper function and print its argument values at runtime during instance startup. This allows us to closely observe what Oracle is doing internally when deriving the number of subpools at instance startup. The bpftrace script [ksmc_pool_sdx_chk.bt] (see source <a href="#source7">7</a>) demonstrates this and produces output like the following when run in verbose mode, which shows Oracle’s internal formulas step by step:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span><span style="color:#080">#~ ./ksmc_pool_sdx_chk.bt verbose
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span><span style="color:#080"></span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>Attaching <span style="color:#666">18</span> probes...
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>Tracing... Hit <span style="color:#666">^</span>C to stop.
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span><span style="color:#666">31090</span> oracle <span style="color:#666">-&gt;</span> ksmcspsdxchk
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span><span style="color:#666">31090</span> oracle    <span style="color:#a0a000">pool</span>: shared pool
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span><span style="color:#666">31090</span> oracle    <span style="color:#666">-&gt;</span> <span style="color:#a0a000">ksmcpoolsdxchk</span>: <span style="color:#666">0x7fde6ccc9578</span>, <span style="color:#666">25</span>, <span style="color:#666">320</span>, <span style="color:#666">31</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span><span style="color:#666">31090</span> oracle       <span style="color:#a0a000">sga_min_pct</span>: <span style="color:#666">25</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span><span style="color:#666">31090</span> oracle       <span style="color:#a0a000">pool_prm_idx</span>: <span style="color:#666">320</span> (x<span style="">$</span>ksppi.indx<span style="color:#666">=</span><span style="color:#666">319</span><span style="color:#666">:</span> shared_pool_size)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span><span style="color:#666">31090</span> oracle       <span style="color:#a0a000">max_subpools</span>: <span style="color:#666">31</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span><span style="color:#666">31090</span> oracle       <span style="color:#666">-&gt;</span> <span style="color:#a0a000">ksmg_estimate_nonimc_sga_size</span>: <span style="color:#666">0x7fde6ccc9578</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span><span style="color:#666">31090</span> oracle       <span style="color:#666">&lt;-</span> <span style="color:#a0a000">ksmg_estimate_nonimc_sga_size</span>: <span style="color:#666">0xc00000000</span> (<span style="color:#666">51539607552</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span><span style="color:#666">31090</span> oracle       <span style="color:#666">-&gt;</span> <span style="color:#a0a000">kspgzp</span>: <span style="color:#666">320</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span><span style="color:#666">31090</span> oracle          <span style="color:#a0a000">prm_idx</span>: <span style="color:#666">320</span> (x<span style="">$</span>ksppi.indx<span style="color:#666">=</span><span style="color:#666">319</span><span style="color:#666">:</span> shared_pool_size)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span><span style="color:#666">31090</span> oracle       <span style="color:#666">&lt;-</span> <span style="color:#a0a000">kspgzp</span>: <span style="color:#666">0x800000000</span> (<span style="color:#666">34359738368</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span><span><span style="color:#666">31090</span> oracle       <span style="color:#666">-&gt;</span> ksb_cpu_eff_thread_count_compute
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span><span><span style="color:#666">31090</span> oracle       <span style="color:#666">&lt;-</span> <span style="color:#a0a000">ksb_cpu_eff_thread_count_compute</span>: <span style="color:#666">0x80</span> (<span style="color:#666">128</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span><span><span style="color:#666">31090</span> oracle       <span style="color:#a0a000">Computation</span>:
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20</span><span><span style="color:#666">31090</span> oracle         max_pools <span style="color:#666">=</span> <span style="color:#666">31</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21</span><span><span style="color:#666">31090</span> oracle         sga_pct   <span style="color:#666">=</span> <span style="color:#666">25</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22</span><span><span style="color:#666">31090</span> oracle         cpu_cap   <span style="color:#666">=</span> (cpu_count <span style="color:#666">-</span> <span style="color:#666">1</span>)<span style="color:#666">/</span><span style="color:#666">4</span> <span style="color:#666">+</span> <span style="color:#666">1</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23</span><span><span style="color:#666">31090</span> oracle                   <span style="color:#666">=</span> (<span style="color:#666">128</span> <span style="color:#666">-</span> <span style="color:#666">1</span>)<span style="color:#666">/</span><span style="color:#666">4</span> <span style="color:#666">+</span> <span style="color:#666">1</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24</span><span><span style="color:#666">31090</span> oracle                   <span style="color:#666">=</span> <span style="color:#666">32</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25</span><span><span style="color:#666">31090</span> oracle         pool_sz   <span style="color:#666">=</span> <span style="color:#00a000">max</span>(sga_sz_nonimc <span style="color:#666">*</span> sga_pct<span style="color:#666">/</span><span style="color:#666">100</span>, pool_sz_spfile)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26</span><span><span style="color:#666">31090</span> oracle                   <span style="color:#666">=</span> <span style="color:#00a000">max</span>(<span style="color:#666">51539607552</span> <span style="color:#666">*</span> <span style="color:#666">25</span><span style="color:#666">/</span><span style="color:#666">100</span>, <span style="color:#666">34359738368</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27</span><span><span style="color:#666">31090</span> oracle                   <span style="color:#666">=</span> <span style="color:#00a000">max</span>(<span style="color:#666">12884901888</span>, <span style="color:#666">34359738368</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28</span><span><span style="color:#666">31090</span> oracle                   <span style="color:#666">=</span> <span style="color:#666">34359738368</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29</span><span><span style="color:#666">31090</span> oracle         mem_cap   <span style="color:#666">=</span> pool_sz<span style="color:#666">/</span><span style="color:#666">2</span><span style="color:#666">^</span><span style="color:#666">30</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30</span><span><span style="color:#666">31090</span> oracle                   <span style="color:#666">=</span> <span style="color:#666">34359738368</span><span style="color:#666">/</span><span style="color:#666">1073741824</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31</span><span><span style="color:#666">31090</span> oracle                   <span style="color:#666">=</span> <span style="color:#666">32</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">32</span><span><span style="color:#666">31090</span> oracle         subpools  <span style="color:#666">=</span> <span style="color:#00a000">min</span>(cpu_cap, mem_cap, max)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">33</span><span><span style="color:#666">31090</span> oracle                   <span style="color:#666">=</span> <span style="color:#00a000">min</span>(<span style="color:#666">32</span>, <span style="color:#666">32</span>, <span style="color:#666">31</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">34</span><span><span style="color:#666">31090</span> oracle                   <span style="color:#666">=</span> <span style="color:#666">31</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">35</span><span><span style="color:#666">31090</span> oracle    <span style="color:#666">&lt;-</span> <span style="color:#a0a000">ksmcpoolsdxchk</span>: <span style="color:#666">0x1f</span> (<span style="color:#666">31</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">36</span><span><span style="color:#666">31090</span> oracle <span style="color:#666">&lt;-</span> <span style="color:#a0a000">ksmcspsdxchk</span>: <span style="color:#666">0x0</span> (<span style="color:#666">0</span>)</span></span></code></pre></div>
+<figcaption>Listing 2: Tracing parameter callback and helper functions using bpftrace</figcaption>
+</figure>
+<p>The example output shows the function call flow executed by the callback function <code>ksmcspsdxchk</code> in Oracle 26ai when computing the number of subpools for the shared pool.</p>
+<ul>
+<li>line 8: the callback function <code>ksmcspsdxchk</code> calls the helper function <code>ksmcpoolsdxchk</code> with arguments <code>0x7fde6ccc9578</code>, <code>25</code>, <code>320</code>, and <code>31</code></li>
+<li>lines 9 - 11: this is essentially a more detailed description of the function arguments.</li>
+<li>lines 12 - 13: the helper function calls <code>ksmg_estimate_nonimc_sga_size</code> to determine the SGA size; as the name suggests, it returns the SGA size excluding the IMC component and returns <code>51539607552</code> bytes (48G) in this case.</li>
+<li>lines 14 - 16: the helper function calls <code>kspgzp</code>, which checks if the parameter with number 320 (<code>shared_pool_size</code>) is set in the spfile; in this case it is set to 32G, so <code>kspgzp</code> returns the value <code>34359738368</code>.</li>
+<li>lines 17 - 18: the helper function calls <code>ksb_cpu_eff_thread_count_compute</code> to return the number of CPUs on this instance, which is 128.</li>
+<li>lines 19 - 34: the tracing script was called with the <code>verbose</code> option and therefore prints a step-by-step walkthrough of how Oracle computes the number of subpools in the shared pool. In this case, the cpu cap and the memory cap both exceed the maximum possible number of subpools, which is why Oracle caps the value at 31.</li>
+<li>line 35: the helper function returns the value <code>31</code>, indicating that 31 shared pool subpools should be created.</li>
+</ul>
+<p>Note that the script shows similar outputs and computations for the large pool, streams pool, and NUMA pool (not shown in the excerpt above; the study of these is left as an exercise for the reader).</p>
+<p>After instance startup completes, we can take a shared pool heap dump (level 2) to verify if there are indeed 31 subpools:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>SQL&gt; connect / as sysdba
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL&gt; oradebug setmypid
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL&gt; oradebug unlimit
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL&gt; oradebug dump heapdump 2
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL&gt; oradebug tracfile_name</span></span></code></pre></div>
+<figcaption>Listing 3: Generating a shared pool heap dump (level 2)</figcaption>
+</figure>
+<p>The shared pool heapdump shows the following:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span>HEAP DUMP heap name=&#34;sga heap&#34;  desc=0x701f3e68
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span> extent sz=0xfe0 alt=352 het=32767 rec=9 flg=0x82 opc=0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span> parent=(nil) owner=(nil) nex=(nil) xsz=0x0 heap=(nil) lru=(nil)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span> fl2=0x64, fl3=0x400, nex=(nil), idx=0, dur=-1, lidx=0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span> pdb id=1, src pdb id=1
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span> ds for index  1: 0x701f5c88 0x701f74e0            0x701fa590   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span> ds for index  2: 0x7020a270 0x7020bac8            0x7020eb78   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span> ds for index  3: 0x7021e858 0x702200b0            0x70223160   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span> ds for index  4: 0x70232e40 0x70234698            0x70237748   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span> ds for index  5: 0x70247428 0x70248c80            0x7024bd30   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span> ds for index  6: 0x7025ba10 0x7025d268            0x70260318   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span> ds for index  7: 0x7026fff8 0x70271850            0x70274900   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span> ds for index  8: 0x702845e0 0x70285e38            0x70288ee8   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span> ds for index  9: 0x70298bc8 0x7029a420            0x7029d4d0   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span> ds for index 10: 0x702ad1b0 0x702aea08            0x702b1ab8   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span> ds for index 11: 0x702c1798 0x702c2ff0            0x702c60a0   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span><span> ds for index 12: 0x702d5d80 0x702d75d8            0x702da688   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span><span> ds for index 13: 0x702ea368 0x702ebbc0            0x702eec70   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span><span> ds for index 14: 0x702fe950 0x703001a8            0x70303258   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20</span><span> ds for index 15: 0x70312f38 0x70314790            0x70317840   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21</span><span> ds for index 16: 0x70327520 0x70328d78            0x7032be28   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22</span><span> ds for index 17: 0x7033bb08 0x7033d360            0x70340410   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23</span><span> ds for index 18: 0x703500f0 0x70351948            0x703549f8   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24</span><span> ds for index 19: 0x703646d8 0x70365f30            0x70368fe0   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25</span><span> ds for index 20: 0x70378cc0 0x7037a518            0x7037d5c8   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26</span><span> ds for index 21: 0x7038d2a8 0x7038eb00            0x70391bb0   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27</span><span> ds for index 22: 0x703a1890 0x703a30e8            0x703a6198   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28</span><span> ds for index 23: 0x703b5e78 0x703b76d0            0x703ba780   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29</span><span> ds for index 24: 0x703ca460 0x703cbcb8            0x703ced68   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30</span><span> ds for index 25: 0x703dea48 0x703e02a0            0x703e3350   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31</span><span> ds for index 26: 0x703f3030 0x703f4888            0x703f7938   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">32</span><span> ds for index 27: 0x70407618 0x70408e70            0x7040bf20   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">33</span><span> ds for index 28: 0x7041bc00 0x7041d458            0x70420508   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">34</span><span> ds for index 29: 0x704301e8 0x70431a40            0x70434af0   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">35</span><span> ds for index 30: 0x704447d0 0x70446028            0x704490d8   rsv cnt 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">36</span><span> ds for index 31: 0x70458db8 0x7045a610            0x7045d6c0   rsv cnt 0</span></span></code></pre></div>
+<figcaption>Listing 4: Shared pool heap dump - section "sga heap"</figcaption>
+</figure>
+<p>The section starting with <code>heap name=&quot;sga heap&quot;</code> in the excerpt above provides a summary of all 31 shared pool subpools on lines 6 - 36, with one line per subpool. Each line begins with <code>ds for index n</code> (where n is the descriptor index 1 - 31), meaning each descriptor index entry corresponds to a subpool.</p>
+<p>In Oracle 26ai, each subpool contains three durations, so each descriptor index entry lists three memory addresses corresponding to the duration descriptors within that subpool. The gap between the second and third address indicates that a duration three is not present (technically, this corresponds to duration number 2, as Oracle uses zero-based numbering for durations, as we&rsquo;ll see shortly).</p>
+<p>Shared pool durations are identified by a number pair (<code>s</code>, <code>d</code>), where <code>s</code> denotes the subpool and <code>d</code> the duration. Note that there is no duration number 2 in Oracle 26ai. Thus, the durations in subpool 1 correspond to <code>(1,0)</code>, <code>(1,1)</code>, and <code>(1,3)</code>; the durations in subpool 2 to <code>(2,0)</code>, <code>(2,1)</code>, and <code>(2,3)</code>, and so on.</p>
+<p>To illustrate this, the section <code>heap name=&quot;sga heap(1,0)&quot;</code> in the excerpt below corresponds to duration 0 in subpool 1. The descriptor address <code>0x701f5c88</code> on line 1 matches the first entry listed under <code>ds for index 1</code> in Listing 4 above. Similarly, the duration can also be identified from the <code>idx=1</code> and <code>dur=0</code> entries on line 4:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span>HEAP DUMP heap name=&#34;sga heap(1,0)&#34;  desc=0x701f5c88
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span> extent sz=0xfe0 alt=352 het=32767 rec=9 flg=0x82 opc=0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span> parent=(nil) owner=(nil) nex=(nil) xsz=0x4000000 heap=(nil) lru=0x701fd640
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span> fl2=0x24, fl3=0x400, nex=(nil), idx=1, dur=0, lidx=8, dsxvers=1, dsxflg=0x0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span> dsx first ext=0x610000000
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span> dsx empty ext bytes=0  subheap rc link=0x6100000e8,0x6100000e8
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span> dsx heap size=67108744, dsx heap depth=0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span> pdb id=1, src pdb id=1
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span> latch set 1 of 31  lidx 8
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span> durations enabled for this heap
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span> reserved granules across heaps 267 (granule size 67108864)</span></span></code></pre></div>
+<figcaption>Listing 5: Shared pool heap dump - section "sga heap(1,0)"</figcaption>
+</figure>
+<p>The aim of this post is not to go into all the gory details of Oracle heap dumps, so we will conclude the investigation at this point. Just one last note before closing: the last line in the excerpt above shows that Oracle is using a granule size of 64 MB (as indicated by <code>granule size 67108864</code>). This is another change introduced in Oracle 26ai, as the granule size for this SGA size (48G) would have been 128M in Oracle 19c. I’ll cover this detail in a future post.</p>
+<h2 id="references">References</h2>
+<p>[1] <a id="source1"></a><a href="https://tanelpoder.com/2009/06/04/ora-04031-errors-and-monitoring-shared-pool-subpool-memory-utilization-with-sgastatxsql/">Tanel Poder, ORA-04031 errors and monitoring shared pool subpool memory utilization with sgastatx.sql, 2009-06-04</a><br>
+[2]  <a id="source3"></a><a href="https://www.soocs.de/public/talk/161115_DOAG2016_Hacking_Oracles_Memory_About_Internals_Troubleshooting_PDF.pdf">Stefan Koehler, Hacking Oracle&rsquo;s Memory - About Internals &amp; Troubleshooting, DOAG Conference Paper, November 15-16, 2016</a><br>
+[3] <a id="source3"></a><a href="https://www.amazon.com/Oracle-Core-Essential-Internals-Developers/dp/1430239549">Jonathan Lewis, Chapter 5: Caches and Copies, Oracle Core: Essential Internals for DBAs and Developers, Apress, 2011</a><br>
+[4] <a id="source4"></a><a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=11098179">My Oracle Support, Bug 34010877 - ORA-4031 on streams pool area with multiple subpools, KI41000, 2025-12-15</a><br>
+[5] <a id="source5"></a><a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=455179">My Oracle Support, How to Determine the Default Number of Subpools Allocated During Startup, KB141686, 2025-11-30</a><br>
+[6] <a id="source6"></a><a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=2225248">My Oracle Support, 12.1: The Default Calculation Of Shared Pool Subpools Is Vulnerable Leading To ORA-4031, KB134758, 2025-11-28</a><br>
+[7] <a id="source7"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/ksmc_pool_sdx_chk.bt">Christoph Lutz, oracle GitHub Repository, Script ksmc_pool_sdx_chk.bt</a></p>
+
+</main>
+
+  <footer>
+  
+  <hr/>
+  © <a href="https://www.0xChris.dev">Christoph Lutz</a> 2025 &ndash; 2026
+  
+  <hr/>
+  <script src="https://giscus.app/client.js"
+            data-repo="Christoph-Lutz/0xChris-Comments"
+            data-repo-id="R_kgDOQo-jcg"
+            data-category="Comments"
+            data-category-id="DIC_kwDOQo-jcs4Cz0NV"
+            data-mapping="pathname"
+            data-strict="1"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="light"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+        </script>
+    <script id="partials/analytics.html" 
+  data-goatcounter="https://0xchris.goatcounter.com/count"
+  async src="//gc.zgo.at/count.js"></script>
+
+  </footer>
+  </body>
+</html>
+
