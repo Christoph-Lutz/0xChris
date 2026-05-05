@@ -105,78 +105,128 @@
 </div>
 
 <main>
-<p>Oracle’s SGA memory pools have undergone regular changes over the years and across different versions. Oracle 26ai is no exception and introduces another redesign of SGA memory pools, such as the shared pool.</p>
-<p>This first part of this post explains how Oracle 26ai changes the number of subpools and durations in various SGA memory pools compared to Oracle 19c, while the second part shows how to trace and observe them using low-level probes. For additional background information on this subject, refer to sources <a href="#source1">1</a>, <a href="#source2">2</a>, and <a href="#source3">3</a>.</p>
+<p>Oracle&rsquo;s SGA memory management has undergone regular changes over the years and across different versions. Oracle 26ai is no exception and introduces another redesign of how SGA memory pools, such as the shared pool, are split into subpools and durations.</p>
+<p>Historically, Oracle began splitting the shared pool into multiple subpools in version 9i and extended this approach in 10gR2 by further subdividing each of these subpools into smaller units called durations (you can also think of a duration as a &ldquo;sub-subpool&rdquo;).</p>
+<p>The main reasons for dividing the shared pool into subpools and durations are to improve scalability by reducing latch contention in the shared pool through multiple subpools (each subpool is protected by its own shared pool latch), and to reduce memory fragmentation (and thus ORA-4031 errors) by grouping memory allocations with similar characteristics into durations.</p>
+<p>While the maximum number of shared pool subpools has remained fairly stable, the number of durations per subpool has varied across different versions.</p>
+<p>The following diagrams summarize the changes across different Oracle versions and provide a first hint of what has changed in Oracle 26ai (click to enlarge):</p>
+<div class="image-row">  
+<figure>  
+<a href="/images/Shared-Pool-Oracle-8.png" target="_blank">  
+<img src="/images/Shared-Pool-Oracle-8.png" alt="Oracle <9i">  
+</a>  
+<figcaption style="text-align: center;">Figure 1: Oracle <9i</figcaption>  
+</figure>  
+<figure>  
+<a href="/images/Shared-Pool-Oracle-9i.png" target="_blank">  
+<img src="/images/Shared-Pool-Oracle-9i.png" alt="Oracle 9i">  
+</a>  
+<figcaption style="text-align: center;">Figure 2: Oracle 9i</figcaption>  
+</figure>  
+<figure>  
+<a href="/images/Shared-Pool-Oracle-10gR2.png" target="_blank">  
+<img src="/images/Shared-Pool-Oracle-10gR2.png" alt="Oracle 10gR2">  
+</a>  
+<figcaption style="text-align: center;">Figure 3: Oracle 10gR2</figcaption>  
+</figure>  
+<figure>  
+<a href="/images/Shared-Pool-Oracle-12c.png" target="_blank">  
+<img src="/images/Shared-Pool-Oracle-12c.png" alt="Oracle 12c">  
+</a>  
+<figcaption style="text-align: center;">Figure 4: Oracle 12c</figcaption>  
+</figure>  
+<figure>  
+<a href="/images/Shared-Pool-Oracle-26ai.png" target="_blank">  
+<img src="/images/Shared-Pool-Oracle-26ai.png" alt="Oracle 26ai">  
+</a>  
+<figcaption style="text-align: center;">Figure 5: Oracle 26ai</figcaption>  
+</figure>  
+</div>
+<p>Compared to earlier versions, Oracle 26ai changes the number of durations per subpool and supports a significantly larger number of subpools, depending on system configuration. Moreover, Oracle 26ai extends the concept of subpools to other SGA memory pools, such as the large pool, streams pool, and NUMA pool.</p>
+<p>If you are interested in more details on this subject, refer to sources <a href="#source1">1</a>, <a href="#source2">2</a>, and <a href="#source3">3</a> for additional background information. This post focuses on the changes in subpools and durations in Oracle 26ai, including the internal formulas used to determine their number. It also shows how to trace and observe this behavior using low-level probes.</p>
 <p>All investigations described in this post were carried out on Oracle versions 23.26.0.0 and 23.26.1.0.</p>
 <h2 id="subpools-and-durations-in-oracle-26ai">Subpools and Durations in Oracle 26ai</h2>
 <p>Oracle 26ai introduces the following changes to subpools and durations:</p>
 <ul>
-<li>The shared pool can be divided into 31 subpools (in Oracle 19c, the limit was 7 subpools).</li>
+<li>The shared pool can be divided into a maximum of 31 subpools (in Oracle 19c, the limit was 7 subpools).</li>
 <li>The large pool, streams pool and NUMA pool can also be divided into subpools (in Oracle 19c, this was only possible for the shared pool).</li>
-<li>The number of subpools in the shared pool, large pool, streams pool, and NUMA pool can be configured via underscore parameters (in Oracle 19c, this was only possible for the shared pool via <code>_kghdsidx</code>).</li>
-<li>There are now 3 durations per shared pool subpool (in Oracle 19c there were only 2).</li>
+<li>The number of subpools in the shared pool, large pool, streams pool, and NUMA pool can be configured via underscore parameters (in Oracle 19c, this was only possible for the shared pool via <code>_kghdsidx_count</code>).</li>
+<li>There are now 3 durations per shared pool subpool (in Oracle 19c there were only 2 durations).</li>
 <li>The streams pool can also be divided into multiple subpools if <code>_enable_streams_pool_subpools=true</code> (default is <code>false</code>). This functionality was backported to 19.16 in fix 34010877, where it can be enabled by setting <code>_bug34010877_enable_streams_pool_subpools=true</code> (see also source <a href="#source4">4</a>).</li>
 </ul>
-<p>Table 1 provides an overview of the new underscore parameters and their associated internal callback functions that Oracle invokes at instance startup. These callback functions compute the number of subpools and initialize the corresponding underscore parameters with their default values when automatic memory management is enabled (that is, when either <code>sga_target</code> or <code>memory_target</code> is set). In addition, the primary factors influencing how Oracle determines the number of subpools are <code>cpu_count</code> and the SGA size; the detailed mechanics and formulas are discussed later.</p>
-<p>Note that the number of durations per subpool is hard-coded and cannot be configured via underscore parameters. Moreover, each subpool is protected by a separate shared pool latch. Since Oracle 26ai can use a higher total number of subpools, this also explains why it may have more shared pool latches than earlier versions</p>
+<p>Table 1 provides an overview of the new underscore parameters and their associated internal callback functions. The callback functions are invoked at instance startup time to determine the number of subpools per pool and initialize the corresponding underscore parameters with their default values:</p>
 <table>  
 <thead>  
 <tr>  
 <th>Pool<br></th>  
-<th>Max Subpools<br></th>  
-<th>Durations<br>per Subpool</th>  
-<th>Parameter<br>(Callback Function)</th>
+<th>Parameter<br></th>
+<th>Callback Function</th>
+<th>Max Subpools Limit</th>  
+<th>Durations</th>  
 </tr>  
 </thead>  
 <tbody>  
 <tr>  
-<td>Shared Pool<br></td>  
+<td>Shared Pool</td>  
+<td>_kghdsidx_sp_count</td>
+<td>ksmcspsdxchk</td>
 <td>31<br></td>  
 <td>3<br></td>
-<td>_kghdsidx_sp_count<br>(ksmcspsdxchk)</td>
 </tr>  
 <tr>
 <td>Large Pool<br></td>
+<td>_kghdsidx_lp_count</td>
+<td>ksmclpsdxchk</td>
 <td>7<br></td>
-<td>None<br></td>
-<td>_kghdsidx_lp_count<br>(ksmclpsdxchk)</td>
+<td>Disabled</td>
 </tr>
 <tr>
-<td>Streams Pool<br></td>
-<td>1 by default<br>(7 if <code>_enable_streams_pool_subpools=true</code>)</td>
-<td>2<br></td>
-<td>_kghdsidx_streams_count<br>(ksmcstrsdxch)</td>
+<td>Streams Pool</td>
+<td>_kghdsidx_streams_count</td>
+<td>ksmcstrsdxchk</td>
+<td>1 by default<br>(7 if enabled by underscore<br>parameter)</td>
+<td>2</td>
 </tr>
 <tr>
-<td>NUMA pool<br></td>
-<td>8<br></td>
-<td>None<br></td>
-<td>_kghdsidx_numa_count<br>(ksmcnumasdxchk)</td>
+<td>NUMA Pool</td>
+<td>_kghdsidx_numa_count</td>
+<td>ksmcnumasdxchk</td>
+<td>8</td>
+<td>Disabled<br></td>
 </tr>
 </tbody>
-<caption>Table 1: Number of subpools and durations in Oracle 26ai</caption>  
+<caption>Table 1: Underscore parameters and callback functions determining the number of subpools in Oracle 26ai</caption>  
 </table>
 <p>The underscore parameters and callback functions have rather cryptic names and, as with many internal Oracle constructs, follow a naming logic that is not publicly disclosed, but which I assume, reflects the following mnemonic scheme:</p>
 <ul>
 <li>kghdsidx: Kernel Generic Heap Descriptor Index(es)</li>
 <li>ksmc&lt;pool&gt;sdxchk: Kernel Service Memory Create &lt;pool&gt; Subpools Descriptor indeX Check, where pool identifies the target memory pool: sp = shared pool, lp = large pool, str = streams pool, numa = NUMA pool</li>
 </ul>
+<p>Note that the number of durations per subpool is hard-coded and cannot be configured via underscore parameters. Moreover, durations are only enabled when automatic memory management is used, i.e. when either <code>sga_target</code>, <code>memory_target</code>, or <code>memory_size</code> is set. If none of these parameters is set and manual memory management is used instead, Oracle disables durations. In that case, you may still end up with multiple subpools, but they are no longer subdivided into durations.</p>
+<p>An additional aspect is that each subpool is protected by a separate shared pool latch. Since Oracle 26ai can use a higher total number of subpools, this explains why it may have more shared pool latches than earlier versions.</p>
 <blockquote class="note">
 📝 <strong>Java Pool</strong><br><br>
-Unlike the other pools, Oracle 26ai introduces no new underscore parameter for the java pool. While I have not investigated this further, the parameter descriptions (see `<code>x$ksppi.ksppdesc</code>`) suggest that the shared pool latches used for the shared pool and large pool are also shared with the java pool. However, I am not aware of any structural changes in the java pool in Oracle 26ai compared to earlier releases.
+Unlike the other pools, Oracle 26ai introduces no new underscore parameter for the java pool. While I have not investigated this further, the parameter descriptions (see <code>x$ksppi.ksppdesc</code>) suggest that the shared pool latches used for the shared pool and large pool are also shared with the java pool. However, I am not aware of any structural changes in the java pool in Oracle 26ai compared to earlier releases.
 </blockquote>
-<p>Unless explicitly overridden by the underscore parameters listed in Table 1, Oracle uses a default sizing formula to derive the number of subpools in each pool. This value is determined as the minimum of three constraints: a CPU cap, a memory cap, and the pool-specific maximum limit, as shown in Table 1 (column &ldquo;Max Subpools&rdquo;):</p>
+<p>Unless explicitly overridden by the underscore parameters listed in Table 1, Oracle uses a default sizing formula to derive the number of subpools in each pool. This value is determined as the minimum of three constraints: a CPU cap, a memory cap, and the pool-specific maximum limit (as shown in Table 1, column &ldquo;Max Subpools Limit&rdquo;):</p>
 <figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>subpools = min(cpu_cap, mem_cap, max_subpools_limit)</span></span></code></pre></div>
 <figcaption>Formula 1: Calculating the number of subpools per pool</figcaption>
 </figure>
-<p>The CPU cap is defined as follows (this is the same formula provided in My Oracle Support note <a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=45517">KB141686</a>; see also source <a href="#source5">5</a>):</p>
+<p>The CPU cap is defined as follows. It scales the number of subpools upward by approximately one for every four CPUs. This is the same formula provided in My Oracle Support note <a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=45517">KB141686</a> (see also source <a href="#source5">5</a>):</p>
 <figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>cpu_cap = (cpu_count - 1)/4 + 1</span></span></code></pre></div>
 <figcaption>Formula 2: Calculating the CPU cap</figcaption>
 </figure>
-<p>The memory cap depends on whether or not explicit pool size settings have been specified in the spfile. If no pool size is specified, Oracle computes a pool-specific minimum size for each pool derived from the SGA size; if a pool size is specified, Oracle uses it, provided that it exceeds the pool-specific minimum size.</p>
-<p>In other words, the pool size used for the memory cap is determined as the maximum of either the calculated default pool size or the pool size explicitly specified in the spfile:</p>
+<p>The memory cap depends on whether manual or automatic memory management is used. With manual memory management, Oracle simply uses the pool sizes specified in the spfile to compute the memory cap (i.e. <code>shared_pool_size</code>, <code>large_pool_size</code>, <code>streams_pool_size</code>).</p>
+<p>With automatic memory management, Oracle computes a default size for each pool derived from the total SGA size. If explicit minimum pool size settings are specified in the spfile, they are compared against the computed default size and only applied if they exceed it. The pool-specific default sizes are:</p>
+<ul>
+<li>Shared pool: 25% of the SGA size</li>
+<li>Large pool: 20% of the SGA size</li>
+<li>Streams pool: 10% of the SGA size</li>
+<li>NUMA pool: 15% of the SGA size</li>
+</ul>
+<p>Either way, the memory cap for each pool is determined as the maximum of the pool-specific default size and the pool size specified in the spfile (under manual memory management, the pool-specific default size is assumed to be 0, so the setting in the spfile is always used):</p>
 <figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>Shared Pool:
 </span></span><span style="display:flex;"><span>pool_sz = max(sga_sz_nonimc * 25/100, shared_pool_size_from_spfile)
@@ -191,7 +241,7 @@ Unlike the other pools, Oracle 26ai introduces no new underscore parameter for t
 </span></span><span style="display:flex;"><span>pool_sz = max(sga_sz_nonimc * 15/100, shared_pool_size_from_spfile)</span></span></code></pre></div>
 <figcaption>Formula 3: Calculating the minimum pool size for the memory cap</figcaption>
 </figure>
-<p>A few things worth noting: The SGA size used in the minimum pool size computation does not include the size of the in-memory column store (IMC). Moreover, the pool-specific minimum sizes are internal, hard-coded percentages that are passed as arguments to the parameter callback functions listed in Table 1, meaning they cannot be changed or configured. Finally, unlike the other pools, the size of the NUMA pool is not controlled by a &ldquo;pool_size&rdquo; parameter, but is instead derived from the <code>shared_pool_size</code> parameter.</p>
+<p>A few things are worth noting: The SGA size used in the default pool size computation does not include the size of the in-memory column store (IMC). Moreover, the pool-specific default sizes are internal, hard-coded percentages that are passed as arguments to the parameter callback functions listed in Table 1, meaning they cannot be changed or overridden. Finally, unlike the other pools, the size of the NUMA pool is not controlled by a &ldquo;pool_size&rdquo; parameter but is instead derived from the <code>shared_pool_size</code> parameter.</p>
 <p>Ultimately, the memory cap is computed by normalizing the pool size into gigabytes (2^30 bytes):</p>
 <figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>mem_cap = pool_sz/2^30</span></span></code></pre></div>
@@ -200,12 +250,14 @@ Unlike the other pools, Oracle 26ai introduces no new underscore parameter for t
 <p>To illustrate this, let&rsquo;s work through an example showing how Oracle computes the number of shared pool subpools in Oracle 26ai based on the following system configuration:</p>
 <ul>
 <li>cpu_count = 30</li>
-<li>sga_target = 140G</li>
-<li>shared_pool_size = 28G (explicitly specified in spfile)</li>
+<li>sga_target = 140G (150323855360 bytes)</li>
+<li>shared_pool_size = 28G (30064771072 bytes) explicitly specified in spfile</li>
 <li>No in-memory column store configured</li>
 </ul>
 <figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>cpu_cap = (cpu_count - 1)/4 + 1 = 
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>max     = 31
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>cpu_cap = (cpu_count - 1)/4 + 1 = 
 </span></span><span style="display:flex;"><span>          (30 - 1)/4 + 1 = 
 </span></span><span style="display:flex;"><span>          29/4 + 1 = 8
 </span></span><span style="display:flex;"><span>
@@ -218,7 +270,7 @@ Unlike the other pools, Oracle 26ai introduces no new underscore parameter for t
 </span></span><span style="display:flex;"><span>          37580963840/2^30 =
 </span></span><span style="display:flex;"><span>          37580963840/1073741824 = 35
 </span></span><span style="display:flex;"><span>          
-</span></span><span style="display:flex;"><span>subpools = min(cpu_cap, mem_cap, 31) = 
+</span></span><span style="display:flex;"><span>subpools = min(cpu_cap, mem_cap, max) = 
 </span></span><span style="display:flex;"><span>           min(8, 35, 31) = 
 </span></span><span style="display:flex;"><span>           8</span></span></code></pre></div>
 <figcaption>Example 1: Determining the number of shared pool subpools in Oracle 26ai</figcaption>
@@ -226,11 +278,11 @@ Unlike the other pools, Oracle 26ai introduces no new underscore parameter for t
 <p>With this system configuration, Oracle 26ai creates 8 shared pool subpools, whereas Oracle 19c capped this at 7, as this was the limit imposed by the undocumented parameter <code>_kghdsidx_count</code> in Oracle 19c.</p>
 <blockquote class="note">
 📝 <strong>Parameter _kghdsidx_count</strong><br><br>
-The underscore parameter `_kghdsidx_count` still exists in Oracle 26ai and is backed by the callback function <code>ksmcsdxchk</code>. However, in Oracle 26ai this function appears to be a placeholder that simply returns the value 1. 
-<p>Interestingly, the <code>_kghdsidx_count</code> parameter can still be used in Oracle 26ai and, when set, it divides the shared pool into the specified number of subpools, with the same upper limit of 7 as in Oracle 19c. However, it does not change the number of durations per shared pool subpool (which remains three), nor does it affect the number of subpools in the other memory pools.</p>
+The underscore parameter <code>_kghdsidx_count</code> still exists in Oracle 26ai and is backed by the callback function <code>ksmcsdxchk</code>. In Oracle 26ai, however, this function appears to act as a placeholder and simply returns the value 1.
+<p>Interestingly, the <code>_kghdsidx_count</code> parameter can still be used in Oracle 26ai and, when set, it divides the shared pool into the specified number of subpools, with the same upper limit of 7 as in Oracle 19c. However, it does not change the number of durations per shared pool subpool (which remains three in Oracle 26ai), nor does it affect the number of subpools in the other memory pools.</p>
 <p>I suspect the <code>_kghdsidx_count</code> parameter remains for backward compatibility, but I have not investigated its purpose and behavior further in Oracle 26ai.</p>
 </blockquote>
-<p>What are the advantages and disadvantages of a higher number of subpools in Oracle 26ai compared to earlier versions? Generally speaking, a higher number of subpools improves concurrency, as contention for shared pool latches can be distributed across multiple subpools. The drawback, however, is that a higher number of subpools results in smaller average subpool sizes, assuming equally sized subpools. Furthermore, non-uniform subpool sizes may lead to memory allocation and free space imbalances across subpools. Both scenarios can increase memory pressure on individual subpools, potentially triggering expensive memory resize operations during which Oracle reallocates granules from the buffer cache to the shared pool as part of automatic SGA resizing. Such operations can temporarily stall a busy system. Additionally, smaller or imbalanced subpools may also lead to ORA-4031 errors.</p>
+<p>What are the advantages and disadvantages of a higher number of subpools in Oracle 26ai compared to earlier versions? Generally speaking, a higher number of subpools improves concurrency, as contention for shared pool latches can be distributed across multiple subpools. The drawback, however, is that increasing the number of subpools can raise the risk of memory pressure, fragmentation, and imbalances at the individual subpool level. These conditions can trigger expensive memory resize operations, during which Oracle reallocates granules from the buffer cache to the shared pool as part of automatic SGA resizing, potentially stalling a busy system. In other scenarios, such conditions may result in memory allocation failures and ORA-4031 errors.</p>
 <h2 id="tracing-how-oracle-26ai-determines-the-number-of-subpools">Tracing How Oracle 26ai Determines the Number of Subpools</h2>
 <p>In Oracle 26ai, the new underscore parameters that determine the number of subpools in the shared pool, large pool, streams pool, and NUMA pool are backed by the callback functions listed in Table 1, which are invoked when an Oracle instance starts.</p>
 <p>The callback functions are essentially just small wrapper functions that delegate the computation to the common helper function <code>ksmcpoolsdxchk</code> (Kernel Service Memory Create Pool Subpool Descriptor Index Check), which has the following signature:</p>
@@ -245,7 +297,7 @@ The underscore parameter `_kghdsidx_count` still exists in Oracle 26ai and is ba
 <li><code>pool_prm_idx</code>: spfile pool_size parameter used to determine whether a minimum pool size is defined; it is specified as an index into the parameter table, corresponding to <code>x$ksppi.indx - 1</code> (Oracle 26ai maps pools to pool_size parameters as follows: shared pool → <code>shared_pool_size</code>, large pool → <code>large_pool_size</code>, streams pool → <code>streams_pool_size</code>, and NUMA pool → <code>shared_pool_size</code>).</li>
 <li><code>max_subpools</code>: the maximum possible number of subpools.</li>
 </ul>
-<p>Based on this, we can use uprobes to instrument the <code>ksmcpoolsdxchk</code> helper function and print its argument values at runtime during instance startup. This allows us to closely observe what Oracle is doing internally when deriving the number of subpools at instance startup. The bpftrace script [ksmc_pool_sdx_chk.bt] (see source <a href="#source7">7</a>) demonstrates this and produces output like the following when run in verbose mode, which shows Oracle’s internal formulas step by step:</p>
+<p>Based on this, we can use uprobes to instrument the <code>ksmcpoolsdxchk</code> helper function and print its argument values at runtime during instance startup. This allows us to closely observe what Oracle is doing internally when deriving the number of subpools at instance startup. The bpftrace script [ksmc_pool_sdx_chk.bt] (see source <a href="#source7">7</a>) demonstrates this and, when run in verbose mode, produces output similar to the following, showing Oracle’s internal computations step by step:</p>
 <figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span><span style="color:#080">#~ ./ksmc_pool_sdx_chk.bt verbose
 </span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span><span style="color:#080"></span>
@@ -285,7 +337,14 @@ The underscore parameter `_kghdsidx_count` still exists in Oracle 26ai and is ba
 </span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">36</span><span><span style="color:#666">31090</span> oracle <span style="color:#666">&lt;-</span> <span style="color:#a0a000">ksmcspsdxchk</span>: <span style="color:#666">0x0</span> (<span style="color:#666">0</span>)</span></span></code></pre></div>
 <figcaption>Listing 2: Tracing parameter callback and helper functions using bpftrace</figcaption>
 </figure>
-<p>The example output shows the function call flow executed by the callback function <code>ksmcspsdxchk</code> in Oracle 26ai when computing the number of subpools for the shared pool.</p>
+<p>The output was generated on an Oracle 26ai system with the following configuration:</p>
+<ul>
+<li>cpu_count = 128</li>
+<li>sga_target = 48G (51539607552 bytes)</li>
+<li>shared_pool_size = 32G (34359738368 bytes) explicitly specified in spfile</li>
+<li>No in-memory column store configured</li>
+</ul>
+<p>It illustrates the function call flow executed by the callback function <code>ksmcspsdxchk</code> during the computation of the number of shared pool subpools. The following lines provide a detailed breakdown of the execution trace:</p>
 <ul>
 <li>line 8: the callback function <code>ksmcspsdxchk</code> calls the helper function <code>ksmcpoolsdxchk</code> with arguments <code>0x7fde6ccc9578</code>, <code>25</code>, <code>320</code>, and <code>31</code></li>
 <li>lines 9 - 11: this is essentially a more detailed description of the function arguments.</li>
@@ -351,7 +410,7 @@ The underscore parameter `_kghdsidx_count` still exists in Oracle 26ai and is ba
 </figure>
 <p>The section starting with <code>heap name=&quot;sga heap&quot;</code> in the excerpt above provides a summary of all 31 shared pool subpools on lines 6 - 36, with one line per subpool. Each line begins with <code>ds for index n</code> (where n is the descriptor index 1 - 31), meaning each descriptor index entry corresponds to a subpool.</p>
 <p>In Oracle 26ai, each subpool contains three durations, so each descriptor index entry lists three memory addresses corresponding to the duration descriptors within that subpool. The gap between the second and third address indicates that a duration three is not present (technically, this corresponds to duration number 2, as Oracle uses zero-based numbering for durations, as we&rsquo;ll see shortly).</p>
-<p>Shared pool durations are identified by a number pair (<code>s</code>, <code>d</code>), where <code>s</code> denotes the subpool and <code>d</code> the duration. Note that there is no duration number 2 in Oracle 26ai. Thus, the durations in subpool 1 correspond to <code>(1,0)</code>, <code>(1,1)</code>, and <code>(1,3)</code>; the durations in subpool 2 to <code>(2,0)</code>, <code>(2,1)</code>, and <code>(2,3)</code>, and so on.</p>
+<p>In heap dumps, shared pool durations are identified by a number pair (<code>s</code>, <code>d</code>), where <code>s</code> denotes the subpool and <code>d</code> the duration. Note that duration number 2 does not exist in Oracle 26ai. Thus, the durations in subpool 1 correspond to <code>(1,0)</code>, <code>(1,1)</code>, and <code>(1,3)</code>; the durations in subpool 2 to <code>(2,0)</code>, <code>(2,1)</code>, and <code>(2,3)</code>, and so on.</p>
 <p>To illustrate this, the section <code>heap name=&quot;sga heap(1,0)&quot;</code> in the excerpt below corresponds to duration 0 in subpool 1. The descriptor address <code>0x701f5c88</code> on line 1 matches the first entry listed under <code>ds for index 1</code> in Listing 4 above. Similarly, the duration can also be identified from the <code>idx=1</code> and <code>dur=0</code> entries on line 4:</p>
 <figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span>HEAP DUMP heap name=&#34;sga heap(1,0)&#34;  desc=0x701f5c88
@@ -369,13 +428,13 @@ The underscore parameter `_kghdsidx_count` still exists in Oracle 26ai and is ba
 </figure>
 <p>The aim of this post is not to go into all the gory details of Oracle heap dumps, so we will conclude the investigation at this point. Just one last note before closing: the last line in the excerpt above shows that Oracle is using a granule size of 64 MB (as indicated by <code>granule size 67108864</code>). This is another change introduced in Oracle 26ai, as the granule size for this SGA size (48G) would have been 128M in Oracle 19c. I’ll cover this detail in a future post.</p>
 <h2 id="references">References</h2>
-<p>[1] <a id="source1"></a><a href="https://tanelpoder.com/2009/06/04/ora-04031-errors-and-monitoring-shared-pool-subpool-memory-utilization-with-sgastatxsql/">Tanel Poder, ORA-04031 errors and monitoring shared pool subpool memory utilization with sgastatx.sql, 2009-06-04</a><br>
-[2]  <a id="source3"></a><a href="https://www.soocs.de/public/talk/161115_DOAG2016_Hacking_Oracles_Memory_About_Internals_Troubleshooting_PDF.pdf">Stefan Koehler, Hacking Oracle&rsquo;s Memory - About Internals &amp; Troubleshooting, DOAG Conference Paper, November 15-16, 2016</a><br>
-[3] <a id="source3"></a><a href="https://www.amazon.com/Oracle-Core-Essential-Internals-Developers/dp/1430239549">Jonathan Lewis, Chapter 5: Caches and Copies, Oracle Core: Essential Internals for DBAs and Developers, Apress, 2011</a><br>
+<p>[1] <a id="source1"></a><a href="https://www.soocs.de/public/talk/161115_DOAG2016_Hacking_Oracles_Memory_About_Internals_Troubleshooting_PDF.pdf">Stefan Koehler, Hacking Oracle&rsquo;s Memory - About Internals &amp; Troubleshooting, DOAG Conference Paper, November 15-16, 2016</a><br>
+[2]  <a id="source2"></a> <a href="https://www.amazon.com/Oracle-Core-Essential-Internals-Developers/dp/1430239549">Jonathan Lewis, Chapter 5: Caches and Copies, Oracle Core: Essential Internals for DBAs and Developers, Apress, 2011</a><br>
+[3] <a id="source3"></a><a href="https://tanelpoder.com/2009/06/04/ora-04031-errors-and-monitoring-shared-pool-subpool-memory-utilization-with-sgastatxsql/">Tanel Poder, ORA-04031 errors and monitoring shared pool subpool memory utilization with sgastatx.sql, 2009-06-04</a><br>
 [4] <a id="source4"></a><a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=11098179">My Oracle Support, Bug 34010877 - ORA-4031 on streams pool area with multiple subpools, KI41000, 2025-12-15</a><br>
 [5] <a id="source5"></a><a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=455179">My Oracle Support, How to Determine the Default Number of Subpools Allocated During Startup, KB141686, 2025-11-30</a><br>
 [6] <a id="source6"></a><a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=2225248">My Oracle Support, 12.1: The Default Calculation Of Shared Pool Subpools Is Vulnerable Leading To ORA-4031, KB134758, 2025-11-28</a><br>
-[7] <a id="source7"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/ksmc_pool_sdx_chk.bt">Christoph Lutz, oracle GitHub Repository, Script ksmc_pool_sdx_chk.bt</a></p>
+[7] <a id="source7"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/ksmc_pool_sdx_chk.bt">Christoph Lutz, oracle GitHub Repository, bpftrace Script ksmc_pool_sdx_chk.bt</a></p>
 
 </main>
 
