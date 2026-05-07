@@ -426,7 +426,7 @@ The underscore parameter <code>_kghdsidx_count</code> still exists in Oracle 26a
 </span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span> reserved granules across heaps 267 (granule size 67108864)</span></span></code></pre></div>
 <figcaption>Listing 5: Shared pool heap dump - section "sga heap(1,0)"</figcaption>
 </figure>
-<p>The aim of this post is not to go into all the gory details of Oracle heap dumps, so we will conclude the investigation at this point. Just one last note before closing: the last line in the excerpt above shows that Oracle is using a granule size of 64 MB (as indicated by <code>granule size 67108864</code>). This is another change introduced in Oracle 26ai, as the granule size for this SGA size (48G) would have been 128M in Oracle 19c. I’ll cover this detail in a future post.</p>
+<p>The aim of this post is not to go into all the gory details of Oracle heap dumps, so we will conclude the investigation at this point. Just one last note before closing: the last line in the excerpt above shows that Oracle is using a granule size of 64 MB (as indicated by <code>granule size 67108864</code>). This is another change introduced in Oracle 26ai, as the granule size for this SGA size (48G) would have been 128M in Oracle 19c. I’ll cover this detail in another <a href="https://www.0xchris.dev/posts/2026-05-07-sga-changes-in-oracle-26ai---maximum-granule-size/">post</a>.</p>
 <h2 id="references">References</h2>
 <p>[1] <a id="source1"></a><a href="https://www.soocs.de/public/talk/161115_DOAG2016_Hacking_Oracles_Memory_About_Internals_Troubleshooting_PDF.pdf">Stefan Koehler, Hacking Oracle&rsquo;s Memory - About Internals &amp; Troubleshooting, DOAG Conference Paper, November 15-16, 2016</a><br>
 [2]  <a id="source2"></a> <a href="https://www.amazon.com/Oracle-Core-Essential-Internals-Developers/dp/1430239549">Jonathan Lewis, Chapter 5: Caches and Copies, Oracle Core: Essential Internals for DBAs and Developers, Apress, 2011</a><br>
@@ -434,7 +434,8 @@ The underscore parameter <code>_kghdsidx_count</code> still exists in Oracle 26a
 [4] <a id="source4"></a><a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=11098179">My Oracle Support, Bug 34010877 - ORA-4031 on streams pool area with multiple subpools, KI41000, 2025-12-15</a><br>
 [5] <a id="source5"></a><a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=455179">My Oracle Support, How to Determine the Default Number of Subpools Allocated During Startup, KB141686, 2025-11-30</a><br>
 [6] <a id="source6"></a><a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=2225248">My Oracle Support, 12.1: The Default Calculation Of Shared Pool Subpools Is Vulnerable Leading To ORA-4031, KB134758, 2025-11-28</a><br>
-[7] <a id="source7"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/ksmc_pool_sdx_chk.bt">Christoph Lutz, oracle GitHub Repository, bpftrace Script ksmc_pool_sdx_chk.bt</a></p>
+[7] <a id="source7"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/ksmc_pool_sdx_chk.bt">Christoph Lutz, oracle GitHub Repository, bpftrace Script ksmc_pool_sdx_chk.bt</a><br>
+[8] <a id="source9"></a><a href="/posts/2026-05-07-sga-changes-in-oracle-26ai---maximum-granule-size/">Christoph Lutz, SGA Changes in Oracle 26ai - Maximum Granule Size, 2026-05-07</a></p>
 
 </main>
 

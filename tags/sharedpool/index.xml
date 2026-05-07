@@ -4,6 +4,13 @@
     <link>https://www.0xChris.dev/</link>
     <description>0xChris updates</description>
     <atom:link href="https://www.0xChris.dev/tags/sharedpool/" rel="self" type="application/rss+xml"/><item>
+      <title>Shared Pool Changes in Oracle 26ai - Maximum Granule Size</title>
+      <link>https://www.0xChris.dev/posts/2026-05-07-sga-changes-in-oracle-26ai---maximum-granule-size/</link>
+      <pubDate>Thu, 07 May 2026 00:00:00 UTC</pubDate>
+      <guid>https://www.0xChris.dev/posts/2026-05-07-sga-changes-in-oracle-26ai---maximum-granule-size/</guid>
+      <description>&lt;p&gt;All memory components in the Oracle SGA are internally managed in fixed-size units called granules. They were introduced back in Oracle 9i as a standardized allocation unit that enables an Oracle instance to dynamically grow and shrink memory pools such as the buffer cache and shared pool at runtime in response to workload demands.&lt;/p&gt;
+&lt;p&gt;Memory for each pool is always allocated in whole granule units, and each pool requires at least one granule. Some memory pools can be subdivided into subpools and durations, and each of these smaller units requires a minimum of one granule. This means that a high number of subpools, and durations results in a higher memory footprint on a system. For a more detailed introduction and description of SGA granules, refer to sources &lt;a href=&#34;#source1&#34;&gt;1&lt;/a&gt;, &lt;a href=&#34;#source2&#34;&gt;2&lt;/a&gt;, and &lt;a href=&#34;#source3&#34;&gt;3&lt;/a&gt;.&lt;/p&gt;</description>
+    </item><item>
       <title>SGA Changes in Oracle 26ai - Subpools and Durations</title>
       <link>https://www.0xChris.dev/posts/2026-05-01-sga-changes-in-oracle-26ai---subpools-and-durations/</link>
       <pubDate>Fri, 01 May 2026 00:00:00 UTC</pubDate>

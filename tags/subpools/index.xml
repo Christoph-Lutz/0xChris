@@ -1,0 +1,14 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>0xChris</title>
+    <link>https://www.0xChris.dev/</link>
+    <description>0xChris updates</description>
+    <atom:link href="https://www.0xChris.dev/tags/subpools/" rel="self" type="application/rss+xml"/><item>
+      <title>SGA Changes in Oracle 26ai - Subpools and Durations</title>
+      <link>https://www.0xChris.dev/posts/2026-05-01-sga-changes-in-oracle-26ai---subpools-and-durations/</link>
+      <pubDate>Fri, 01 May 2026 00:00:00 UTC</pubDate>
+      <guid>https://www.0xChris.dev/posts/2026-05-01-sga-changes-in-oracle-26ai---subpools-and-durations/</guid>
+      <description>&lt;p&gt;Oracle&amp;rsquo;s SGA memory management has undergone regular changes over the years and across different versions. Oracle 26ai is no exception and introduces another redesign of how SGA memory pools, such as the shared pool, are split into subpools and durations.&lt;/p&gt;
+&lt;p&gt;Historically, Oracle began splitting the shared pool into multiple subpools in version 9i and extended this approach in 10gR2 by further subdividing each of these subpools into smaller units called durations (you can also think of a duration as a &amp;ldquo;sub-subpool&amp;rdquo;).&lt;/p&gt;</description>
+    </item></channel>
+</rss>

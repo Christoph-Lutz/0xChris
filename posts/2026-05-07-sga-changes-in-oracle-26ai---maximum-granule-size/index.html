@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Shared Pool Changes in Oracle 26ai - Maximum Granule Size | 0xChris</title>
+
+    
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="/css/custom.css" />
+
+    
+    
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Shared Pool Changes in Oracle 26ai - Maximum Granule Size">
+  <meta name="twitter:description" content="Shared pool changes in Oracle 26ai - Maximum Granule Size">
+
+
+<meta property="og:title" content="Shared Pool Changes in Oracle 26ai - Maximum Granule Size">
+<meta property="og:description" content="Shared pool changes in Oracle 26ai - Maximum Granule Size">
+<meta property="og:url" content="https://www.0xChris.dev/posts/2026-05-07-sga-changes-in-oracle-26ai---maximum-granule-size/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="0xChris">
+
+
+
+<meta property="og:image" content="https://www.0xChris.dev/">
+
+
+  </head>
+
+  <body>
+    <nav>
+      <ul class="menu">
+        
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/posts/">Blog</a></li>
+        
+          <li><a href="/categories/">Categories</a></li>
+        
+          <li><a href="/tags/">Tags</a></li>
+        
+          <li><a href="/contact/">Contact</a></li>
+        
+          <li><a href="/index.xml">Subscribe</a></li>
+        
+
+        
+        
+          
+            <li class="icon">
+              <a href="https://github.com/Christoph-Lutz" aria-label="GitHub">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <title>GitHub</title>
+  <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" fill="currentColor"/>
+</svg>
+
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://x.com/chris_skyflier" aria-label="Twitter">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>X</title><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://bsky.app/profile/christophlutz.bsky.social" aria-label="Bluesky">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Bluesky</title><path d="M5.202 2.857C7.954 4.922 10.913 9.11 12 11.358c1.087-2.247 4.046-6.436 6.798-8.501C20.783 1.366 24 .213 24 3.883c0 .732-.42 6.156-.667 7.037-.856 3.061-3.978 3.842-6.755 3.37 4.854.826 6.089 3.562 3.422 6.299-5.065 5.196-7.28-1.304-7.847-2.97-.104-.305-.152-.448-.153-.327 0-.121-.05.022-.153.327-.568 1.666-2.782 8.166-7.847 2.97-2.667-2.737-1.432-5.473 3.422-6.3-2.777.473-5.899-.308-6.755-3.369C.42 10.04 0 4.615 0 3.883c0-3.67 3.217-2.517 5.202-1.026"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://sym42.org" aria-label="Sym42">
+                
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+  <path transform="scale(0.1004,0.1364) translate(11,1)" d="M0 0 C8.91 0 17.82 0 27 0 C27 32.01 27 64.02 27 97 C51.75 97 76.5 97 102 97 C102.33 118.78 102.66 140.56 103 163 C113.65023618 149.38741342 113.65023618 149.38741342 124 135.5625 C125.16793211 133.96872315 126.33590197 132.37497396 127.50390625 130.78125 C128.08156738 129.99105469 128.65922852 129.20085937 129.25439453 128.38671875 C132.14116363 124.43971809 135.0386119 120.50060445 137.9375 116.5625 C138.50952148 115.78430908 139.08154297 115.00611816 139.67089844 114.2043457 C143.34771065 109.21167043 147.06937462 104.25523259 150.81298828 99.3125 C170.98641999 74.34600723 170.98641999 74.34600723 177 44 C175.18481682 37.01549082 172.39314724 31.88945254 166.25390625 27.8515625 C158.52779633 23.46773353 150.43585329 23.37053009 141.8828125 25.125 C137.49428572 26.45701897 133.56042734 28.49182265 129.53125 30.66015625 C127 32 127 32 124 33 C124 23.76 124 14.52 124 5 C138.64493558 -0.63266753 138.64493558 -0.63266753 144.8828125 -0.62890625 C145.54860321 -0.63131821 146.21439392 -0.63373016 146.90036011 -0.63621521 C148.28308171 -0.63525162 149.66584937 -0.62222324 151.04833984 -0.59692383 C153.13124785 -0.56239643 155.20993568 -0.57639315 157.29296875 -0.59570312 C171.18361481 -0.58191047 181.8308422 3.34041929 192.00390625 12.87890625 C200.75379996 22.23354424 204.74719368 34.28009799 205.375 47 C204.41179837 64.52286038 196.17302926 80.08711875 186 94 C185.50757813 94.67724121 185.01515625 95.35448242 184.5078125 96.05224609 C180.97969681 100.89390965 177.41603046 105.70856193 173.84228516 110.51660156 C171.48040306 113.70041612 169.13374187 116.89527097 166.78710938 120.09033203 C159.52624187 129.97226581 152.18066843 139.78923387 144.81054688 149.58984375 C143.01140967 151.98481172 141.21597581 154.38250747 139.421875 156.78125 C138.8645166 157.52608643 138.3071582 158.27092285 137.73291016 159.03833008 C136.68515004 160.43879049 135.6379229 161.83964987 134.59130859 163.2409668 C131.11186653 167.88813347 131.11186653 167.88813347 130 169 C128.28134591 169.0935919 126.55884256 169.11744611 124.83764648 169.11352539 C123.73658066 169.11344986 122.63551483 169.11337433 121.50108337 169.11329651 C120.3031868 169.10813522 119.10529022 169.10297394 117.87109375 169.09765625 C116.65172623 169.0962413 115.4323587 169.09482635 114.17604065 169.09336853 C110.2631693 169.08774967 106.35035419 169.07519396 102.4375 169.0625 C99.79231853 169.05748743 97.14713617 169.0529241 94.50195312 169.04882812 C88.00126274 169.03862296 81.50069467 169.01905121 75 169 C75 154.15 75 139.3 75 124 C50.25 124 25.5 124 0 124 C0 83.08 0 42.16 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(155.8828125,0.37109375)" d="M0 0 C0.66579071 -0.00241196 1.33158142 -0.00482391 2.01754761 -0.00730896 C3.40026921 -0.00634537 4.78303687 0.00668301 6.16552734 0.03198242 C8.24843535 0.06650982 10.32712318 0.0525131 12.41015625 0.03320312 C26.30080231 0.04699578 36.9480297 3.96932554 47.12109375 13.5078125 C55.87098746 22.86245049 59.86438118 34.90900424 60.4921875 47.62890625 C59.52898587 65.15176663 51.29021676 80.716025 41.1171875 94.62890625 C40.62476563 95.30614746 40.13234375 95.98338867 39.625 96.68115234 C36.09688431 101.5228159 32.53321796 106.33746818 28.95947266 111.14550781 C26.59759056 114.32932237 24.25092937 117.52417722 21.90429688 120.71923828 C14.64342937 130.60117206 7.29785593 140.41814012 -0.07226562 150.21875 C-1.87140283 152.61371797 -3.66683669 155.01141372 -5.4609375 157.41015625 C-6.2969751 158.52741089 -6.2969751 158.52741089 -7.14990234 159.66723633 C-8.19766246 161.06769674 -9.2448896 162.46855612 -10.29150391 163.86987305 C-13.77094597 168.51703972 -13.77094597 168.51703972 -14.8828125 169.62890625 C-17.02840077 169.7166623 -19.17685671 169.73585844 -21.32421875 169.7265625 C-22.62939453 169.72333984 -23.93457031 169.72011719 -25.27929688 169.71679688 C-26.6679694 169.70844026 -28.05664127 169.6999753 -29.4453125 169.69140625 C-30.83788906 169.68639291 -32.23046731 169.68182972 -33.62304688 169.67773438 C-37.0430112 169.66590059 -40.46289094 169.64941505 -43.8828125 169.62890625 C-43.27097081 166.41918652 -42.20356776 164.38991326 -40.25 161.78515625 C-39.69892578 161.04394531 -39.14785156 160.30273438 -38.58007812 159.5390625 C-37.97873047 158.74371094 -37.37738281 157.94835937 -36.7578125 157.12890625 C-35.82098633 155.87400391 -35.82098633 155.87400391 -34.86523438 154.59375 C-32.87737817 151.93402615 -30.8807052 149.28109666 -28.8828125 146.62890625 C-27.62458729 144.95213253 -26.3667668 143.27505503 -25.109375 141.59765625 C-23.23806447 139.10192152 -21.36611031 136.60668841 -19.49169922 134.11328125 C-14.67303275 127.70001086 -9.90631899 121.24999876 -5.16113281 114.78222656 C-1.50429727 109.80538271 2.1987027 104.86635957 5.92797852 99.94360352 C26.10348636 74.9765367 26.10348636 74.9765367 32.1171875 44.62890625 C30.30200432 37.64439707 27.51033474 32.51835879 21.37109375 28.48046875 C13.64498383 24.09663978 5.55304079 23.99943634 -3 25.75390625 C-7.38852678 27.08592522 -11.32238516 29.1207289 -15.3515625 31.2890625 C-17.8828125 32.62890625 -17.8828125 32.62890625 -20.8828125 33.62890625 C-20.8828125 24.38890625 -20.8828125 15.14890625 -20.8828125 5.62890625 C-6.23787692 -0.00376128 -6.23787692 -0.00376128 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(171,143)" d="M0 0 C15.51 0 31.02 0 47 0 C47 8.91 47 17.82 47 27 C31.49 27 15.98 27 0 27 C0 18.09 0 9.18 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(135,6)" d="M0 0 C0.99 0.495 0.99 0.495 2 1 C1.67 8.92 1.34 16.84 1 25 C1.66 25 2.32 25 3 25 C2.67 25.99 2.34 26.98 2 28 C1.34 28 0.68 28 0 28 C0 18.76 0 9.52 0 0 Z"/>
+</svg>
+
+              </a>
+            </li>
+          
+        
+      </ul>
+      <hr/>
+    </nav>
+  </body>
+</html>
+<div class="article-meta">
+<h1><span class="title">Shared Pool Changes in Oracle 26ai - Maximum Granule Size</span></h1>
+
+<h2 class="date">2026/05/07</h2>
+</div>
+
+<main>
+<p>All memory components in the Oracle SGA are internally managed in fixed-size units called granules. They were introduced back in Oracle 9i as a standardized allocation unit that enables an Oracle instance to dynamically grow and shrink memory pools such as the buffer cache and shared pool at runtime in response to workload demands.</p>
+<p>Memory for each pool is always allocated in whole granule units, and each pool requires at least one granule. Some memory pools can be subdivided into subpools and durations, and each of these smaller units requires a minimum of one granule. This means that a high number of subpools, and durations results in a higher memory footprint on a system. For a more detailed introduction and description of SGA granules, refer to sources <a href="#source1">1</a>, <a href="#source2">2</a>, and <a href="#source3">3</a>.</p>
+<p>Historically, the granule size has varied with the Oracle version and total SGA size. It can also vary across platforms, but this post focuses on Oracle 26ai running on Linux, and compares its behavior to Oracle 19c where appropriate.</p>
+<p>My Oracle Support note <a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=947152">KB136956</a> (source <a href="#source4">4</a>) provides the following SGA-size-to-granule-size mapping, showing how the granule size changes across Oracle versions. In general, smaller SGAs use smaller granules, while larger SGAs are assigned larger granules.</p>
+<table>  
+<thead>  
+<tr>  
+<th>Version</th>  
+<th>SGA Size</th>  
+<th>Granule Size</th>  
+</tr>  
+</thead>  
+<tbody>  
+<tr>  
+<td>9.2<br><br></td>  
+<td>&le;128M<br>&gt;128M</td>  
+<td>4M<br>16M</td>  
+</tr>  
+<tr>
+<td>10.2<br><br></td>
+<td>&le;1G<br>&gt;1G</td>
+<td>4M<br>16M</td>
+</tr>
+<tr>
+<td>11gR1<br><br><br><br></td>
+<td>&le;1G<br>&gt;1G &le;4G<br>&gt;4G &le;16G<br>&gt;16G &le;64G<br>&gt;64G</td>
+<td>4M<br>16M<br>64M<br>256M<br>512M
+</td>
+</tr>
+<tr>
+<td>11gR2 and later<br><br><br><br><br><br><br></td>
+<td>&le;1G<br>&gt;1G &le;8G<br>&gt;8G &le;16G<br>&gt;16G &le;32G<br>&gt;32G &le;64G<br>&gt;64G &le;128G<br>&gt;128G</td>
+<td>4M<br>16M<br>32M<br>64M<br>128M<br>256M<br>512M<br></td>
+</tr>
+</tbody>
+<caption>Table 1: Granule sizes across different Oracle releases</caption>  
+</table>
+<p>My Oracle Support note <a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=2658593">KB119333</a> (source <a href="#source5">5</a>) further explains that versions prior to 18.9 included the size of the in-memory column store (IMC) defined by parameter <code>inmemory_size</code> in the SGA size whereas 19c and later no longer include it. This means that as of 19c, the <code>inmemory_size</code> value must be subtracted from the <code>sga_target</code> or <code>memory_target</code> value to determine the granule size.</p>
+<p>Based on this information, we would expect a granule size of 128M for an instance with an SGA size of 48G (and no IMC configured). A check on 19c (19.26) shows that the information from <a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=2658593">KB119333</a> still applies:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>-- Oracle 19c
+</span></span><span style="display:flex;"><span>SQL&gt; show parameter sga_target
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>NAME                                 TYPE        VALUE
+</span></span><span style="display:flex;"><span>------------------------------------ ----------- ------------------------------
+</span></span><span style="display:flex;"><span>sga_target                           big integer 48G
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL&gt; show parameter inmemory_size
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>NAME                                 TYPE        VALUE
+</span></span><span style="display:flex;"><span>------------------------------------ ----------- ------------------------------
+</span></span><span style="display:flex;"><span>inmemory_size                        big integer 0
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL&gt; select bytes/power(2,20) granule_sz_mb from  v$sgainfo where name = &#39;Granule Size&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>GRANULE_SZ_MB
+</span></span><span style="display:flex;"><span>-------------
+</span></span><span style="display:flex;"><span>          128</span></span></code></pre></div>
+<figcaption>Listing 1: Granule size in Oracle 19c (19.26)</figcaption>
+</figure>
+<p>However, running the same check on Oracle 26ai (23.26.0.0) yields a different result, showing that Oracle now uses a granule size of 64M rather than 128M:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>-- Oracle 26ai
+</span></span><span style="display:flex;"><span>SQL&gt; show parameter sga_target
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>NAME                                 TYPE        VALUE
+</span></span><span style="display:flex;"><span>------------------------------------ ----------- ------------------------------
+</span></span><span style="display:flex;"><span>sga_target                           big integer 48G
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL&gt; show parameter inmemory_size
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>NAME                                 TYPE        VALUE
+</span></span><span style="display:flex;"><span>------------------------------------ ----------- -----------------------------
+</span></span><span style="display:flex;"><span>inmemory_size                        big integer 0
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL&gt; select bytes/power(2,20) granule_sz_mb from v$sgainfo where name = &#39;Granule Size&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>GRANULE_SZ_MB
+</span></span><span style="display:flex;"><span>-------------
+</span></span><span style="display:flex;"><span>           64</span></span></code></pre></div>
+<figcaption>Listing 2: Granule size in Oracle 26ai (23.26.0.0)</figcaption>
+</figure>
+<p>Apparently, something has changed in Oracle 26ai, and the change has not been reflected in the Oracle docs. So, time for an investigation and a closer look.</p>
+<p>Interestingly, <a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=2658593">KB119333</a> also mentions a &ldquo;granule size lookup table&rdquo; without providing further details on what it is or where it is stored.</p>
+<p>A low-level examination of the Oracle binary reveals a symbol named <code>ksmg_gran_sz</code>, which is worth taking a closer look at using the readelf utility (the symbol&rsquo;s mnemonic can be interpreted as Kernel Service Memory Granule Granule Size).</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span><span><span style="color:#080">#~ readelf -s $ORACLE_HOME/bin/oracle | grep -wE &#39;ksmg_gran_sz&#39;
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span><span><span style="color:#080"></span>  <span style="color:#666">2554</span><span style="color:#666">:</span> <span style="color:#666">000000001</span><span style="color:#666">98515</span>c0    <span style="color:#666">64</span> OBJECT  LOCAL  DEFAULT   <span style="color:#666">17</span> ksmg_gran_sz</span></span></code></pre></div>
+<figcaption>Listing 3: Examining symbol ksmg_gran_sz using readelf</figcaption>
+</figure>
+<p>The output above from version 23.26.0.0 shows that the symbol starts at virtual memory address <code>0x198515c0</code> and has a size of 64 bytes. Assuming a word size of 8 bytes, it spans 8 words, i.e., it can store 8 elements of 8 bytes each.</p>
+<p>Let’s examine this in more detail using gdb, which can inspect memory at arbitrary addresses and format the displayed values. The command below loads the Oracle binary into gdb and displays eight consecutive 8-byte values from the address of <code>ksmg_gran_sz</code> (<code>&amp;ksmg_gran_sz = 0x198515c0</code>) in unsigned decimal format (<code>x/8gu</code> = e<strong>x</strong>amine <strong>8</strong> <strong>g</strong>iant words and display them as <strong>u</strong>nsigned):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>#~ gdb -q $ORACLE_HOME/bin/oracle
+</span></span><span style="display:flex;"><span>Reading symbols from oracle...(no debugging symbols found)...done.
+</span></span><span style="display:flex;"><span>(gdb) x/8gu &amp;ksmg_gran_sz
+</span></span><span style="display:flex;"><span>0x198515c0 &lt;ksmg_gran_sz&gt;:      536870912       268435456
+</span></span><span style="display:flex;"><span>0x198515d0 &lt;ksmg_gran_sz+16&gt;:   134217728       67108864
+</span></span><span style="display:flex;"><span>0x198515e0 &lt;ksmg_gran_sz+32&gt;:   33554432        16777216
+</span></span><span style="display:flex;"><span>0x198515f0 &lt;ksmg_gran_sz+48&gt;:   4194304 0</span></span></code></pre></div>
+<figcaption>Listing 4: Examining ksmg_gran_sz using gdb</figcaption>
+</figure>
+<p>To make this even more readable and structured, we can use the gdb command below, which interprets <code>&amp;ksmg_gran_sz</code> as an array of eight 8-byte elements, converts each element value to megabytes, and prints the result, with each line showing the virtual memory address of the element and its corresponding value:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>(gdb) set $i = 0
+</span></span><span style="display:flex;"><span>while $i &lt; 8
+</span></span><span style="display:flex;"><span>  printf &#34;%p: %3luM\n&#34;,                                     \
+</span></span><span style="display:flex;"><span>    ((unsigned long long*) &amp;ksmg_gran_sz) + $i,             \
+</span></span><span style="display:flex;"><span>    ((unsigned long long*) &amp;ksmg_gran_sz)[$i] / (1ULL &lt;&lt; 20)
+</span></span><span style="display:flex;"><span>  set $i = $i + 1
+</span></span><span style="display:flex;"><span>end
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>0x198515c0: 512M
+</span></span><span style="display:flex;"><span>0x198515c8: 256M
+</span></span><span style="display:flex;"><span>0x198515d0: 128M
+</span></span><span style="display:flex;"><span>0x198515d8:  64M
+</span></span><span style="display:flex;"><span>0x198515e0:  32M
+</span></span><span style="display:flex;"><span>0x198515e8:  16M
+</span></span><span style="display:flex;"><span>0x198515f0:   4M
+</span></span><span style="display:flex;"><span>0x198515f8:   0M</span></span></code></pre></div>
+<figcaption>Listing 5: Interpreting ksmg_gran_sz as array of eight 8-byte elements</figcaption>
+</figure>
+<p>This looks very much like the “granule size lookup” table mentioned in <a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=2658593">KB119333</a>, since the granule sizes perfectly match those listed in that note (see also Table 1 above).</p>
+<p>This raises two questions: how does Oracle use the “granule size lookup table”, and why does Oracle 26ai use a granule size of 64M whereas Oracle 19c used 128M?</p>
+<p>To understand this, we need to examine a second symbol, <code>ksmg_sga_sz</code>, using the same techniques as above, starting again with <code>readelf</code>:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>#~ readelf -s $ORACLE_HOME/bin/oracle | grep -wE &#39;ksmg_sga_sz&#39;
+</span></span><span style="display:flex;"><span>  2555: 0000000019851600    64 OBJECT  LOCAL  DEFAULT   17 ksmg_sga_sz</span></span></code></pre></div>
+<figcaption>Listing 6: Examining symbol ksmg_sga_sz using readelf</figcaption>
+</figure>
+<p>Similar to <code>ksmg_gran_sz</code>, <code>ksmg_sga_sz</code> is also 64 bytes in size and so can hold eight 8-byte values as well. The second gdb command below also interprets <code>ksmg_sga_sz</code> as an array of eight 8-byte elements:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span># Examine 8 giant words and display them as unsigned
+</span></span><span style="display:flex;"><span>(gdb) x/8gu &amp;ksmg_sga_sz
+</span></span><span style="display:flex;"><span>0x19851600 &lt;ksmg_sga_sz&gt;:       137438953472    68719476736
+</span></span><span style="display:flex;"><span>0x19851610 &lt;ksmg_sga_sz+16&gt;:    34359738368     17179869184
+</span></span><span style="display:flex;"><span>0x19851620 &lt;ksmg_sga_sz+32&gt;:    8589934592      1073741824
+</span></span><span style="display:flex;"><span>0x19851630 &lt;ksmg_sga_sz+48&gt;:    1       0
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span># Print the address of each `ksmg_sga_sz` array 
+</span></span><span style="display:flex;"><span># element and its value converted to megabytes
+</span></span><span style="display:flex;"><span>(gdb) set $i = 0
+</span></span><span style="display:flex;"><span>while $i &lt; 8
+</span></span><span style="display:flex;"><span>  printf &#34;%p: %6luM\n&#34;,                                     \
+</span></span><span style="display:flex;"><span>    ((unsigned long long*)&amp;ksmg_sga_sz) + $i,               \
+</span></span><span style="display:flex;"><span>    ((unsigned long long*) &amp;ksmg_sga_sz)[$i] / (1ULL &lt;&lt; 20)
+</span></span><span style="display:flex;"><span>  set $i = $i + 1
+</span></span><span style="display:flex;"><span>end
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>0x19851600: 131072M  # 128G
+</span></span><span style="display:flex;"><span>0x19851608:  65536M  #  64G
+</span></span><span style="display:flex;"><span>0x19851610:  32768M  #  32G
+</span></span><span style="display:flex;"><span>0x19851618:  16384M  #  16G
+</span></span><span style="display:flex;"><span>0x19851620:   8192M  #   8G
+</span></span><span style="display:flex;"><span>0x19851628:   1024M  #   1G
+</span></span><span style="display:flex;"><span>0x19851630:      0M  # This position holds the value 1,  which gets rounded down to 0!
+</span></span><span style="display:flex;"><span>0x19851638:      0M</span></span></code></pre></div>
+<figcaption>Listing 7: Examining ksmg_sga_sz using gdb</figcaption>
+</figure>
+<p>Note that I added additional comments to the output showing the values in gigabyte units, and, interestingly, they exactly match the SGA size thresholds listed in <a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=2658593">KB119333</a> (see also Table 1 above). Moreover, each SGA size threshold in the <code>ksmg_sga_sz</code> array maps to the granule size at the corresponding index in the <code>ksmg_gran_sz</code> array.</p>
+<p>So what Oracle did through version 19c is something like: scan the <code>ksmg_sga_sz</code> array until the SGA size threshold at the current index position becomes smaller than the SGA size; once the first smaller threshold (or the array terminator) is reached, return the granule size from <code>ksmg_gran_sz</code> at the same index.</p>
+<p>Translated into code, it could look like this:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>/* granule size lookup table */
+</span></span><span style="display:flex;"><span>uint64_t ksmg_gran_sz[] = {  
+</span></span><span style="display:flex;"><span>    1ULL &lt;&lt; 29,  /* 512M */
+</span></span><span style="display:flex;"><span>    1ULL &lt;&lt; 28,  /* 256M */  
+</span></span><span style="display:flex;"><span>    1ULL &lt;&lt; 27,  /* 128M */
+</span></span><span style="display:flex;"><span>    1ULL &lt;&lt; 26,  /*  64M */ 
+</span></span><span style="display:flex;"><span>    1ULL &lt;&lt; 25,  /*  32M */
+</span></span><span style="display:flex;"><span>    1ULL &lt;&lt; 24,  /*  16M */
+</span></span><span style="display:flex;"><span>    1ULL &lt;&lt; 22,  /*   4M */
+</span></span><span style="display:flex;"><span>    0ULL
+</span></span><span style="display:flex;"><span>};
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>/* sga size threshold array */
+</span></span><span style="display:flex;"><span>uint64_t ksmg_sga_sz[] = {
+</span></span><span style="display:flex;"><span>    1ULL &lt;&lt; 37,  /* 128G */
+</span></span><span style="display:flex;"><span>    1ULL &lt;&lt; 36,  /*  64G */
+</span></span><span style="display:flex;"><span>    1ULL &lt;&lt; 35,  /*  32G */
+</span></span><span style="display:flex;"><span>    1ULL &lt;&lt; 34,  /*  16G */
+</span></span><span style="display:flex;"><span>    1ULL &lt;&lt; 33,  /*   8G */
+</span></span><span style="display:flex;"><span>    1ULL &lt;&lt; 30,  /*   1G */
+</span></span><span style="display:flex;"><span>    1ULL,
+</span></span><span style="display:flex;"><span>    0ULL
+</span></span><span style="display:flex;"><span>};
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>uint64_t get_granule_size(uint64_t sga_sz)  
+</span></span><span style="display:flex;"><span>{  
+</span></span><span style="display:flex;"><span>    int i = 0;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    while (ksmg_sga_sz[i] != 0 &amp;&amp;
+</span></span><span style="display:flex;"><span>           sga_sz &lt;= ksmg_sga_sz[i])
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        i++;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    return ksmg_gran_sz[i];
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<figcaption>Listing 8: Example granule size lookup code</figcaption>
+</figure>
+<p>The example program <a href="https://github.com/Christoph-Lutz/oracle/blob/main/C/sga-sz-gran-sz-mapping.c">sga-sz-gran-sz-mapping.c</a> (see source <a href="#source6">6</a>) prints the SGA-size-to-granule-size mapping using the <code>ksmg_sga_sz</code> and <code>ksmg_gran_sz</code> values from Oracle 26ai:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span> $ ./sga-sz-gran-sz-mapping
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Idx   SGA Threshold   Granule Size
+</span></span><span style="display:flex;"><span>---   -------------   ------------
+</span></span><span style="display:flex;"><span>0            &gt; 128G           512M
+</span></span><span style="display:flex;"><span>1            &gt;  64G           256M
+</span></span><span style="display:flex;"><span>2            &gt;  32G           128M
+</span></span><span style="display:flex;"><span>3            &gt;  16G            64M
+</span></span><span style="display:flex;"><span>4            &gt;   8G            32M
+</span></span><span style="display:flex;"><span>5            &gt;   1G            16M
+</span></span><span style="display:flex;"><span>6            &lt;   1G             4M</span></span></code></pre></div>
+<figcaption>Listing 9: Example granule size lookup program</figcaption>
+</figure>
+<p>According to the lookup logic and the values in the <code>ksmg_sga_sz</code> and <code>ksmg_gran_sz</code> arrays, Oracle 26ai should use a granule size of 128M for an SGA size of 48G. However, as shown in Listing 2, the observed granule size in Oracle 26ai is 64M.</p>
+<p>The reason for this is that Oracle 26ai introduces a new hidden parameter, <code>_max_def_granule_size</code>, which defaults to 64M (67108864 bytes) and defines an upper bound on the granule size. This limit is enforced by the internal callback function <code>ksmg_max_def_gran_size_chk</code>, which applies the following constraints:</p>
+<ul>
+<li>if <code>_max_def_granule_size</code> is set to a value below 4M, it is rounded up to 4M</li>
+<li>if it is set to a value above 512M, it is rounded down to 512M</li>
+<li>if it is set within the range of 4M to 512M and is not a power-of-two value, it is rounded up to the next power-of-two value (for instance  <code>_max_def_granule_size=6M</code> is rounded up to 8M)</li>
+<li>if it is lower than <code>db_files * 144 + 536</code>, it is rounded up to the next power-of-two value above that value. Note that this is a reasonable approximation, as the exact formula is quite complex and not worth analyzing further at this point, since it is only relevant when the number of db files is very large (meaning ten thousands of datafiles) and <code>_max_def_granule_size</code> is set to a relatively low value such as 4M or 8M</li>
+</ul>
+<p>If you set <code>_max_def_granule_size=512M</code>, the granule size lookup logic behaves the same as in Oracle 19c.</p>
+<p>Let&rsquo;s look at some examples by tracing callback function <code>ksmg_max_def_gran_size_chk</code> using script <a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/ksmg_max_def_gran_size_chk.bt">ksmg_max_def_gran_size_chk.bt</a> (see source <a href="#source7">7</a>) during instance startup.</p>
+<p><strong>Example 1:</strong></p>
+<ul>
+<li><code>sga_target=48G</code></li>
+<li><code>_max_def_granule_size</code> not set (default setting of 64M)</li>
+<li><code>db_files=200</code> (default setting)</li>
+</ul>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span><span style="color:#080">#~ ./ksmg_max_def_gran_size_chk.bt 
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span><span style="color:#080"></span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>Attaching <span style="color:#666">15</span> probes...
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>Tracing... Hit <span style="color:#666">^</span>C to stop.
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span><span style="color:#666">42201</span> oracle <span style="color:#666">-&gt;</span> ksmg_max_def_gran_size_chk
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span><span style="color:#666">42201</span> oracle    <span style="color:#666">-&gt;</span> <span style="color:#a0a000">kspges</span>: <span style="color:#666">1024</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span><span style="color:#666">42201</span> oracle       <span style="color:#a0a000">prm_idx</span>: <span style="color:#666">1024</span> (x<span style="">$</span>ksppi.indx<span style="color:#666">=</span><span style="color:#666">1023</span><span style="color:#666">:</span> _ksmg_granule_size)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span><span style="color:#666">42201</span> oracle    <span style="color:#666">&lt;-</span> <span style="color:#a0a000">kspges</span>: <span style="color:#666">0x0</span> (<span style="color:#666">0</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span><span style="color:#666">42201</span> oracle    <span style="color:#666">-&gt;</span> <span style="color:#a0a000">kspges</span>: <span style="color:#666">1025</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span><span style="color:#666">42201</span> oracle       <span style="color:#a0a000">prm_idx</span>: <span style="color:#666">1025</span> (x<span style="">$</span>ksppi.indx<span style="color:#666">=</span><span style="color:#666">1024</span><span style="color:#666">:</span> _max_def_granule_size)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span><span style="color:#666">42201</span> oracle    <span style="color:#666">&lt;-</span> <span style="color:#a0a000">kspges</span>: <span style="color:#666">0x0</span> (<span style="color:#666">0</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span><span style="color:#666">42201</span> oracle    param value <span style="color:#666">=</span> <span style="color:#666">67108864</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span><span style="color:#666">42201</span> oracle <span style="color:#666">&lt;-</span> <span style="color:#a0a000">ksmg_max_def_gran_size_chk</span>: <span style="color:#666">0x0</span> (<span style="color:#666">0</span>)</span></span></code></pre></div>
+<figcaption>Listing 10: Tracing ksmg_max_def_gran_size_chk (example 1)</figcaption>
+</figure>
+<p>The trace output shows the following:</p>
+<ul>
+<li>lines 7 - 9: <code>kspges</code> checks if <code>_ksmg_granule_size</code> is set; it is not at this stage, so it returns 0.</li>
+<li>lines 10 - 12: <code>kspges</code> checks if <code>_max_def_granule_size</code> is set; it is not at this stage, so it returns 0.</li>
+<li>line 13: Oracle uses the <code>_max_def_granule_size</code> default value of 64M (67108864 bytes)</li>
+</ul>
+<p><strong>Example 2:</strong></p>
+<ul>
+<li><code>sga_target=48G</code></li>
+<li><code>_max_def_granule_size=512M</code> (same maximum granule size as in Oracle 19c)</li>
+<li><code>db_files=200</code> (default setting)</li>
+</ul>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span><span style="color:#080">#~ ./ksmg_max_def_gran_size_chk.bt 
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span><span style="color:#080"></span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>Attaching <span style="color:#666">15</span> probes...
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>Tracing... Hit <span style="color:#666">^</span>C to stop.
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span><span style="color:#666">49419</span> oracle <span style="color:#666">-&gt;</span> ksmg_max_def_gran_size_chk
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span><span style="color:#666">49419</span> oracle    <span style="color:#666">-&gt;</span> <span style="color:#a0a000">kspges</span>: <span style="color:#666">1024</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span><span style="color:#666">49419</span> oracle       <span style="color:#a0a000">prm_idx</span>: <span style="color:#666">1024</span> (x<span style="">$</span>ksppi.indx<span style="color:#666">=</span><span style="color:#666">1023</span><span style="color:#666">:</span> _ksmg_granule_size)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span><span style="color:#666">49419</span> oracle    <span style="color:#666">&lt;-</span> <span style="color:#a0a000">kspges</span>: <span style="color:#666">0x0</span> (<span style="color:#666">0</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span><span style="color:#666">49419</span> oracle    <span style="color:#666">-&gt;</span> <span style="color:#a0a000">kspges</span>: <span style="color:#666">1025</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span><span style="color:#666">49419</span> oracle       <span style="color:#a0a000">prm_idx</span>: <span style="color:#666">1025</span> (x<span style="">$</span>ksppi.indx<span style="color:#666">=</span><span style="color:#666">1024</span><span style="color:#666">:</span> _max_def_granule_size)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span><span style="color:#666">49419</span> oracle    <span style="color:#666">&lt;-</span> <span style="color:#a0a000">kspges</span>: <span style="color:#666">0x1</span> (<span style="color:#666">1</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span><span style="color:#666">49419</span> oracle    param value <span style="color:#666">=</span> <span style="color:#666">536870912</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span><span style="color:#666">49419</span> oracle <span style="color:#666">&lt;-</span> <span style="color:#a0a000">ksmg_max_def_gran_size_chk</span>: <span style="color:#666">0x0</span> (<span style="color:#666">0</span>)</span></span></code></pre></div>
+<figcaption>Listing 11: Tracing ksmg_max_def_gran_size_chk (example 2)</figcaption>
+</figure>
+<p>In this example, <code>_max_def_granule_size</code> was set to 512M (536870912 bytes). The call to <code>kspges</code> (lines 10 - 12) indicates that a parameter value has been specified by returning 1, and Oracle therefore uses the specified value 536870912 (512M) as the maximum limit (line 13).</p>
+<p><strong>Example 3:</strong></p>
+<ul>
+<li><code>sga_target=48G</code></li>
+<li><code>_max_def_granule_size=4M</code></li>
+<li><code>db_files=40000</code></li>
+</ul>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span><span style="color:#080">#~ ./ksmg_max_def_gran_size_chk.bt verbose verbose
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span><span style="color:#080"></span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span><span style="color:#666">56073</span> oracle <span style="color:#666">-&gt;</span> ksmg_max_def_gran_size_chk
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span><span style="color:#666">56073</span> oracle    <span style="color:#666">-&gt;</span> <span style="color:#a0a000">kspges</span>: <span style="color:#666">1024</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span><span style="color:#666">56073</span> oracle       <span style="color:#a0a000">prm_idx</span>: <span style="color:#666">1024</span> (x<span style="">$</span>ksppi.indx<span style="color:#666">=</span><span style="color:#666">1023</span><span style="color:#666">:</span> _ksmg_granule_size)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span><span style="color:#666">56073</span> oracle    <span style="color:#666">&lt;-</span> <span style="color:#a0a000">kspges</span>: <span style="color:#666">0x0</span> (<span style="color:#666">0</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span><span style="color:#666">56073</span> oracle    <span style="color:#666">-&gt;</span> kcfmingran
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span><span style="color:#666">56073</span> oracle    <span style="color:#666">&lt;-</span> <span style="color:#a0a000">kcfmingran</span>: <span style="color:#666">0x57e670</span> (<span style="color:#666">5760624</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span><span style="color:#666">56073</span> oracle    <span style="color:#666">-&gt;</span> kcfmingran
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span><span style="color:#666">56073</span> oracle    <span style="color:#666">&lt;-</span> <span style="color:#a0a000">kcfmingran</span>: <span style="color:#666">0x57e670</span> (<span style="color:#666">5760624</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span><span style="color:#666">56073</span> oracle    <span style="color:#666">-&gt;</span> kcbwmingran
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span><span style="color:#666">56073</span> oracle    <span style="color:#666">&lt;-</span> <span style="color:#a0a000">kcbwmingran</span>: <span style="color:#666">0xc00</span> (<span style="color:#666">3072</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span><span style="color:#666">56073</span> oracle    <span style="color:#666">-&gt;</span> <span style="color:#a0a000">kspges</span>: <span style="color:#666">1025</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span><span style="color:#666">56073</span> oracle       <span style="color:#a0a000">prm_idx</span>: <span style="color:#666">1025</span> (x<span style="">$</span>ksppi.indx<span style="color:#666">=</span><span style="color:#666">1024</span><span style="color:#666">:</span> _max_def_granule_size)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span><span style="color:#666">56073</span> oracle    <span style="color:#666">&lt;-</span> <span style="color:#a0a000">kspges</span>: <span style="color:#666">0x1</span> (<span style="color:#666">1</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span><span style="color:#666">56073</span> oracle    param value <span style="color:#666">=</span> <span style="color:#666">8388608</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span><span><span style="color:#666">56073</span> oracle <span style="color:#666">&lt;-</span> <span style="color:#a0a000">ksmg_max_def_gran_size_chk</span>: <span style="color:#666">0x0</span> (<span style="color:#666">0</span>)</span></span></code></pre></div>
+<figcaption>Listing 12: Tracing ksmg_max_def_gran_size_chk (example 3)</figcaption>
+</figure>
+<p>Note that in this example, the script was called with the <code>verbose</code> option to also show the calls to <code>kcfmingran</code> and <code>kcbwmingran</code>. These are helper functions that can override the maximum default granule size if Oracle considers it too low.</p>
+<p>The helper function called first, <code>kcfmingran</code>, factors in a minimum size for every datafile based on the <code>db_files</code> setting. In this case, <code>db_files</code> is set to 40000 and therefore returns a value of 5760624 (lines 8 and 10). This is slightly off from the result given by the earlier mentioned approximation formula (<code>db_files * 144 + 536 = 5760536</code>), but still sufficiently close for our purposes. More importantly, the value 5760624 returned by <code>kcfmingran</code> exceeds the specified <code>_max_def_granule_size</code> of 4M and is not a power-of-two value, Oracle therefore rounds it up to 8388608 (8M), as shown on line 16.</p>
+<p>The second helper function, <code>kcbwmingran</code>, always returns the hard-coded value of 3072 in Oracle 26ai, so it has no practical relevance. Oracle uses the maximum value returned by either <code>kcfmingran</code> or <code>kcbwmingran</code>, and with a default <code>db_files</code> setting of 200, the value returned by <code>kcfmingran</code> is higher than 3072 (200 * 144 + 536 = 29336).</p>
+<p>Note that the parameter <code>_max_def_granule_size</code> only defines the maximum limit for the granule size. The effective granule size is determined via parameter <code>_ksmg_granule_size</code>, which already existed in Oracle 19c (and earlier versions). Its value is initialized at instance startup through the callback function <code>ksmglgchk</code>, which performs an SGA size-to-granule-size mapping using a lookup logic based on the <code>ksmg_sga_sz</code> and <code>ksmg_gran_sz</code> arrays, as described above.</p>
+<p>In Oracle 26ai, however, <code>ksmglgchk</code> additionally calls a new function, <code>ksmg_adjust_gransize</code>, which enforces the cap on the computed granule size, defaulting to 64M unless overridden by a user-defined limit specified in <code>_max_def_granule_size</code>.</p>
+<p>If <code>_ksmg_granule_size</code> is set to a user-specified value, the <code>_max_def_granule_size</code> check is bypassed (that is, the function <code>ksmg_adjust_gransize</code> is not called during instance startup). In other words, setting <code>_ksmg_granule_size</code> disables the maximum granule size cap.</p>
+<p>For parameter <code>_ksmg_granule_size</code>, the following constraints apply:</p>
+<ul>
+<li>the minimum value is 1M, a value lower than that is rounded up to 1M (note that 1M is a pure technical limit, on my test system a granule size of 1M resulted in an ORA-64 error at instance startup: &ldquo;object is too large to allocate on this O/S (1,1539816,sys event stats)&rdquo;).</li>
+<li>if set to a value above 512M, it is rounded down to 512M</li>
+<li>if it is set within the range of 1M to 512M and is not a power-of-two value, it is rounded up to the next power-of-two value (for instance  <code>_ksmg_granule_size=6M</code> is rounded up to 8M)</li>
+</ul>
+<p>Let’s look at some traces again, this time using the bpftrace script <a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/ksmglgchk.bt">ksmglgchk.bt</a> (see source <a href="#source8">8</a>) to trace calls to <code>ksmglgchk</code>.</p>
+<p><strong>Example 4:</strong></p>
+<ul>
+<li><code>sga_target=48G</code> (according to the granule size lookup table, this should result in a granule size of 128M)</li>
+<li><code>_max_def_granule_size</code> not set (default setting of 64M)</li>
+</ul>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span><span style="color:#080">#~ ./ksmglgchk.bt
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span><span style="color:#080"></span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>Attaching <span style="color:#666">19</span> probes...
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>Tracing... Hit <span style="color:#666">^</span>C to stop.
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span><span style="color:#666">182045</span> oracle <span style="color:#666">-&gt;</span> ksmglgchk
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span><span style="color:#666">182045</span> oracle    <span style="color:#666">-&gt;</span> <span style="color:#a0a000">kspges</span>: <span style="color:#666">1024</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span><span style="color:#666">182045</span> oracle       <span style="color:#a0a000">prm_idx</span>: <span style="color:#666">1024</span> (x<span style="">$</span>ksppi.indx<span style="color:#666">=</span><span style="color:#666">1023</span><span style="color:#666">:</span> _ksmg_granule_size)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span><span style="color:#666">182045</span> oracle    <span style="color:#666">&lt;-</span> <span style="color:#a0a000">kspges</span>: <span style="color:#666">0x0</span> (<span style="color:#666">0</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span><span style="color:#666">182045</span> oracle    <span style="color:#666">-&gt;</span> <span style="color:#a0a000">ksmg_estimate_nonimc_sga_size</span>: <span style="color:#666">0x7fa81d360820</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span><span style="color:#666">182045</span> oracle    <span style="color:#666">&lt;-</span> <span style="color:#a0a000">ksmg_estimate_nonimc_sga_size</span>: <span style="color:#666">0xc00000000</span> (<span style="color:#666">51539607552</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span><span style="color:#666">182045</span> oracle    <span style="color:#666">-&gt;</span> <span style="color:#a0a000">ksmg_adjust_gransize</span>: <span style="color:#666">134217728</span>, <span style="color:#666">32366</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span><span style="color:#666">182045</span> oracle    <span style="color:#666">-&gt;</span> <span style="color:#a0a000">kspgip</span>: <span style="color:#666">6822</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span><span style="color:#666">182045</span> oracle       <span style="color:#a0a000">prm_idx</span>: <span style="color:#666">6822</span> (x<span style="">$</span>ksppi.indx<span style="color:#666">=</span><span style="color:#666">6821</span><span style="color:#666">:</span> _enable_pdb_isolation)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span><span style="color:#666">182045</span> oracle       <span style="color:#666">&lt;-</span> <span style="color:#a0a000">kspgip</span>: <span style="color:#666">0x0</span> (<span style="color:#666">0</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span><span style="color:#666">182045</span> oracle       <span style="color:#666">-&gt;</span> <span style="color:#a0a000">kspges</span>: <span style="color:#666">1025</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span><span><span style="color:#666">182045</span> oracle          <span style="color:#a0a000">prm_idx</span>: <span style="color:#666">1025</span> (x<span style="">$</span>ksppi.indx<span style="color:#666">=</span><span style="color:#666">1024</span><span style="color:#666">:</span> _max_def_granule_size)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span><span><span style="color:#666">182045</span> oracle       <span style="color:#666">&lt;-</span> <span style="color:#a0a000">kspges</span>: <span style="color:#666">0x0</span> (<span style="color:#666">0</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span><span><span style="color:#666">182045</span> oracle       <span style="color:#666">&lt;-</span> <span style="color:#a0a000">ksmg_adjust_gransize</span>: <span style="color:#666">0x4000000</span> (<span style="color:#666">67108864</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20</span><span><span style="color:#666">182045</span> oracle       param value <span style="color:#666">=</span> <span style="color:#666">67108864</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21</span><span><span style="color:#666">182045</span> oracle <span style="color:#666">&lt;-</span> <span style="color:#a0a000">ksmglgchk</span>: <span style="color:#666">0x0</span> (<span style="color:#666">0</span>)</span></span></code></pre></div>
+<figcaption>Listing 13: Tracing ksmglgchk (example 4)</figcaption>
+</figure>
+<p>The trace output (formatted for readability) shows the following:</p>
+<ul>
+<li>lines 7 - 9: <code>kspges</code> checks if <code>_ksmg_granule_size</code> is set; it is not at this stage, so it returns 0.</li>
+<li>lines 10 - 11: Oracle calls <code>ksmg_estimate_nonimc_sga_size</code> to estimate the SGA size (excluding the IMC), which is 48G (51539607552 bytes) in this case</li>
+<li>line 12: Oracle calls <code>ksmg_adjust_gransize</code>; the first parameter is the granule size from the lookup table (128M or 134217728 bytes).</li>
+<li>lines 13 - 18: <code>ksmg_adjust_gransize</code> checks if <code>_enabled_pdb_isolation</code> and <code>_max_def_granule_size</code> are set using <code>kspgip</code> and <code>kspges</code>; neither of these parameters is set, so both functions return 0</li>
+<li>line 19: <code>ksmg_adjust_gransize</code> returns the default maximum granule size of 64M (67108864 bytes)</li>
+<li>line 20: <code>ksmglgchk</code> uses the default maximum granule size of 64M (67108864 bytes) returned by <code>ksmg_adjust_gransize</code></li>
+</ul>
+<p>This example proves that Oracle 26ai still uses the same granule size lookup logic as in 19c and determines a granule size of 128M, which then gets adjusted because it exceeds the maximum limit imposed by <code>_max_def_granule_size</code>.</p>
+<p><strong>Example 5:</strong></p>
+<ul>
+<li><code>sga_target=48G</code> (according to the granule size lookup table, this should result in a granule size of 128M)</li>
+<li><code>_max_def_granule_size=512M</code> (same maximum granule size as in Oracle 19c)</li>
+</ul>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span><span style="color:#080">#~ ./ksmglgchk.bt
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span><span style="color:#080"></span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>Attaching <span style="color:#666">19</span> probes...
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>Tracing... Hit <span style="color:#666">^</span>C to stop.
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span><span style="color:#666">223509</span> oracle <span style="color:#666">-&gt;</span> ksmglgchk
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span><span style="color:#666">223509</span> oracle    <span style="color:#666">-&gt;</span> <span style="color:#a0a000">kspges</span>: <span style="color:#666">1024</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span><span style="color:#666">223509</span> oracle       <span style="color:#a0a000">prm_idx</span>: <span style="color:#666">1024</span> (x<span style="">$</span>ksppi.indx<span style="color:#666">=</span><span style="color:#666">1023</span><span style="color:#666">:</span> _ksmg_granule_size)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span><span style="color:#666">223509</span> oracle    <span style="color:#666">&lt;-</span> <span style="color:#a0a000">kspges</span>: <span style="color:#666">0x0</span> (<span style="color:#666">0</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span><span style="color:#666">223509</span> oracle    <span style="color:#666">-&gt;</span> <span style="color:#a0a000">ksmg_estimate_nonimc_sga_size</span>: <span style="color:#666">0x7fad3540d820</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span><span style="color:#666">223509</span> oracle    <span style="color:#666">&lt;-</span> <span style="color:#a0a000">ksmg_estimate_nonimc_sga_size</span>: <span style="color:#666">0xc00000000</span> (<span style="color:#666">51539607552</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span><span style="color:#666">223509</span> oracle    <span style="color:#666">-&gt;</span> <span style="color:#a0a000">ksmg_adjust_gransize</span>: <span style="color:#666">134217728</span>, <span style="color:#666">32366</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span><span style="color:#666">223509</span> oracle       <span style="color:#666">-&gt;</span> <span style="color:#a0a000">kspgip</span>: <span style="color:#666">6822</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span><span style="color:#666">223509</span> oracle          <span style="color:#a0a000">prm_idx</span>: <span style="color:#666">6822</span> (x<span style="">$</span>ksppi.indx<span style="color:#666">=</span><span style="color:#666">6821</span><span style="color:#666">:</span> _enable_pdb_isolation)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span><span style="color:#666">223509</span> oracle       <span style="color:#666">&lt;-</span> <span style="color:#a0a000">kspgip</span>: <span style="color:#666">0x0</span> (<span style="color:#666">0</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span><span style="color:#666">223509</span> oracle       <span style="color:#666">-&gt;</span> <span style="color:#a0a000">kspges</span>: <span style="color:#666">1025</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span><span><span style="color:#666">223509</span> oracle          <span style="color:#a0a000">prm_idx</span>: <span style="color:#666">1025</span> (x<span style="">$</span>ksppi.indx<span style="color:#666">=</span><span style="color:#666">1024</span><span style="color:#666">:</span> _max_def_granule_size)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span><span><span style="color:#666">223509</span> oracle       <span style="color:#666">&lt;-</span> <span style="color:#a0a000">kspges</span>: <span style="color:#666">0x1</span> (<span style="color:#666">1</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span><span><span style="color:#666">223509</span> oracle       <span style="color:#666">-&gt;</span> <span style="color:#a0a000">kspgzp</span>: <span style="color:#666">1025</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20</span><span><span style="color:#666">223509</span> oracle          <span style="color:#a0a000">prm_idx</span>: <span style="color:#666">1025</span> (x<span style="">$</span>ksppi.indx<span style="color:#666">=</span><span style="color:#666">1024</span><span style="color:#666">:</span> _max_def_granule_size)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21</span><span><span style="color:#666">223509</span> oracle       <span style="color:#666">&lt;-</span> <span style="color:#a0a000">kspgzp</span>: <span style="color:#666">0x20000000</span> (<span style="color:#666">536870912</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22</span><span><span style="color:#666">223509</span> oracle    <span style="color:#666">&lt;-</span> <span style="color:#a0a000">ksmg_adjust_gransize</span>: <span style="color:#666">0x8000000</span> (<span style="color:#666">134217728</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23</span><span><span style="color:#666">223509</span> oracle    param value <span style="color:#666">=</span> <span style="color:#666">134217728</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24</span><span><span style="color:#666">223509</span> oracle <span style="color:#666">&lt;-</span> <span style="color:#a0a000">ksmglgchk</span>: <span style="color:#666">0x0</span> (<span style="color:#666">0</span>)</span></span></code></pre></div>
+<figcaption>Listing 14: Tracing ksmglgchk (example 5)</figcaption>
+</figure>
+<p>With <code>_max_def_granule_size</code> set to 512M, Oracle uses a granule size of 128M (134217728 bytes), as shown on lines 22 and 23. This matches the granule size from the lookup table and reflects the same behavior as in Oracle 19c.</p>
+<p>Note that Oracle calls <code>kspges</code> on line 16 to check whether <code>_max_def_granule_size</code> has been set; the return value of 1 on line 18 indicates that it has. It then calls <code>kspgzp</code> to retrieve the maximum granule size limit from the spfile, which is 512M (536870912 bytes) and therefore higher than the value of 128M (134217728 bytes) passed into <code>ksmg_adjust_gransize</code> (line 12). This means, the value retrieved from the granule size lookup table is below the maximum granule size and is therefore used without further adjustment.</p>
+<p><strong>Example 6:</strong></p>
+<ul>
+<li><code>sga_target=48G</code> (according to the granule size lookup table, this should result in a granule size of 128M)</li>
+<li><code>_max_def_granule_size=32M</code></li>
+<li><code>_ksmg_granule_size=209715200</code> (this corresponds to 200M, but the <code>_ksmg_granule_size</code> parameter doesn&rsquo;t support human-readable format specifiers)</li>
+</ul>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C" data-lang="C"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span><span style="color:#080">#~ ./ksmglgchk.bt
+</span></span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span><span style="color:#080"></span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>Attaching <span style="color:#666">19</span> probes...
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>Tracing... Hit <span style="color:#666">^</span>C to stop.
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span><span style="color:#666">306679</span> oracle <span style="color:#666">-&gt;</span> ksmglgchk
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span><span style="color:#666">306679</span> oracle    <span style="color:#666">-&gt;</span> <span style="color:#a0a000">kspges</span>: <span style="color:#666">1024</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span><span style="color:#666">306679</span> oracle       <span style="color:#a0a000">prm_idx</span>: <span style="color:#666">1024</span> (x<span style="">$</span>ksppi.indx<span style="color:#666">=</span><span style="color:#666">1023</span><span style="color:#666">:</span> _ksmg_granule_size)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span><span style="color:#666">306679</span> oracle    <span style="color:#666">&lt;-</span> <span style="color:#a0a000">kspges</span>: <span style="color:#666">0x1</span> (<span style="color:#666">1</span>)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span><span style="color:#666">306679</span> oracle    param value <span style="color:#666">=</span> <span style="color:#666">268435456</span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span><span style="color:#666">306679</span> oracle <span style="color:#666">&lt;-</span> <span style="color:#a0a000">ksmglgchk</span>: <span style="color:#666">0x0</span> (<span style="color:#666">0</span>)</span></span></code></pre></div>
+<figcaption>Listing 15: Tracing ksmglgchk (example 6)</figcaption>
+</figure>
+<p>In this scenario, the limit imposed by <code>_max_def_granule_size</code> is lower than <code>_ksmg_granule_size</code>, and <code>_ksmg_granule_size</code> is not a power-of-two value. However, the trace shows that the maximum granule size limit is not enforced (that is, the function <code>ksmg_adjust_gransize</code> is not called), and Oracle uses the value from <code>_ksmg_granule_size</code>, rounded up to the next power-of-two value, which is 256M (268435456 bytes). This proves that the <code>_ksmg_granule_size</code> setting takes precedence and overrides <code>_max_def_granule_size</code>.</p>
+<p>Why did Oracle change the maximum default granule size in 26ai and decide to cap it at 64M by default? Unfortunately, we don&rsquo;t know, because this is an undocumented internal change, so we can only speculate. I suspect part of the motivation relates to this <a href="/posts/2026-05-01-sga-changes-in-oracle-26ai---subpools-and-durations/">SGA change in Oracle 26ai</a> (see source <a href="#source9">9</a>) where, depending on system configuration, the number of subpools and durations may increase compared to earlier versions. Since each of these smaller units requires at least one granule, a smaller maximum granule size could help reduce memory overhead.</p>
+<p>Another reason may be that the old maximum size of 512M turned out to be too large and inflexible for reshuffling memory across different memory pools. So, this change may aim to make reshuffling operations more gradual and less intrusive, as eight smaller 64M reallocations may be less disruptive than one large 512M reallocation.</p>
+<h2 id="references">References</h2>
+<p>[1] <a id="source1"></a><a href="https://www.soocs.de/public/talk/161115_DOAG2016_Hacking_Oracles_Memory_About_Internals_Troubleshooting_PDF.pdf">Stefan Koehler, Hacking Oracle&rsquo;s Memory - About Internals &amp; Troubleshooting, DOAG Conference Paper, November 15-16, 2016</a><br>
+[2] <a id="source2"></a><a href="https://www.amazon.com/Oracle-Core-Essential-Internals-Developers/dp/1430239549">Jonathan Lewis, Chapter 5: Caches and Copies, Oracle Core: Essential Internals for DBAs and Developers, Apress, 2011</a><br>
+[3] <a id="source3"></a><a href="https://www.amazon.com/Oracle-Core-Essential-Internals-Developers/dp/1430239549">Jonathan Lewis, Chapter 7: Parsing and Optimizing, Oracle Core: Essential Internals for DBAs and Developers, Apress, 2011</a><br>
+[4]  <a id="source4"></a><a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=947152">My Oracle Support, How To Determine Granule Size, KB136956, 2025-11-30</a><br>
+[5] <a id="source5"></a><a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=2658593">My Oracle Support, Granule Size Change in Oracle Release 12.2, 18c, and 19c (KB119333), 2025-11-28</a><br>
+[6] <a id="source6"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/C/sga-sz-gran-sz-mapping.c">Christoph Lutz, oracle GitHub Repository, C Program sga-sz-gran-sz-mapping.c</a><br>
+[7] <a id="source7"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/ksmg_max_def_gran_size_chk.bt">Christoph Lutz, oracle GitHub Repository, bpftrace Script ksmg_max_def_gran_size_chk.bt</a><br>
+[8] <a id="source8"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/ksmglgchk.bt">Christoph Lutz, oracle GitHub Repository, bpftrace Script ksmglgchk.bt</a><br>
+[9] <a id="source9"></a><a href="/posts/2026-05-01-sga-changes-in-oracle-26ai---subpools-and-durations/">Christoph Lutz, SGA Changes in Oracle 26ai - Subpools and Durations, 2026-05-01</a></p>
+
+</main>
+
+  <footer>
+  
+  <hr/>
+  © <a href="https://www.0xChris.dev">Christoph Lutz</a> 2025 &ndash; 2026
+  
+  <hr/>
+  <script src="https://giscus.app/client.js"
+            data-repo="Christoph-Lutz/0xChris-Comments"
+            data-repo-id="R_kgDOQo-jcg"
+            data-category="Comments"
+            data-category-id="DIC_kwDOQo-jcs4Cz0NV"
+            data-mapping="pathname"
+            data-strict="1"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="light"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+        </script>
+    <script id="partials/analytics.html" 
+  data-goatcounter="https://0xchris.goatcounter.com/count"
+  async src="//gc.zgo.at/count.js"></script>
+
+  </footer>
+  </body>
+</html>
+
