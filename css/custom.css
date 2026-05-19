@@ -165,10 +165,57 @@ pre code,
 
 /* Code formatting */
 code {
-    hyphens: none;       /* Disable automatic hyphenation */
-    word-break: normal;  /* Prevent breaking in the middle */
+    hyphens: none;         /* Disable automatic hyphenation */
+    word-break: normal;    /* Prevent breaking in the middle */
     overflow-wrap: normal; /* Ensure long words stay intact */
     white-space: pre-wrap; /* Optional: preserve spaces but allow wrapping */
+}
+
+
+/* Use for raw code with color highlighting */
+.rawcode {
+  background: #f8f8f8;
+  margin: 1em 0;  
+  /* margin: 0; */
+  line-height: 1.0;
+  overflow-x: auto;
+}
+
+.rawcode code {
+  font-family: ui-monospace, monospace;
+  white-space: pre-wrap;
+  display: block;
+}
+
+.hl-red {
+    color: #d14;
+    font-weight: 500;
+    /* font-weight: bold; */
+}
+
+.hl-blue {
+    color: #1f4e79;  /* dark blue */
+    font-weight: 500;
+}
+
+.hl-green {
+    color: #2e7d32;
+    font-weight: 500;
+}
+
+.hl-orange {
+    color: #e67e22;
+    font-weight: 500;
+}
+
+.hl-purple {
+    color: #6a1b9a;
+    font-weight: 500;
+}
+
+.hl-grey {
+    color: #8a8a8a;
+    font-weight: 500;
 }
 
 /* Multiple images in a row */

@@ -4,6 +4,13 @@
     <link>https://www.0xChris.dev/</link>
     <description>0xChris updates</description>
     <atom:link href="https://www.0xChris.dev/tags/gdb/" rel="self" type="application/rss+xml"/><item>
+      <title>Extracting Fixed View Definitions From The Oracle Binary</title>
+      <link>https://www.0xChris.dev/posts/2026-05-19-extracting-fixed-view-definitions-from-the-oracle-binary/</link>
+      <pubDate>Tue, 19 May 2026 00:00:00 UTC</pubDate>
+      <guid>https://www.0xChris.dev/posts/2026-05-19-extracting-fixed-view-definitions-from-the-oracle-binary/</guid>
+      <description>&lt;p&gt;If you&amp;rsquo;ve ever needed to look up the definition of a dynamic performance view in Oracle, also referred to as a fixed view, or simply a V$ view, chances are that you&amp;rsquo;ve come across &lt;code&gt;V$FIXED_VIEW_DEFINITION&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;It is a special dynamic performance view that exposes the SQL definitions of Oracle’s V$ views in its &lt;code&gt;VIEW_DEFINITION&lt;/code&gt; column, which is defined as &lt;code&gt;VARCHAR2(4000)&lt;/code&gt;, as shown by the output of &lt;code&gt;describe&lt;/code&gt; (from version 23.26.0.0):&lt;/p&gt;</description>
+    </item><item>
       <title>Bypassing oradebug Restrictions</title>
       <link>https://www.0xChris.dev/posts/2026-04-14-bypassing-oradebug-restrictions/</link>
       <pubDate>Tue, 14 Apr 2026 00:00:00 UTC</pubDate>

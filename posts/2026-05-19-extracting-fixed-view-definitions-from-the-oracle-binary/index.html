@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Extracting Fixed View Definitions From The Oracle Binary | 0xChris</title>
+
+    
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="/css/custom.css" />
+
+    
+    
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Extracting Fixed View Definitions From The Oracle Binary">
+  <meta name="twitter:description" content="Extracing Fixed View Definitions From The Oracle Binary">
+
+
+<meta property="og:title" content="Extracting Fixed View Definitions From The Oracle Binary">
+<meta property="og:description" content="Extracing Fixed View Definitions From The Oracle Binary">
+<meta property="og:url" content="https://www.0xChris.dev/posts/2026-05-19-extracting-fixed-view-definitions-from-the-oracle-binary/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="0xChris">
+
+
+
+<meta property="og:image" content="https://www.0xChris.dev/">
+
+
+  </head>
+
+  <body>
+    <nav>
+      <ul class="menu">
+        
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/posts/">Blog</a></li>
+        
+          <li><a href="/categories/">Categories</a></li>
+        
+          <li><a href="/tags/">Tags</a></li>
+        
+          <li><a href="/contact/">Contact</a></li>
+        
+          <li><a href="/index.xml">Subscribe</a></li>
+        
+
+        
+        
+          
+            <li class="icon">
+              <a href="https://github.com/Christoph-Lutz" aria-label="GitHub">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <title>GitHub</title>
+  <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" fill="currentColor"/>
+</svg>
+
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://x.com/chris_skyflier" aria-label="Twitter">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>X</title><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://bsky.app/profile/christophlutz.bsky.social" aria-label="Bluesky">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Bluesky</title><path d="M5.202 2.857C7.954 4.922 10.913 9.11 12 11.358c1.087-2.247 4.046-6.436 6.798-8.501C20.783 1.366 24 .213 24 3.883c0 .732-.42 6.156-.667 7.037-.856 3.061-3.978 3.842-6.755 3.37 4.854.826 6.089 3.562 3.422 6.299-5.065 5.196-7.28-1.304-7.847-2.97-.104-.305-.152-.448-.153-.327 0-.121-.05.022-.153.327-.568 1.666-2.782 8.166-7.847 2.97-2.667-2.737-1.432-5.473 3.422-6.3-2.777.473-5.899-.308-6.755-3.369C.42 10.04 0 4.615 0 3.883c0-3.67 3.217-2.517 5.202-1.026"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://sym42.org" aria-label="Sym42">
+                
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+  <path transform="scale(0.1004,0.1364) translate(11,1)" d="M0 0 C8.91 0 17.82 0 27 0 C27 32.01 27 64.02 27 97 C51.75 97 76.5 97 102 97 C102.33 118.78 102.66 140.56 103 163 C113.65023618 149.38741342 113.65023618 149.38741342 124 135.5625 C125.16793211 133.96872315 126.33590197 132.37497396 127.50390625 130.78125 C128.08156738 129.99105469 128.65922852 129.20085937 129.25439453 128.38671875 C132.14116363 124.43971809 135.0386119 120.50060445 137.9375 116.5625 C138.50952148 115.78430908 139.08154297 115.00611816 139.67089844 114.2043457 C143.34771065 109.21167043 147.06937462 104.25523259 150.81298828 99.3125 C170.98641999 74.34600723 170.98641999 74.34600723 177 44 C175.18481682 37.01549082 172.39314724 31.88945254 166.25390625 27.8515625 C158.52779633 23.46773353 150.43585329 23.37053009 141.8828125 25.125 C137.49428572 26.45701897 133.56042734 28.49182265 129.53125 30.66015625 C127 32 127 32 124 33 C124 23.76 124 14.52 124 5 C138.64493558 -0.63266753 138.64493558 -0.63266753 144.8828125 -0.62890625 C145.54860321 -0.63131821 146.21439392 -0.63373016 146.90036011 -0.63621521 C148.28308171 -0.63525162 149.66584937 -0.62222324 151.04833984 -0.59692383 C153.13124785 -0.56239643 155.20993568 -0.57639315 157.29296875 -0.59570312 C171.18361481 -0.58191047 181.8308422 3.34041929 192.00390625 12.87890625 C200.75379996 22.23354424 204.74719368 34.28009799 205.375 47 C204.41179837 64.52286038 196.17302926 80.08711875 186 94 C185.50757813 94.67724121 185.01515625 95.35448242 184.5078125 96.05224609 C180.97969681 100.89390965 177.41603046 105.70856193 173.84228516 110.51660156 C171.48040306 113.70041612 169.13374187 116.89527097 166.78710938 120.09033203 C159.52624187 129.97226581 152.18066843 139.78923387 144.81054688 149.58984375 C143.01140967 151.98481172 141.21597581 154.38250747 139.421875 156.78125 C138.8645166 157.52608643 138.3071582 158.27092285 137.73291016 159.03833008 C136.68515004 160.43879049 135.6379229 161.83964987 134.59130859 163.2409668 C131.11186653 167.88813347 131.11186653 167.88813347 130 169 C128.28134591 169.0935919 126.55884256 169.11744611 124.83764648 169.11352539 C123.73658066 169.11344986 122.63551483 169.11337433 121.50108337 169.11329651 C120.3031868 169.10813522 119.10529022 169.10297394 117.87109375 169.09765625 C116.65172623 169.0962413 115.4323587 169.09482635 114.17604065 169.09336853 C110.2631693 169.08774967 106.35035419 169.07519396 102.4375 169.0625 C99.79231853 169.05748743 97.14713617 169.0529241 94.50195312 169.04882812 C88.00126274 169.03862296 81.50069467 169.01905121 75 169 C75 154.15 75 139.3 75 124 C50.25 124 25.5 124 0 124 C0 83.08 0 42.16 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(155.8828125,0.37109375)" d="M0 0 C0.66579071 -0.00241196 1.33158142 -0.00482391 2.01754761 -0.00730896 C3.40026921 -0.00634537 4.78303687 0.00668301 6.16552734 0.03198242 C8.24843535 0.06650982 10.32712318 0.0525131 12.41015625 0.03320312 C26.30080231 0.04699578 36.9480297 3.96932554 47.12109375 13.5078125 C55.87098746 22.86245049 59.86438118 34.90900424 60.4921875 47.62890625 C59.52898587 65.15176663 51.29021676 80.716025 41.1171875 94.62890625 C40.62476563 95.30614746 40.13234375 95.98338867 39.625 96.68115234 C36.09688431 101.5228159 32.53321796 106.33746818 28.95947266 111.14550781 C26.59759056 114.32932237 24.25092937 117.52417722 21.90429688 120.71923828 C14.64342937 130.60117206 7.29785593 140.41814012 -0.07226562 150.21875 C-1.87140283 152.61371797 -3.66683669 155.01141372 -5.4609375 157.41015625 C-6.2969751 158.52741089 -6.2969751 158.52741089 -7.14990234 159.66723633 C-8.19766246 161.06769674 -9.2448896 162.46855612 -10.29150391 163.86987305 C-13.77094597 168.51703972 -13.77094597 168.51703972 -14.8828125 169.62890625 C-17.02840077 169.7166623 -19.17685671 169.73585844 -21.32421875 169.7265625 C-22.62939453 169.72333984 -23.93457031 169.72011719 -25.27929688 169.71679688 C-26.6679694 169.70844026 -28.05664127 169.6999753 -29.4453125 169.69140625 C-30.83788906 169.68639291 -32.23046731 169.68182972 -33.62304688 169.67773438 C-37.0430112 169.66590059 -40.46289094 169.64941505 -43.8828125 169.62890625 C-43.27097081 166.41918652 -42.20356776 164.38991326 -40.25 161.78515625 C-39.69892578 161.04394531 -39.14785156 160.30273438 -38.58007812 159.5390625 C-37.97873047 158.74371094 -37.37738281 157.94835937 -36.7578125 157.12890625 C-35.82098633 155.87400391 -35.82098633 155.87400391 -34.86523438 154.59375 C-32.87737817 151.93402615 -30.8807052 149.28109666 -28.8828125 146.62890625 C-27.62458729 144.95213253 -26.3667668 143.27505503 -25.109375 141.59765625 C-23.23806447 139.10192152 -21.36611031 136.60668841 -19.49169922 134.11328125 C-14.67303275 127.70001086 -9.90631899 121.24999876 -5.16113281 114.78222656 C-1.50429727 109.80538271 2.1987027 104.86635957 5.92797852 99.94360352 C26.10348636 74.9765367 26.10348636 74.9765367 32.1171875 44.62890625 C30.30200432 37.64439707 27.51033474 32.51835879 21.37109375 28.48046875 C13.64498383 24.09663978 5.55304079 23.99943634 -3 25.75390625 C-7.38852678 27.08592522 -11.32238516 29.1207289 -15.3515625 31.2890625 C-17.8828125 32.62890625 -17.8828125 32.62890625 -20.8828125 33.62890625 C-20.8828125 24.38890625 -20.8828125 15.14890625 -20.8828125 5.62890625 C-6.23787692 -0.00376128 -6.23787692 -0.00376128 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(171,143)" d="M0 0 C15.51 0 31.02 0 47 0 C47 8.91 47 17.82 47 27 C31.49 27 15.98 27 0 27 C0 18.09 0 9.18 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(135,6)" d="M0 0 C0.99 0.495 0.99 0.495 2 1 C1.67 8.92 1.34 16.84 1 25 C1.66 25 2.32 25 3 25 C2.67 25.99 2.34 26.98 2 28 C1.34 28 0.68 28 0 28 C0 18.76 0 9.52 0 0 Z"/>
+</svg>
+
+              </a>
+            </li>
+          
+        
+      </ul>
+      <hr/>
+    </nav>
+  </body>
+</html>
+<div class="article-meta">
+<h1><span class="title">Extracting Fixed View Definitions From The Oracle Binary</span></h1>
+
+<h2 class="date">2026/05/19</h2>
+</div>
+
+<main>
+<p>If you&rsquo;ve ever needed to look up the definition of a dynamic performance view in Oracle, also referred to as a fixed view, or simply a V$ view, chances are that you&rsquo;ve come across <code>V$FIXED_VIEW_DEFINITION</code>.</p>
+<p>It is a special dynamic performance view that exposes the SQL definitions of Oracle’s V$ views in its <code>VIEW_DEFINITION</code> column, which is defined as <code>VARCHAR2(4000)</code>, as shown by the output of <code>describe</code> (from version 23.26.0.0):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-SQL" data-lang="SQL"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">SQL</span><span style="color:#666">&gt;</span><span style="color:#bbb"> </span><span style="color:#a2f;font-weight:bold">desc</span><span style="color:#bbb"> </span>v$fixed_view_definition<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"> </span>Name<span style="color:#bbb">               </span><span style="color:#a2f;font-weight:bold">Null</span><span style="color:#666">?</span><span style="color:#bbb">    </span><span style="color:#a2f;font-weight:bold">Type</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"> </span><span style="color:#080;font-style:italic">------------------ -------- ------------------
+</span></span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"></span><span style="color:#bbb"> </span>VIEW_NAME<span style="color:#bbb">                   </span>VARCHAR2(<span style="color:#666">128</span>)<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"> </span>VIEW_DEFINITION<span style="color:#bbb">             </span>VARCHAR2(<span style="color:#666">4000</span>)<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"> </span>CON_ID<span style="color:#bbb">                      </span><span style="color:#a2f">NUMBER</span></span></span></code></pre></div>
+<figcaption>Listing 1: V$FIXED_VIEW_DEFINITION column definitions</figcaption>
+</figure>
+<p>The maximum size of <code>VARCHAR2</code> columns in Oracle is limited to 4000 bytes (see also source <a href="#source1">1</a>), unless <code>MAX_STRING_SIZE</code> is set to <code>EXTENDED</code>, though this does not apply to data dictionary columns, which remain capped at 4000 bytes.</p>
+<p>Since some V$ view definitions exceed the <code>VARCHAR2</code> limit of 4000 bytes, they are truncated when queried from <code>V$FIXED_VIEW_DEFINITION</code>. This behavior was observed and discussed by Jonathan Lewis in this <a href="https://jonathanlewis.wordpress.com/2022/03/21/v_fixed_view_definition/">post</a> (see also source <a href="#source2">2</a>), which also examines Oracle’s internal memory layout, showing that the X$ table <code>x$kqfvt</code> exposes a pointer-to-pointer chain that leads to the fixed view&rsquo;s SQL text in memory (kqfvt likely stands for &ldquo;Kernel Query Fixed tables View Text&rdquo;).</p>
+<p>Based on Jonathan’s findings, the technique I use to retrieve fixed view definitions exceeding 4000 bytes is as follows: locate the pointer to the SQL text pointer in <code>x$kqfvt</code> (joined to <code>x$kqfvi</code> for convenient lookup by view name), then follow and dereference the pointers in gdb.</p>
+<p>To illustrate this, let&rsquo;s walk through a concrete example step by step, starting with a query adapted from source [2] that returns the starting address of the pointer-to-pointer chain for the <code>GV$SESSION</code> view, whose definition exceeds 4000 bytes.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-SQL" data-lang="SQL"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">select</span><span style="color:#bbb"> 
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">        </span>i.kqfvinam,<span style="color:#bbb"> </span>t.addr<span style="color:#bbb"> 
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#a2f;font-weight:bold">from</span><span style="color:#bbb"> 
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">        </span>x$kqfvi<span style="color:#bbb"> </span>i,<span style="color:#bbb"> 
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">        </span>x$kqfvt<span style="color:#bbb"> </span>t<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#a2f;font-weight:bold">where</span><span style="color:#bbb"> 
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">        </span>i.kqfvinam<span style="color:#bbb"> </span><span style="color:#666">=</span><span style="color:#bbb"> </span><span style="color:#b44">&#39;GV$SESSION&#39;</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#a2f;font-weight:bold">and</span><span style="color:#bbb">     </span>t.indx<span style="color:#bbb"> </span><span style="color:#666">=</span><span style="color:#bbb"> </span>i.indx<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#666">/</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span>KQFVINAM<span style="color:#bbb">           </span>ADDR<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#080;font-style:italic">------------------ ----------------
+</span></span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"></span>GV$SESSION<span style="color:#bbb">         </span><span style="color:#666">000000001</span>B4F7C70</span></span></code></pre></div>
+<figcaption>Listing 2: Joining x$kqfvi and $xkqfvt</figcaption>
+</figure>
+<p>In this case, address <code>0x000000001B4F7C70</code> points to the start of the pointer chain. By attaching to a running Oracle process with gdb, we can follow the chain by treating address <code>0x000000001B4F7C70</code> as a double pointer (pointer to a pointer) and dereferencing it.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span><span>#~gdb -q -p &lt;pid&gt;
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span><span>(gdb) set print elements 0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4</span><span> 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5</span><span>(gdb) x/s *(char **) 0x000000001B4F7C70
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6</span><span>0x1b794720:     &#34;select s.inst_id,s.addr,s.indx,s.ksuseser,s.ksuudses,s.ksusepro,s.ksuudlui, 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">7</span><span>...
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">8</span><span>from x$ksuse s, x$ksled e, x$kslwt w where bitand(s.ksspaflg,1)!=0 and bitand(s.ksuseflg,1)!=0 
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">9</span><span>and s.indx=w.kslwtsid and w.kslwtevt=e.indx&#34;</span></span></code></pre></div>
+<figcaption>Listing 3: Dereferencing address 0x1B4F7C70 as a pointer to a string pointer</figcaption>
+</figure>
+<p>The gdb command <code>x/s *(char **) 0x000000001B4F7C70</code> (line 5) treats the address as a <code>char **</code>, dereferences it to obtain the underlying string pointer, and prints the corresponding null-terminated string. By default, gdb limits the number of elements printed for arrays and strings, so the <code>set print elements 0</code> command (line 3) disables output truncation. Note that I edited and shortened the SQL text output (lines 6 - 9) for readability.</p>
+<p>I recently needed the definition of a fixed view that is longer than 4000 bytes and thought it would be useful to have a tool that could automate retrieving the full view definition. For that reason, I ended up digging deeper and wrote a small script that extracts the fixed view definitions directly from the oracle binary.</p>
+<p>The script is called <a href="https://github.com/Christoph-Lutz/oracle/blob/main/gdb/kqfvi.sh">kqfvi.sh</a> (see source <a href="#source4">4</a>) and is essentially a small bash wrapper around a gdb script with embedded Python logic that automates locating the internal fixed view definition structures in the oracle binary. I’ll briefly show its usage and discuss the internal structures in the next section of this note.</p>
+<p>The script requires the <code>ORACLE_HOME</code> environment variable to be set and works with 19c and 26ai (I tested it with versions 19.26, 23.26.0 and 23.26.1, but have not checked other versions).</p>
+<p>When executed without any arguments, it examines the <code>oracle</code> binary in the <code>$ORACLE_HOME/bin</code> directory and extracts the definitions of all fixed views (note that the view definitions shown in the output below are truncated for readability; the script does print the full view text).</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>$ ./kqfvi.sh
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Oracle version is: 23
+</span></span><span style="display:flex;"><span>Retrieving all fixed view definitions ...
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>--
+</span></span><span style="display:flex;"><span>Name  : GV$WAITSTAT
+</span></span><span style="display:flex;"><span>Length: 428
+</span></span><span style="display:flex;"><span>select inst_id,decode(mod(indx,19),1,&#39;data block&#39;,2,&#39;sort block&#39;,3,&#39;save undo block&#39;, 4, ...
+</span></span><span style="display:flex;"><span>--
+</span></span><span style="display:flex;"><span>Name  : V$WAITSTAT
+</span></span><span style="display:flex;"><span>Length: 85
+</span></span><span style="display:flex;"><span>select class,count,time, con_id from gv$waitstat where inst_id = USERENV(&#39;Instance&#39;) ...
+</span></span><span style="display:flex;"><span>--
+</span></span><span style="display:flex;"><span>Name  : GV$BH
+</span></span><span style="display:flex;"><span>Length: 817
+</span></span><span style="display:flex;"><span>select bh.inst_id, file#, dbablk, class, decode(state,0,&#39;free&#39;,1,&#39;xcur&#39;,2,&#39;scur&#39;,3,&#39;cr&#39;, ...
+</span></span><span style="display:flex;"><span>--</span></span></code></pre></div>
+<figcaption>Listing 4: Extracting all fixed view definitions from the oracle binary using kqfvi.sh</figcaption>
+</figure>
+<p>If you are interested in the definition of a particular view, especially one that exceeds the length of 4000 bytes, like <code>GV$SESSION</code>, you can specify that view as an argument. Be careful to correctly quote or escape the view name in the shell (the view definition in the output below is again edited and truncated for readability):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>$ ./kqfvi.sh &#39;GV$SESSION&#39;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Oracle version is: 23
+</span></span><span style="display:flex;"><span>Retrieving fixed view definition for GV$SESSION ...
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>--
+</span></span><span style="display:flex;"><span>Name  : GV$SESSION
+</span></span><span style="display:flex;"><span>Length: 4747
+</span></span><span style="display:flex;"><span>select s.inst_id,s.addr,s.indx,s.ksuseser,s.ksuudses,s.ksusepro,s.ksuudlui,
+</span></span><span style="display:flex;"><span>...
+</span></span><span style="display:flex;"><span>from x$ksuse s, x$ksled e, x$kslwt w where bitand(s.ksspaflg,1)!=0 and bitand(s.ksuseflg,1)!=0 
+</span></span><span style="display:flex;"><span>and s.indx=w.kslwtsid and w.kslwtevt=e.indx&#34;
+</span></span><span style="display:flex;"><span>--</span></span></code></pre></div>
+<figcaption>Listing 5: Extracting the fixed view definitions for GV$SESSION from the oracle binary using kqfvi.sh</figcaption>
+</figure>
+<p>With some additional shell scripting, the script can also be used to list all views longer than 4000 bytes, something like:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>$ ./kqfvi.sh | awk &#39;  
+</span></span><span style="display:flex;"><span>/^Name/ { name = $3 }  
+</span></span><span style="display:flex;"><span>/^Length:/ { len = $2 }  
+</span></span><span style="display:flex;"><span>/^(Name|Length|--)/ { next }  
+</span></span><span style="display:flex;"><span>{  
+</span></span><span style="display:flex;"><span>txt = $0  
+</span></span><span style="display:flex;"><span>if (len &gt; 4000)  
+</span></span><span style="display:flex;"><span>print name &#34; (&#34; len &#34;)&#34;  
+</span></span><span style="display:flex;"><span>}&#39; | sort
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>GV$ACTIVE_SESSION_HISTORY (5143)
+</span></span><span style="display:flex;"><span>GV$ALL_ACTIVE_SESSION_HISTORY (5230)
+</span></span><span style="display:flex;"><span>GV$ALL_SQL_MONITOR (5268)
+</span></span><span style="display:flex;"><span>GV$ALL_SQL_PLAN_MONITOR (4957)
+</span></span><span style="display:flex;"><span>GV$DATABASE (4504)
+</span></span><span style="display:flex;"><span>GV$DATAGUARD_PROCESS (4807)
+</span></span><span style="display:flex;"><span>GV$FALSE_PING (4843)
+</span></span><span style="display:flex;"><span>GV$GOLDENGATE_CAPTURE (7795)
+</span></span><span style="display:flex;"><span>GV$IOSTAT_FILE (5424)
+</span></span><span style="display:flex;"><span>GV$RECENT_SQL_MONITOR (5271)
+</span></span><span style="display:flex;"><span>GV$RSRCMGRMETRIC (4170)
+</span></span><span style="display:flex;"><span>GV$RSRCMGRMETRIC_HISTORY (4104)
+</span></span><span style="display:flex;"><span>GV$RSRCPDBMETRIC (4711)
+</span></span><span style="display:flex;"><span>GV$RSRCPDBMETRIC_HISTORY (4657)
+</span></span><span style="display:flex;"><span>GV$SESSION (4747)
+</span></span><span style="display:flex;"><span>GV$SQL_MONITOR (5070)
+</span></span><span style="display:flex;"><span>GV$SQL_PLAN_MONITOR (4953)
+</span></span><span style="display:flex;"><span>GV$SQL_SHARED_CURSOR (4038)
+</span></span><span style="display:flex;"><span>GV$STREAMS_CAPTURE (5068)
+</span></span><span style="display:flex;"><span>GV$WLM_PCMETRIC (6688)
+</span></span><span style="display:flex;"><span>GV$XSTREAM_CAPTURE (4483)
+</span></span><span style="display:flex;"><span>V$BACKUP_CONTROLFILE_SUMMARY (4386)
+</span></span><span style="display:flex;"><span>V$BACKUP_DATAFILE_SUMMARY (5420)
+</span></span><span style="display:flex;"><span>V$RECOVERY_AREA_USAGE (11248)
+</span></span><span style="display:flex;"><span>V$RMAN_BACKUP_SUBJOB_DETAILS (4292)
+</span></span><span style="display:flex;"><span>V$RMAN_STATUS (5006)</span></span></code></pre></div>
+<figcaption>Listing 6: Listing all fixed views longer than 4000 bytes</figcaption>
+</figure>
+<p>While the script automates the extraction process, the interesting part is how it discovers and traverses the underlying fixed view structures inside the oracle binary. If you are interested in that kind of detail, the next section walks through the internal structures and discusses my findings along the way (as observed in version 23.26.0.0)</p>
+<h2 id="a-look-behind-the-scenes">A Look Behind The Scenes</h2>
+<p>My investigations started with an interesting comment on Jonathan’s blog by Mikhail Velikikh (source <a href="#source3">3</a>), where he explains that the addresses (pointers) exposed by <code>x$kqfvt</code> come from the underlying structure <code>kqfvip</code>, which resides in the oracle binary’s read-only data (<code>.rodata</code>) section, as indicated by the <code>R</code> symbol type in the following <code>nm</code> output.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>$ nm $ORACLE_HOME/bin/oracle | grep kqfvip
+</span></span><span style="display:flex;"><span>000000001b4f7220 R kqfvip</span></span></code></pre></div>
+<figcaption>Listing 7: Examining kqfvip using nm</figcaption>
+</figure>
+<p>Structures in a binary&rsquo;s <code>.rodata</code> section can be examined by loading the binary into gdb without the need to attach to a running process. This means we can extract the view definitions directly from the oracle binary, provided that we understand the <code>kqfvip</code> structure in more detail.</p>
+<p>So, the example below loads the oracle binary (version 23.26.0.0) into gdb and examines 15 consecutive 8-byte (giant word) values in hexadecimal starting at the memory address of <code>kqfvip</code>.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>$ gdb -q -ex "file $ORACLE_HOME/bin/oracle"
+
+(gdb) x/15xg &kqfvip
+0x1b4f7220 &lt;kqfvip&gt;:     <span class="hl-red">0x000000001b78e4a0      0x000000001b508800</span>
+0x1b4f7230 &lt;kqfvip+16&gt;:  <span class="hl-red">0x0000000000000000      0x0000000000000000</span>
+0x1b4f7240 &lt;kqfvip+32&gt;:  <span class="hl-red">0x000000000000007e</span>      <span class="hl-blue">0x000000001b78e660</span>
+0x1b4f7250 &lt;kqfvip+48&gt;:  <span class="hl-blue">0x000000001b508860      0x0000000000000000</span>
+0x1b4f7260 &lt;kqfvip+64&gt;:  <span class="hl-blue">0x0000000000000000      0x000000000000007e</span>
+0x1b4f7270 &lt;kqfvip+80&gt;:  <span class="hl-green">0x000000001b78e6c0      0x000000001b5088c0</span>
+0x1b4f7280 &lt;kqfvip+96&gt;:  <span class="hl-green">0x0000000000000000      0x0000000000000000</span>
+0x1b4f7290 &lt;kqfvip+112&gt;: <span class="hl-green">0x000000000000007e</span>
+</code></pre>
+<figcaption>Listing 8: Examining kqfvip using gdb</figcaption>
+</figure>
+<p>The output reveals a pattern and shows that <code>kqfvip</code> appears to be an array of five 8-byte words, i.e., 5 × 8 = 40 bytes (0x28) per element. This is further illustrated by the color highlighting, which groups the memory layout into three distinct 40-byte (0x28) blocks, each corresponding to an array element.</p>
+<p>Inspecting the individual array elements shows that the first entry in each element is a memory address pointing to the fixed view definition text (output shortened and formatted for readability).</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>(gdb) x/s <span class="hl-red">0x000000001b78e4a0</span>
+0x1b78e4a0:     "select inst_id,decode(mod(indx,19),1,'data block',2,'sort block',3,'save ..."</code><br>
+<code>(gdb) x/s <span class="hl-blue">0x000000001b78e660</span>
+0x1b78e660:     "select class,count,time, con_id from gv$waitstat where inst_id = USERENV ..."</code><br>
+<code>(gdb) x/s <span class="hl-green">0x000000001b78e6c0</span>
+0x1b78e6c0:     "select bh.inst_id, file#, dbablk, class, decode(state,0,'free',1,'xcur' ..."
+</code></pre>
+<figcaption>Listing 9: Examining kqfvip elements using gdb</figcaption>
+</figure>
+<p>Using this information, we can iterate over the <code>kqfvip</code> array and print out all fixed view definitions. There is only one missing piece: the array size. Without knowing how many elements the array contains, we don&rsquo;t know when to stop.</p>
+<p>The answer to this turns out to be stored in variable <code>kqfvpsz</code>, which is also stored in the oracle binary’s <code>.rodata</code> section and which equals <code>1778</code>.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>(gdb) info symbol &amp;kqfvpsz
+</span></span><span style="display:flex;"><span>kqfvpsz in section .rodata
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>(gdb) x/1uw &amp;kqfvpsz
+</span></span><span style="display:flex;"><span>0x1b73f704 &lt;kqfvpsz&gt;:   1778</span></span></code></pre></div>
+<figcaption>Listing 10: Examining kqfvpsz using gdb</figcaption>
+</figure>
+<p>Comparing that with the number of entries in <code>V$FIXED_VIEW_DEFINITION</code> confirms that we are very close.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-SQL" data-lang="SQL"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">SQL</span><span style="color:#666">&gt;</span><span style="color:#bbb"> </span><span style="color:#a2f;font-weight:bold">select</span><span style="color:#bbb"> </span><span style="color:#a2f;font-weight:bold">count</span>(<span style="color:#666">*</span>)<span style="color:#bbb"> </span><span style="color:#a2f;font-weight:bold">from</span><span style="color:#bbb"> </span>v$fixed_view_definition;<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#a2f;font-weight:bold">COUNT</span>(<span style="color:#666">*</span>)<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#080;font-style:italic">----------
+</span></span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"></span><span style="color:#bbb">      </span><span style="color:#666">1777</span></span></span></code></pre></div>
+<figcaption>Listing 11: Counting the number of fixed views</figcaption>
+</figure>
+<p>The off-by-one difference between <code>kqfvpsz</code> and the number of entries counted in <code>V$FIXED_VIEW_DEFINITION</code> is explained by a terminating zero element at the end of <code>kqfvip</code>. This can be seen by examining the last element using gdb (note that arrays use 0-based indexing, so the memory offset of the last element is calculated as <code>(kqfvpsz - 1) * elem_size</code>).</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>(gdb) x/16xg 0x1b4f7220 + (1777 * 0x28)
+</span></span><span style="display:flex;"><span>0x1b5087c8 &lt;kqfvip+71080&gt;:      0x0000000000000000      0x0000000000000000
+</span></span><span style="display:flex;"><span>0x1b5087d8 &lt;kqfvip+71096&gt;:      0x0000000000000000      0x0000000000000000
+</span></span><span style="display:flex;"><span>0x1b5087e8 &lt;kqfvip+71112&gt;:      0x0000000000000000      0x0000000000000000</span></span></code></pre></div>
+<figcaption>Listing 12: Counting the number of fixed views</figcaption>
+</figure>
+<p>This leaves us with two options for extracting all fixed view definitions from <code>kqfvip</code>: either maintain a loop counter or iterate until we reach the terminator entry. Note that the underlying type structure of <code>kqfvip</code> is not publicly available, so we cannot use pointer arithmetic or array indexing in gdb and must instead resort to raw address calculations, which is quite messy.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span># ---------------------------------------
+</span></span><span style="display:flex;"><span># Option 1: loop counter
+</span></span><span style="display:flex;"><span># ---------------------------------------
+</span></span><span style="display:flex;"><span>(gdb) set pagination off
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>(gdb) set $i = 0
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>(gdb) while ($i &lt; (unsigned int) kqfvpsz -1)
+</span></span><span style="display:flex;"><span> &gt;printf &#34;indx %u: %s\n&#34;, $i, *(char **)((unsigned long)&amp;kqfvip + $i * 0x28)
+</span></span><span style="display:flex;"><span> &gt;set $i++
+</span></span><span style="display:flex;"><span> &gt;end
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span># ---------------------------------------
+</span></span><span style="display:flex;"><span># Option 2: loop until terminator reached
+</span></span><span style="display:flex;"><span># ---------------------------------------
+</span></span><span style="display:flex;"><span>(gdb) set pagination off
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>(gdb) set $i = 0  
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>(gdb) set $p = *(unsigned long *)((unsigned long)&amp;kqfvip + $i * 0x28)  
+</span></span><span style="display:flex;"><span>  
+</span></span><span style="display:flex;"><span>(gdb) while ($p != 0)  
+</span></span><span style="display:flex;"><span> &gt;printf &#34;indx %u: %s\n&#34;, $i, *(char **)((unsigned long)&amp;kqfvip + $i * 0x28)  
+</span></span><span style="display:flex;"><span> &gt;set $i = $i + 1  
+</span></span><span style="display:flex;"><span> &gt;set $p = *(unsigned long *)((unsigned long)&amp;kqfvip + $i * 0x28)  
+</span></span><span style="display:flex;"><span> &gt;end</span></span></code></pre></div>
+<figcaption>Listing 13: Iterating over all kqfvip elements</figcaption>
+</figure>
+<p>Both approaches shown above print the value of the loop counter <code>$i</code> on every iteration. This value corresponds to the <code>indx</code> column in <code>x$kqfvi</code> and <code>x$kqfvt</code>, the two X$ tables that we joined together earlier to look up the pointer chain leading to the fixed view definition text.</p>
+<p>Let’s use <code>GV$SESSION</code> again as an example to illustrate the point. The query below joins <code>x$kqfvi</code> and <code>x$kqfvt</code> and returns the index position for <code>GV$SESSION</code>, which is <code>66</code> in this case. This means the view definition of <code>GV$SESSION</code> resides at index position 66 in the underlying <code>kqfvip</code> array.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-SQL" data-lang="SQL"><span style="display:flex;"><span><span style="color:#a2f;font-weight:bold">select</span><span style="color:#bbb"> 
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">        </span>i.indx,<span style="color:#bbb"> </span>t.indx,<span style="color:#bbb"> </span>i.kqfvinam<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#a2f;font-weight:bold">from</span><span style="color:#bbb"> 
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">        </span>x$kqfvi<span style="color:#bbb"> </span>i,<span style="color:#bbb"> 
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">        </span>x$kqfvt<span style="color:#bbb"> </span>t<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#a2f;font-weight:bold">where</span><span style="color:#bbb"> 
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">        </span>i.kqfvinam<span style="color:#bbb"> </span><span style="color:#666">=</span><span style="color:#bbb"> </span><span style="color:#b44">&#39;GV$SESSION&#39;</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#a2f;font-weight:bold">and</span><span style="color:#bbb">     </span>t.indx<span style="color:#bbb"> </span><span style="color:#666">=</span><span style="color:#bbb"> </span>i.indx<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#666">/</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span>INDX<span style="color:#bbb">   </span>INDX<span style="color:#bbb"> </span>KQFVINAM<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#080;font-style:italic">------ ------ --------------
+</span></span></span><span style="display:flex;"><span><span style="color:#080;font-style:italic"></span><span style="color:#bbb">   </span><span style="color:#666">66</span><span style="color:#bbb">      </span><span style="color:#666">66</span><span style="color:#bbb"> </span>GV$SESSION</span></span></code></pre></div>
+<figcaption>Listing 14: Index position of GV$SESSION in x$kqfvi and x$kqfvt</figcaption>
+</figure>
+<p>We can convert the index position into a memory offset from the start of the <code>kqfvip</code> array and use it to access the <code>GV$SESSION</code> fixed view definition directly from the oracle binary, as follows:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span># Retrieve address of kqfvip
+</span></span><span style="display:flex;"><span>(gdb) p/x (unsigned long) &amp;kqfvip
+</span></span><span style="display:flex;"><span>$1 = 0x1b4f7220
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span># Add offset of 66 * 0x28 to address of kqfvip
+</span></span><span style="display:flex;"><span>(gdb) p/x (unsigned long) &amp;kqfvip + (66 * 0x28)
+</span></span><span style="display:flex;"><span>$2 = 0x1b4f7c70
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span># Dereference 0x1b4f7c70
+</span></span><span style="display:flex;"><span>(gdb) x/1xg 0x1b4f7c70
+</span></span><span style="display:flex;"><span>0x1b4f7c70 &lt;kqfvip+2640&gt;:       0x000000001b794720
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span># Dereference 0x1b794720
+</span></span><span style="display:flex;"><span>(gdb) x/s 0x000000001b794720
+</span></span><span style="display:flex;"><span>0x1b794720:     &#34;select s.inst_id,s.addr,s.indx,s.ksuseser,s.ksuudses,s.ksusepro,s.ksuudlui, ...
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span># All in one command
+</span></span><span style="display:flex;"><span>(gdb)  x/s *(char **) ((unsigned long) &amp;kqfvip + (66 * 0x28))
+</span></span><span style="display:flex;"><span>0x1b794720:     &#34;select s.inst_id,s.addr,s.indx,s.ksuseser,s.ksuudses,s.ksusepro,s.ksuudlui, ...</span></span></code></pre></div>
+<figcaption>Listing 15: Retrieving fixed view definition by indx using gdb</figcaption>
+</figure>
+<p>If you’ve carefully studied the query result in Listing 14, you may have noticed that the index in <code>x$kqfvt</code> corresponds to the index in <code>x$kqfvi</code>, which is the X$ table containing the view name (exposed in column <code>KQFVINAM</code>). This allows us to use the index number to look up the view name, provided we know where the structure behind <code>x$kqfvi</code> is and how it is laid out.</p>
+<p>As it turns out, the structure behind <code>x$kqfvi</code> is an array named <code>kqfviw</code>, which also contains 1778 elements. Examining its elements in gdb shows the following:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>$ gdb -q -ex "file $ORACLE_HOME/bin/oracle"
+
+(gdb) x/30xg &kqfviw
+0x1b4d4680 &lt;kqfviw&gt;:     <span class="hl-red">0x000000000000000b      0x000000001b740cc8</span>
+0x1b4d4690 &lt;kqfviw+16&gt;:  <span class="hl-red">0x0000000000000004      0x000000001951ac84</span>
+0x1b4d46a0 &lt;kqfviw+32&gt;:  <span class="hl-red">0x0000000000000003      0x0000000000000000</span>
+0x1b4d46b0 &lt;kqfviw+48&gt;:  <span class="hl-red">0x00000000000001ad      0x0000000000000005</span>
+0x1b4d46c0 &lt;kqfviw+64&gt;:  <span class="hl-red">0x007e0004ffffc1cb      0x0000000000000000</span>
+0x1b4d46d0 &lt;kqfviw+80&gt;:  <span class="hl-blue">0x000000000000000a      0x000000001b740cd4</span>
+0x1b4d46e0 &lt;kqfviw+96&gt;:  <span class="hl-blue">0x0000000000000004      0x000000001951ac84</span>
+0x1b4d46f0 &lt;kqfviw+112&gt;: <span class="hl-blue">0x0000000000000003      0x0000000000000000</span>
+0x1b4d4700 &lt;kqfviw+128&gt;: <span class="hl-blue">0x0000000000000056      0x0000000000000004</span>
+0x1b4d4710 &lt;kqfviw+144&gt;: <span class="hl-blue">0x007e0005ffffc003      0x0000000000000000</span>
+0x1b4d4720 &lt;kqfviw+160&gt;: <span class="hl-green">0x0000000000000005      0x000000001b740ce0</span>
+0x1b4d4730 &lt;kqfviw+176&gt;: <span class="hl-green">0x0000000000000004      0x000000001951ac84</span>
+0x1b4d4740 &lt;kqfviw+192&gt;: <span class="hl-green">0x0000000000000003      0x0000000000000000</span>
+0x1b4d4750 &lt;kqfviw+208&gt;: <span class="hl-green">0x0000000000000332      0x0000000000000019</span>
+0x1b4d4760 &lt;kqfviw+224&gt;: <span class="hl-green">0x007e000cffffc1ed      0x0000000000000000</span>
+</code></pre>
+<figcaption>Listing 16: Examining kqfviw using gdb</figcaption>
+</figure>
+<p>As illustrated by the color highlighting, each element in <code>kqfviw</code> consists of ten 8-byte words, i.e. <code>10 × 8 = 80</code> bytes (<code>0x50</code>).</p>
+<p>For each element, the length of the view name (not including the trailing null terminator) is stored at offset <code>0x0</code>, and a pointer to the view name is stored at offset <code>0x8</code>; to illustrate:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code><span class="hl-red"># Element 0: offset 0
+(gdb) x/1dw (unsigned int) &kqfviw + 0 * 0x50
+0x1b4d4680 <kqfviw>:    11</span>
+
+<span class="hl-red"># Element 0: offset 0x8
+(gdb) x/s *(char **) ((unsigned long long) &kqfviw + 0 * 0x50 + 0x8)
+0x1b740cc8:     "GV$WAITSTAT"</span>
+
+<span class="hl-blue"># Element 1: offset 0
+(gdb) x/1dw (unsigned int) &kqfviw + 1 * 0x50
+0x1b4d4680 <kqfviw>:    10</span>
+
+<span class="hl-blue"># Element 1: offset 0x8
+(gdb) x/s *(char **) ((unsigned long long) &kqfviw + 1 * 0x50 + 0x8)
+0x1b740cd4:     "V$WAITSTAT"</span>
+
+<span class="hl-green"># Element 2: offset 0
+(gdb) x/1dw (unsigned int) &kqfviw + 2 * 0x50
+0x1b4d4720 <kqfviw+160>:        5</span>
+
+<span class="hl-green"># Element 2: offset 0x8
+(gdb) x/s *(char **) ((unsigned long long) &kqfviw + 2 * 0x50 + 0x8)
+0x1b740ce0:     "GV$BH"</span>
+</code></pre>
+<figcaption>Listing 17: Examining kqfviw elements using gdb</figcaption>
+</figure>
+<p>Using <code>GV$SESSION</code> at index position <code>66</code> as an example again, we can look up its view name string in <code>kqfviw</code> by using the index to compute the element offset from the base of <code>kqfviw</code>, and then dereferencing the pointer stored at offset <code>0x8</code> within that element.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>(gdb) (gdb) x/s *(char **) ((unsigned long long) &kqfviw + (66 * 0x50) + 8)
+0x1b7411e4:     "GV$SESSION"
+</code></pre>
+<figcaption>Listing 18: Looking up GV$SESSION view name in kqfviw</figcaption>
+</figure>
+<p>Since the index number corresponds to the element position in both arrays, it can be used as a direct mapping key to relate entries in <code>kqfviw</code> to their corresponding view definitions in <code>kqfvip</code>. To locate a view by name, a simple linear scan over the <code>kqfviw</code> array can be performed: each element is inspected and the view name pointer at offset <code>+0x8</code> is compared against the target name. Once a match is found, the current index position is reused to access the corresponding entry in <code>kqfvip</code>, thereby retrieving the associated view definition — this is precisely the approach used in the script <a href="https://github.com/Christoph-Lutz/oracle/blob/main/gdb/kqfvi.sh">kqfvi.sh</a> does.</p>
+<h2 id="references">References</h2>
+<p>[1] <a id="source1"></a><a href="https://docs.oracle.com/en/database/oracle/oracle-database/26/refrn/datatype-limits.html#GUID-963C79C9-9303-49FE-8F2D-C8AAF04D3095">Oracle Corp., Oracle AI Database, Database Reference, 26ai, A.1 Datatype Limits, G43716-07, April 2026</a><br>
+[2] <a id="source2"></a><a href="https://jonathanlewis.wordpress.com/2022/03/21/v_fixed_view_definition/">Jonathan Lewis, v$fixed_view_definition, 2022-03-21</a><br>
+[3] <a id="source3"></a><a href="https://jonathanlewis.wordpress.com/2022/03/21/v_fixed_view_definition/">Mikhail Velikikh, Comment #3 on &ldquo;v$fixed_view_definition&rdquo;, 2022-03-28</a><br>
+[4] <a id="source4"></a> <a href="https://github.com/Christoph-Lutz/oracle/blob/main/gdb/kqfvi.sh">Christoph Lutz, oracle GitHub Repository, Script kqfvi.sh</a></p>
+
+</main>
+
+  <footer>
+  
+  <hr/>
+  © <a href="https://www.0xChris.dev">Christoph Lutz</a> 2025 &ndash; 2026
+  
+  <hr/>
+  <script src="https://giscus.app/client.js"
+            data-repo="Christoph-Lutz/0xChris-Comments"
+            data-repo-id="R_kgDOQo-jcg"
+            data-category="Comments"
+            data-category-id="DIC_kwDOQo-jcs4Cz0NV"
+            data-mapping="pathname"
+            data-strict="1"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="light"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+        </script>
+    <script id="partials/analytics.html" 
+  data-goatcounter="https://0xchris.goatcounter.com/count"
+  async src="//gc.zgo.at/count.js"></script>
+
+  </footer>
+  </body>
+</html>
+
