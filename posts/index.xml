@@ -4,6 +4,17 @@
     <link>https://www.0xChris.dev/</link>
     <description>0xChris updates</description>
     <atom:link href="https://www.0xChris.dev/posts/" rel="self" type="application/rss+xml"/><item>
+      <title>Default Calculation of TARGET_PDBS</title>
+      <link>https://www.0xChris.dev/posts/2026-05-20-default-calculation-of-target_pdbs/</link>
+      <pubDate>Wed, 20 May 2026 00:00:00 UTC</pubDate>
+      <guid>https://www.0xChris.dev/posts/2026-05-20-default-calculation-of-target_pdbs/</guid>
+      <description>&lt;p&gt;According to My Oracle Support note &lt;a href=&#34;https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;amp;kmContentId=2644243&#34;&gt;PALRT1151&lt;/a&gt; (see also source &lt;a href=&#34;#source1&#34;&gt;1&lt;/a&gt;) and various sources on the internet, Oracle uses the following formula to derive the default value of the &lt;code&gt;target_pdbs&lt;/code&gt; parameter:&lt;/p&gt;
+&lt;figure style=&#34;display:block; width:100%; margin:0; padding:0; box-sizing:border-box;&#34;&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-text&#34; data-lang=&#34;text&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;target_pdbs = 2 x (sga_size / 512M) &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;figcaption&gt;Listing 1: Default formula for target_pdbs calculation from My Oracle Support note PALRT1151&lt;/figcaption&gt;
+&lt;/figure&gt;
+&lt;p&gt;For an SGA size of 42G (45097156608 bytes), this should result in a &lt;code&gt;target_pdbs&lt;/code&gt; value of &lt;code&gt;168&lt;/code&gt;:&lt;/p&gt;</description>
+    </item><item>
       <title>Extracting Fixed View Definitions From The Oracle Binary</title>
       <link>https://www.0xChris.dev/posts/2026-05-19-extracting-fixed-view-definitions-from-the-oracle-binary/</link>
       <pubDate>Tue, 19 May 2026 00:00:00 UTC</pubDate>
