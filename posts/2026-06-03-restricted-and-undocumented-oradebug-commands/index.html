@@ -105,9 +105,10 @@
 </div>
 
 <main>
-<p>After an investigation into how to <a href="/posts/2026-04-14-bypassing-oradebug-restrictions/">bypass restricted oradebug commands</a> (see also source <a href="#source1">1</a>), I started wondering whether a complete list of restricted commands exists, or whether there is any way to reliably identify them. Unfortunately, no such list is available, so I decided to take a closer look at the internal structures that oradebug uses under the hood.</p>
+<p>After an investigation into how to <a href="/posts/2026-04-14-bypassing-oradebug-restrictions/">bypass restricted oradebug commands</a> (see also <a href="#source1">1</a>), I started wondering whether a complete list of restricted commands exists, or whether there is any way to reliably identify them. Unfortunately, no such list is available, so I decided to take a closer look at the internal structures that oradebug uses under the hood.</p>
 <p>To my surprise, I discovered that oradebug not only has restricted commands, but also a number of undocumented commands that are not shown in the <code>oradebug help</code> output.</p>
-<p>The result of this investigation is a little little script, <a href="https://github.com/Christoph-Lutz/oracle/blob/main/gdb/ksdxta.sh">ksdxta.sh</a> (see also source <a href="#source2">2</a>), which extracts and lists all oradebug commands from the Oracle binary and indicates whether each command is restricted or undocumented. A short example output with the <code>compact</code> option is shown below; a full example output can be found <a href="https://gist.githubusercontent.com/Christoph-Lutz/8a30952e47e088c7b1d9a4f168d70638/raw/695151c343deffa0df4aa07998019f45b5f8986c/gistfile1.txt">here</a> (both from version 23.26.0.0). Note that the script also works on 19c, but I have only tested it on RU 19.26.</p>
+<p>The result of this investigation is a little little script, <a href="https://github.com/Christoph-Lutz/oracle/blob/main/gdb/ksdxta.sh">ksdxta.sh</a> (see also <a href="#source2">2</a>), which extracts and lists all oradebug commands from the Oracle binary and indicates whether each command is restricted or undocumented.</p>
+<p>A short example output with the <code>compact</code> option is shown below; a full example output, similar to the <code>oradebug help</code> output and including command descriptions and the internal callback functions used by the <code>oradebug</code> command, can be found here <a href="https://gist.githubusercontent.com/Christoph-Lutz/8a30952e47e088c7b1d9a4f168d70638/raw/695151c343deffa0df4aa07998019f45b5f8986c/gistfile1.txt">here</a> (from version 23.26.0.0). Note that the script also works on 19c, although I only tested it on RU 19.26.</p>
 <figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
 <pre class="rawcode"><code>$ ./ksdxta.sh compact
 
@@ -132,7 +133,6 @@ SETVAR               YES         YES
 </code></pre>
 <figcaption>Listing 1: Output ksdxta.sh</figcaption>
 </figure>
-<p>The <a href="https://gist.githubusercontent.com/Christoph-Lutz/8a30952e47e088c7b1d9a4f168d70638/raw/695151c343deffa0df4aa07998019f45b5f8986c/gistfile1.txt">full</a> script output is similar to the <code>oradebug help</code> output, except that it also shows all restricted and undocumented commands, as well as the internal callback functions executed by oradebug behind the scenes.</p>
 <p>With additional shell scripting logic, it is possible to filter for restricted commands, undocumented commands, or commands that are both restricted and undocumented:</p>
 <figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
 <pre class="rawcode"><code># Show all restricted oradebug commands
@@ -181,7 +181,7 @@ UNIT_TEST_REM
 OMENGREP
 KERNEL_DUMP
 </code></pre>
-<figcaption>Listing 2: Output ksdxta.sh</figcaption>
+<figcaption>Listing 2: Showing restricted and undocumented oradebug commands</figcaption>
 </figure>
 <p>Internally, all the information displayed by the script is stored in an array called <code>ksdxta</code> (&ldquo;Kernel Service Debug X? Table&rdquo;). The array is located in the binary’s <code>.rodata</code> section and contains 69 elements (the number of elements in <code>ksdxta</code> is hard-coded in the oracle binary).</p>
 <p>Each element in <code>ksdxta</code> has length of 48 bytes (0x30). Examining the first two elements with gdb shows the following (output version 23.26.0.0):</p>
