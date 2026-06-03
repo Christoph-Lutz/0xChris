@@ -218,6 +218,11 @@ code {
     font-weight: 500;
 }
 
+.hl-skyblue {
+    color: #56B4E9;
+    font-weight: 500;
+}
+
 /* Multiple images in a row */
 .image-row {
   display: flex;

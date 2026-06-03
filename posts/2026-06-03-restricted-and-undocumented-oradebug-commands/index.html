@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Restricted and Undocumented oradebug Commands | 0xChris</title>
+
+    
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="/css/custom.css" />
+
+    
+    
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Restricted and Undocumented oradebug Commands">
+  <meta name="twitter:description" content="Restricted and Undocumented oradebug Commands">
+
+
+<meta property="og:title" content="Restricted and Undocumented oradebug Commands">
+<meta property="og:description" content="Restricted and Undocumented oradebug Commands">
+<meta property="og:url" content="https://www.0xChris.dev/posts/2026-06-03-restricted-and-undocumented-oradebug-commands/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="0xChris">
+
+
+
+<meta property="og:image" content="https://www.0xChris.dev/">
+
+
+  </head>
+
+  <body>
+    <nav>
+      <ul class="menu">
+        
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/posts/">Blog</a></li>
+        
+          <li><a href="/categories/">Categories</a></li>
+        
+          <li><a href="/tags/">Tags</a></li>
+        
+          <li><a href="/contact/">Contact</a></li>
+        
+          <li><a href="/index.xml">Subscribe</a></li>
+        
+
+        
+        
+          
+            <li class="icon">
+              <a href="https://github.com/Christoph-Lutz" aria-label="GitHub">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <title>GitHub</title>
+  <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" fill="currentColor"/>
+</svg>
+
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://x.com/chris_skyflier" aria-label="Twitter">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>X</title><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://bsky.app/profile/christophlutz.bsky.social" aria-label="Bluesky">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Bluesky</title><path d="M5.202 2.857C7.954 4.922 10.913 9.11 12 11.358c1.087-2.247 4.046-6.436 6.798-8.501C20.783 1.366 24 .213 24 3.883c0 .732-.42 6.156-.667 7.037-.856 3.061-3.978 3.842-6.755 3.37 4.854.826 6.089 3.562 3.422 6.299-5.065 5.196-7.28-1.304-7.847-2.97-.104-.305-.152-.448-.153-.327 0-.121-.05.022-.153.327-.568 1.666-2.782 8.166-7.847 2.97-2.667-2.737-1.432-5.473 3.422-6.3-2.777.473-5.899-.308-6.755-3.369C.42 10.04 0 4.615 0 3.883c0-3.67 3.217-2.517 5.202-1.026"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://sym42.org" aria-label="Sym42">
+                
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+  <path transform="scale(0.1004,0.1364) translate(11,1)" d="M0 0 C8.91 0 17.82 0 27 0 C27 32.01 27 64.02 27 97 C51.75 97 76.5 97 102 97 C102.33 118.78 102.66 140.56 103 163 C113.65023618 149.38741342 113.65023618 149.38741342 124 135.5625 C125.16793211 133.96872315 126.33590197 132.37497396 127.50390625 130.78125 C128.08156738 129.99105469 128.65922852 129.20085937 129.25439453 128.38671875 C132.14116363 124.43971809 135.0386119 120.50060445 137.9375 116.5625 C138.50952148 115.78430908 139.08154297 115.00611816 139.67089844 114.2043457 C143.34771065 109.21167043 147.06937462 104.25523259 150.81298828 99.3125 C170.98641999 74.34600723 170.98641999 74.34600723 177 44 C175.18481682 37.01549082 172.39314724 31.88945254 166.25390625 27.8515625 C158.52779633 23.46773353 150.43585329 23.37053009 141.8828125 25.125 C137.49428572 26.45701897 133.56042734 28.49182265 129.53125 30.66015625 C127 32 127 32 124 33 C124 23.76 124 14.52 124 5 C138.64493558 -0.63266753 138.64493558 -0.63266753 144.8828125 -0.62890625 C145.54860321 -0.63131821 146.21439392 -0.63373016 146.90036011 -0.63621521 C148.28308171 -0.63525162 149.66584937 -0.62222324 151.04833984 -0.59692383 C153.13124785 -0.56239643 155.20993568 -0.57639315 157.29296875 -0.59570312 C171.18361481 -0.58191047 181.8308422 3.34041929 192.00390625 12.87890625 C200.75379996 22.23354424 204.74719368 34.28009799 205.375 47 C204.41179837 64.52286038 196.17302926 80.08711875 186 94 C185.50757813 94.67724121 185.01515625 95.35448242 184.5078125 96.05224609 C180.97969681 100.89390965 177.41603046 105.70856193 173.84228516 110.51660156 C171.48040306 113.70041612 169.13374187 116.89527097 166.78710938 120.09033203 C159.52624187 129.97226581 152.18066843 139.78923387 144.81054688 149.58984375 C143.01140967 151.98481172 141.21597581 154.38250747 139.421875 156.78125 C138.8645166 157.52608643 138.3071582 158.27092285 137.73291016 159.03833008 C136.68515004 160.43879049 135.6379229 161.83964987 134.59130859 163.2409668 C131.11186653 167.88813347 131.11186653 167.88813347 130 169 C128.28134591 169.0935919 126.55884256 169.11744611 124.83764648 169.11352539 C123.73658066 169.11344986 122.63551483 169.11337433 121.50108337 169.11329651 C120.3031868 169.10813522 119.10529022 169.10297394 117.87109375 169.09765625 C116.65172623 169.0962413 115.4323587 169.09482635 114.17604065 169.09336853 C110.2631693 169.08774967 106.35035419 169.07519396 102.4375 169.0625 C99.79231853 169.05748743 97.14713617 169.0529241 94.50195312 169.04882812 C88.00126274 169.03862296 81.50069467 169.01905121 75 169 C75 154.15 75 139.3 75 124 C50.25 124 25.5 124 0 124 C0 83.08 0 42.16 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(155.8828125,0.37109375)" d="M0 0 C0.66579071 -0.00241196 1.33158142 -0.00482391 2.01754761 -0.00730896 C3.40026921 -0.00634537 4.78303687 0.00668301 6.16552734 0.03198242 C8.24843535 0.06650982 10.32712318 0.0525131 12.41015625 0.03320312 C26.30080231 0.04699578 36.9480297 3.96932554 47.12109375 13.5078125 C55.87098746 22.86245049 59.86438118 34.90900424 60.4921875 47.62890625 C59.52898587 65.15176663 51.29021676 80.716025 41.1171875 94.62890625 C40.62476563 95.30614746 40.13234375 95.98338867 39.625 96.68115234 C36.09688431 101.5228159 32.53321796 106.33746818 28.95947266 111.14550781 C26.59759056 114.32932237 24.25092937 117.52417722 21.90429688 120.71923828 C14.64342937 130.60117206 7.29785593 140.41814012 -0.07226562 150.21875 C-1.87140283 152.61371797 -3.66683669 155.01141372 -5.4609375 157.41015625 C-6.2969751 158.52741089 -6.2969751 158.52741089 -7.14990234 159.66723633 C-8.19766246 161.06769674 -9.2448896 162.46855612 -10.29150391 163.86987305 C-13.77094597 168.51703972 -13.77094597 168.51703972 -14.8828125 169.62890625 C-17.02840077 169.7166623 -19.17685671 169.73585844 -21.32421875 169.7265625 C-22.62939453 169.72333984 -23.93457031 169.72011719 -25.27929688 169.71679688 C-26.6679694 169.70844026 -28.05664127 169.6999753 -29.4453125 169.69140625 C-30.83788906 169.68639291 -32.23046731 169.68182972 -33.62304688 169.67773438 C-37.0430112 169.66590059 -40.46289094 169.64941505 -43.8828125 169.62890625 C-43.27097081 166.41918652 -42.20356776 164.38991326 -40.25 161.78515625 C-39.69892578 161.04394531 -39.14785156 160.30273438 -38.58007812 159.5390625 C-37.97873047 158.74371094 -37.37738281 157.94835937 -36.7578125 157.12890625 C-35.82098633 155.87400391 -35.82098633 155.87400391 -34.86523438 154.59375 C-32.87737817 151.93402615 -30.8807052 149.28109666 -28.8828125 146.62890625 C-27.62458729 144.95213253 -26.3667668 143.27505503 -25.109375 141.59765625 C-23.23806447 139.10192152 -21.36611031 136.60668841 -19.49169922 134.11328125 C-14.67303275 127.70001086 -9.90631899 121.24999876 -5.16113281 114.78222656 C-1.50429727 109.80538271 2.1987027 104.86635957 5.92797852 99.94360352 C26.10348636 74.9765367 26.10348636 74.9765367 32.1171875 44.62890625 C30.30200432 37.64439707 27.51033474 32.51835879 21.37109375 28.48046875 C13.64498383 24.09663978 5.55304079 23.99943634 -3 25.75390625 C-7.38852678 27.08592522 -11.32238516 29.1207289 -15.3515625 31.2890625 C-17.8828125 32.62890625 -17.8828125 32.62890625 -20.8828125 33.62890625 C-20.8828125 24.38890625 -20.8828125 15.14890625 -20.8828125 5.62890625 C-6.23787692 -0.00376128 -6.23787692 -0.00376128 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(171,143)" d="M0 0 C15.51 0 31.02 0 47 0 C47 8.91 47 17.82 47 27 C31.49 27 15.98 27 0 27 C0 18.09 0 9.18 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(135,6)" d="M0 0 C0.99 0.495 0.99 0.495 2 1 C1.67 8.92 1.34 16.84 1 25 C1.66 25 2.32 25 3 25 C2.67 25.99 2.34 26.98 2 28 C1.34 28 0.68 28 0 28 C0 18.76 0 9.52 0 0 Z"/>
+</svg>
+
+              </a>
+            </li>
+          
+        
+      </ul>
+      <hr/>
+    </nav>
+  </body>
+</html>
+<div class="article-meta">
+<h1><span class="title">Restricted and Undocumented oradebug Commands</span></h1>
+
+<h2 class="date">2026/06/03</h2>
+</div>
+
+<main>
+<p>After an investigation into how to <a href="/posts/2026-04-14-bypassing-oradebug-restrictions/">bypass restricted oradebug commands</a> (see also source <a href="#source1">1</a>), I started wondering whether a complete list of restricted commands exists, or whether there is any way to reliably identify them. Unfortunately, no such list is available, so I decided to take a closer look at the internal structures that oradebug uses under the hood.</p>
+<p>To my surprise, I discovered that oradebug not only has restricted commands, but also a number of undocumented commands that are not shown in the <code>oradebug help</code> output.</p>
+<p>The result of this investigation is a little little script, <a href="https://github.com/Christoph-Lutz/oracle/blob/main/gdb/ksdxta.sh">ksdxta.sh</a> (see also source <a href="#source2">2</a>), which extracts and lists all oradebug commands from the Oracle binary and indicates whether each command is restricted or undocumented. A short example output with the <code>compact</code> option is shown below; a full example output can be found <a href="https://gist.githubusercontent.com/Christoph-Lutz/8a30952e47e088c7b1d9a4f168d70638/raw/695151c343deffa0df4aa07998019f45b5f8986c/gistfile1.txt">here</a> (both from version 23.26.0.0). Note that the script also works on 19c, but I have only tested it on RU 19.26.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>$ ./ksdxta.sh compact
+
+Command              Restricted? Documented?
+HELP                 NO          YES
+SETMYPID             NO          YES
+SETOSPID             NO          YES
+SETORAPID            NO          YES
+SETORAPNAME          NO          YES
+SHORT_STACK          NO          YES
+CURRENT_SQL          NO          YES
+DUMP                 NO          YES
+PDUMP                NO          YES
+DUMPSGA              NO          YES
+DUMPLIST             NO          YES
+EVENT                NO          YES
+SESSION_EVENT        NO          YES
+DUMPVAR              NO          YES
+DUMPTYPE             NO          YES
+SETVAR               YES         YES
+...
+</code></pre>
+<figcaption>Listing 1: Output ksdxta.sh</figcaption>
+</figure>
+<p>The <a href="https://gist.githubusercontent.com/Christoph-Lutz/8a30952e47e088c7b1d9a4f168d70638/raw/695151c343deffa0df4aa07998019f45b5f8986c/gistfile1.txt">full</a> script output is similar to the <code>oradebug help</code> output, except that it also shows all restricted and undocumented commands, as well as the internal callback functions executed by oradebug behind the scenes.</p>
+<p>With additional shell scripting logic, it is possible to filter for restricted commands, undocumented commands, or commands that are both restricted and undocumented:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code># Show all restricted oradebug commands
+$ ./ksdxta.sh compact | awk '$2 == "YES" { print $1 }'
+SETVAR
+POKE
+NSDBX
+SGATOFILE
+SKDSTTPCS
+WATCH
+DELETE
+UNIT_TEST
+UNIT_TEST_NOLG
+UNIT_TEST_REM
+OMENGREP
+KERNEL_DUMP
+CALL
+
+# Show all undocumented oradebug commands
+$ ./ksdxta.sh compact | awk '$3 == "NO" { print $1 }'
+_WPTOP
+UNIT_TEST
+UNIT_TEST_NOLG
+UNIT_TEST_REM
+MEMANOTDUMP
+MEMANOTEND
+PROT
+REPROT
+EVENTDUMP
+OMENGREP
+PATCH
+DOC
+KERNEL_DUMP
+CLEANUP_KFK_FD
+MGA_REFRESH
+PLSQL_STACK
+DYN_GCR
+BUILDINFO
+QAMODE
+
+# Show restricted and undocumented oradebug commands
+./ksdxta.sh compact | awk '$2 == "YES" && $3 == "NO" { print $1 }'
+UNIT_TEST
+UNIT_TEST_NOLG
+UNIT_TEST_REM
+OMENGREP
+KERNEL_DUMP
+</code></pre>
+<figcaption>Listing 2: Output ksdxta.sh</figcaption>
+</figure>
+<p>Internally, all the information displayed by the script is stored in an array called <code>ksdxta</code> (&ldquo;Kernel Service Debug X? Table&rdquo;). The array is located in the binary’s <code>.rodata</code> section and contains 69 elements (the number of elements in <code>ksdxta</code> is hard-coded in the oracle binary).</p>
+<p>Each element in <code>ksdxta</code> has length of 48 bytes (0x30). Examining the first two elements with gdb shows the following (output version 23.26.0.0):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>$ gdb -q -ex "file $ORACLE_HOME/bin/oracle"
+
+(gdb) info symbol &ksdxta
+ksdxta in section .rodata
+
+(gdb) x/12xg &ksdxta
+0x1c0a1500 &lt;ksdxta&gt;:    <span class="hl-red">0x000000001c22fc80      0x0000000000000004</span>
+0x1c0a1510 &lt;ksdxta+16&gt;: <span class="hl-red">0x0000000004ca7270      0x000000001c09e944</span>
+0x1c0a1520 &lt;ksdxta+32&gt;: <span class="hl-red">0x0000000000010100      0x0000000000000000</span>
+0x1c0a1530 &lt;ksdxta+48&gt;: <span class="hl-blue">0x000000001c09e97c      0x0000000000000008</span>
+0x1c0a1540 &lt;ksdxta+64&gt;: <span class="hl-blue">0x0000000004ca6500      0x000000001c09e988</span>
+0x1c0a1550 &lt;ksdxta+80&gt;: <span class="hl-blue">0x0000000000030000      0x0000000000000000</span>
+</code></pre>
+<figcaption>Listing 3: Examining ksdxta using gdb</figcaption>
+</figure>
+<p>The color highlighting groups the memory layout into two distinct 48-byte (0x30) blocks, with element 0 shown in red and element 1 in blue.</p>
+<p>The element fields of of interest are:</p>
+<ul>
+<li>Offset <code>+0x0 (+0)</code>: the oradebug command string</li>
+<li>Offset <code>+0x8 (+8)</code>: the length of the oradebug command string (not including the trailing null character)</li>
+<li>Offset <code>+0x10 (+16)</code>: the address of the oradebug command callback function. This function is executed when the oradebug command at offset <code>0x0</code> is invoked.</li>
+<li>Offset <code>0x18 (+24)</code>: the oradebug help description</li>
+<li>Offset <code>0x22 (+34)</code>: flag field with the following values of interest:
+<ul>
+<li><code>0x20</code> = hidden/undocumented command</li>
+<li><code>0x200</code> = restricted command</li>
+</ul>
+</li>
+</ul>
+<p>To illustrate this, let&rsquo;s examine the fields of the first element in detail using gdb:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>$ gdb -q -ex "file $ORACLE_HOME/bin/oracle"
+
+(gdb) set print repeats 0
+
+# Element 0
+(gdb) x/6xg &ksdxta
+0x1c0a1500 &lt;ksdxta&gt;:    <span class="hl-red">0x000000001c22fc80</span>      <span class="hl-grey">0x00000000</span><span class="hl-blue">00000004</span>
+0x1c0a1510 &lt;ksdxta+16&gt;: <span class="hl-green">0x0000000004ca7270</span>      <span class="hl-orange">0x000000001c09e944</span>
+0x1c0a1520 &lt;ksdxta+32&gt;: <span class="hl-grey">0x0000</span><span class="hl-purple">00000001</span><span class="hl-grey">0100</span>      <span class="hl-grey">0x0000000000000000</span>
+
+<span class="hl-red"># Offset +0x0: oradebug command
+(gdb) x/s 0x000000001c22fc80
+0x1c22fc80:     "HELP"</span>
+
+<span class="hl-blue"># Offset +0x8: oradebug command length
+(gdb) x/1dw (char *) &ksdxta + 0x8
+0x1c0a1508 &lt;ksdxta+8&gt;:  4</span>
+
+<span class="hl-green"># Offset +0x10: Command callback function
+(gdb) info symbol 0x4ca7270
+ksdxfhlp in section .text</span>
+
+<span class="hl-orange"># Offset +0x18: Command help description
+(gdb) x/s 0x000000001c09e944
+0x1c09e944:     "[command]                 Describe one or all commands"</span>
+
+<span class="hl-purple"># Offset +0x22: Flags
+(gdb) x/1xw (char *) &ksdxta + 0x22
+0x1c0a1522 &lt;ksdxta+34&gt;: 0x00000001</span>
+</code></pre>
+<figcaption>Listing 4: Examining ksdxta elements using gdb</figcaption>
+</figure>
+<p>The output above shows that the first element in <code>ksdxta</code> describes the <code>oradebug HELP</code> command, which has a length of 4 bytes. When invoked via <code>oradebug</code>, it calls the callback function <code>ksdxfhlp</code> in the background. Its flag field is set to <code>0x1</code> (the meaning of which is not known to me).</p>
+<p>Let’s look at another example using the restricted and undocumented <code>oradebug UNIT_TEST</code> command, which resides at index position 44 in the <code>ksdxta</code> array. In this case, note that the flag field has bits <code>0x20</code> and <code>0x200</code> set, indicating that the command is both restricted and undocumented:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>$ gdb -q -ex "file $ORACLE_HOME/bin/oracle"
+
+(gdb) set print repeats 0
+
+# Element 66
+(gdb) x/6xg (char *) &ksdxta + 44*0x30
+0x1c0a1d40 &lt;ksdxta+2112&gt;:       <span class="hl-red">0x000000001c09f18c</span>     <span class="hl-grey">0x00000000</span><span class="hl-blue">00000009</span>
+0x1c0a1d50 &lt;ksdxta+2128&gt;:       <span class="hl-green">0x0000000004cce420</span>     <span class="hl-orange">0x000000001c09f198</span>
+0x1c0a1d60 &lt;ksdxta+2144&gt;:       <span class="hl-grey">0x0000</span><span class="hl-purple">000002211001</span>     <span class="hl-grey">0x0000000004ccf5f0</span>
+
+<span class="hl-red"># Offset +0x0: oradebug command
+(gdb) x/s *(char **) ((char *) &ksdxta + 44*0x30 + 0x0)
+0x1c09f18c:     "UNIT_TEST"</span>
+
+<span class="hl-blue"># Offset +0x8: oradebug command length
+(gdb) x/1dw ((char *) &ksdxta + 44*0x30 + 0x8)
+0x1c0a1d48 &lt;ksdxta+2120&gt;:       9</span>
+
+<span class="hl-green"># Offset +0x10: Command callback function
+(gdb) info symbol *(char **) ((char *) &ksdxta + 44*0x30 + 0x10)
+ksdxuth in section .text</span>
+
+<span class="hl-orange"># Offset +0x18: Command help description
+(gdb) x/s *(char **) ((char *) &ksdxta + 44*0x30 + 0x18)
+0x1c09f198:     "&lt;unit_test_name&gt; &lt;args&gt;   Unit test harness"</span>
+
+<span class="hl-purple"># Offset +0x22: Flags
+(gdb) x/1xw ((char *) &ksdxta + 44*0x30 + 0x22)
+0x1c0a1d62 &lt;ksdxta+2146&gt;:       0x00000221
+
+(gdb) p/t  0x00000221 & 0x200
+$1 = 1000000000
+
+(gdb) p/t  0x00000221 & 0x20
+$2 = 100000</span>
+</code></pre>
+<figcaption>Listing 5: Examining the oradebug UNIT_TEST command at index position 44</figcaption>
+</figure>
+<p>Similar to <code>ksdxta</code>, there is another array called <code>skdxta</code>, which only holds elements describing system- and OS-specific oradebug commands. The elements are laid out in the same way as those in <code>ksdxta</code>. However, in Oracle 23.26 on Linux (OEL 8.10), it contains only two elements, which are shown below:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>$ gdb -q -ex "file $ORACLE_HOME/bin/oracle"
+
+(gdb) x/12xg &skdxta
+0x1c22e5a0 &lt;skdxta&gt;:    <span class="hl-red">0x000000001b13b21c      0x0000000000000004</span>
+0x1c22e5b0 &lt;skdxta+16&gt;: <span class="hl-red">0x0000000014a604a0      0x000000001c22e484</span>
+0x1c22e5c0 &lt;skdxta+32&gt;: <span class="hl-red">0x0000000000000000      0x0000000000000000</span>
+0x1c22e5d0 &lt;skdxta+48&gt;: <span class="hl-blue">0x000000001c22e4c4      0x0000000000000008</span>
+0x1c22e5e0 &lt;skdxta+64&gt;: <span class="hl-blue">0x0000000014a60590      0x000000001c22e4d0</span>
+0x1c22e5f0 &lt;skdxta+80&gt;: <span class="hl-blue">0x0000000000000000      0x0000000000000000</span>
+</code></pre>
+<figcaption>Listing 6: Examining skdxta using gdb</figcaption>
+</figure>
+<p>The <a href="https://github.com/Christoph-Lutz/oracle/blob/main/gdb/ksdxta.sh">ksdxta.sh</a> script iterates over <code>ksdxta</code> and <code>skdxta</code> to extract and display all entries from both arrays.</p>
+<h2 id="references">References</h2>
+<p>[1] <a id="source1"></a><a href="/posts/2026-04-14-bypassing-oradebug-restrictions/">Christoph Lutz, Bypassing oradebug Restrictions, 2026-04-14</a><br>
+[2] <a id="source2"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/gdb/ksdxta.sh">Christoph Lutz, oracle GitHub Repository, Script ksdxta.sh</a><br>
+[3] <a id="source3"></a><a href="https://gist.githubusercontent.com/Christoph-Lutz/8a30952e47e088c7b1d9a4f168d70638/raw/695151c343deffa0df4aa07998019f45b5f8986c/gistfile1.txt">Christoph Lutz, Full ksdxta.sh Example Output (Gist)</a></p>
+
+</main>
+
+  <footer>
+  
+  <hr/>
+  © <a href="https://www.0xChris.dev">Christoph Lutz</a> 2025 &ndash; 2026
+  
+  <hr/>
+  <script src="https://giscus.app/client.js"
+            data-repo="Christoph-Lutz/0xChris-Comments"
+            data-repo-id="R_kgDOQo-jcg"
+            data-category="Comments"
+            data-category-id="DIC_kwDOQo-jcs4Cz0NV"
+            data-mapping="pathname"
+            data-strict="1"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="light"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+        </script>
+    <script id="partials/analytics.html" 
+  data-goatcounter="https://0xchris.goatcounter.com/count"
+  async src="//gc.zgo.at/count.js"></script>
+
+  </footer>
+  </body>
+</html>
+

@@ -3,10 +3,46 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://www.0xChris.dev/</loc>
-    <lastmod>2026-05-20T00:00:00+00:00</lastmod>
+    <lastmod>2026-06-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/categories/26ai/</loc>
+    <lastmod>2026-06-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/26ai/</loc>
+    <lastmod>2026-06-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/binary/</loc>
+    <lastmod>2026-06-03T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/categories/</loc>
-    <lastmod>2026-05-20T00:00:00+00:00</lastmod>
+    <lastmod>2026-06-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/gdb/</loc>
+    <lastmod>2026-06-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/categories/gdb/</loc>
+    <lastmod>2026-06-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/categories/internals/</loc>
+    <lastmod>2026-06-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/internals/</loc>
+    <lastmod>2026-06-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/categories/oradebug/</loc>
+    <lastmod>2026-06-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/oradebug/</loc>
+    <lastmod>2026-06-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/posts/</loc>
+    <lastmod>2026-06-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/posts/2026-06-03-restricted-and-undocumented-oradebug-commands/</loc>
+    <lastmod>2026-06-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/</loc>
+    <lastmod>2026-06-03T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/posts/2026-05-20-default-calculation-of-target_pdbs/</loc>
     <lastmod>2026-05-20T00:00:00+00:00</lastmod>
@@ -23,17 +59,8 @@
     <loc>https://www.0xChris.dev/tags/parameter/</loc>
     <lastmod>2026-05-20T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://www.0xChris.dev/posts/</loc>
-    <lastmod>2026-05-20T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/tags/</loc>
-    <lastmod>2026-05-20T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://www.0xChris.dev/tags/target_pdbs/</loc>
     <lastmod>2026-05-20T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/tags/binary/</loc>
-    <lastmod>2026-05-19T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/posts/2026-05-19-extracting-fixed-view-definitions-from-the-oracle-binary/</loc>
     <lastmod>2026-05-19T00:00:00+00:00</lastmod>
@@ -41,26 +68,11 @@
     <loc>https://www.0xChris.dev/categories/gdb/</loc>
     <lastmod>2026-05-19T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://www.0xChris.dev/tags/gdb/</loc>
-    <lastmod>2026-05-19T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/categories/internals/</loc>
-    <lastmod>2026-05-19T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/tags/internals/</loc>
-    <lastmod>2026-05-19T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://www.0xChris.dev/categories/v/</loc>
     <lastmod>2026-05-19T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/tags/vdollarviews/</loc>
     <lastmod>2026-05-19T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/categories/26ai/</loc>
-    <lastmod>2026-05-07T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/tags/26ai/</loc>
-    <lastmod>2026-05-07T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/tags/granules/</loc>
     <lastmod>2026-05-07T00:00:00+00:00</lastmod>
@@ -92,19 +104,10 @@
     <loc>https://www.0xChris.dev/posts/2026-04-14-bypassing-oradebug-restrictions/</loc>
     <lastmod>2026-04-14T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://www.0xChris.dev/categories/oradebug/</loc>
-    <lastmod>2026-04-14T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/tags/oradebug/</loc>
-    <lastmod>2026-04-14T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://www.0xChris.dev/categories/c/</loc>
     <lastmod>2026-03-27T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/tags/c/</loc>
-    <lastmod>2026-03-27T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/categories/gdb/</loc>
     <lastmod>2026-03-27T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/tags/glibc/</loc>

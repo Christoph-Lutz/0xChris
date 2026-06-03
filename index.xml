@@ -4,6 +4,13 @@
     <link>https://www.0xChris.dev/</link>
     <description>0xChris updates</description>
     <atom:link href="https://www.0xChris.dev/" rel="self" type="application/rss+xml"/><item>
+      <title>Restricted and Undocumented oradebug Commands</title>
+      <link>https://www.0xChris.dev/posts/2026-06-03-restricted-and-undocumented-oradebug-commands/</link>
+      <pubDate>Wed, 03 Jun 2026 00:00:00 UTC</pubDate>
+      <guid>https://www.0xChris.dev/posts/2026-06-03-restricted-and-undocumented-oradebug-commands/</guid>
+      <description>&lt;p&gt;After an investigation into how to &lt;a href=&#34;https://www.0xChris.dev/posts/2026-04-14-bypassing-oradebug-restrictions/&#34;&gt;bypass restricted oradebug commands&lt;/a&gt; (see also source &lt;a href=&#34;#source1&#34;&gt;1&lt;/a&gt;), I started wondering whether a complete list of restricted commands exists, or whether there is any way to reliably identify them. Unfortunately, no such list is available, so I decided to take a closer look at the internal structures that oradebug uses under the hood.&lt;/p&gt;
+&lt;p&gt;To my surprise, I discovered that oradebug not only has restricted commands, but also a number of undocumented commands that are not shown in the &lt;code&gt;oradebug help&lt;/code&gt; output.&lt;/p&gt;</description>
+    </item><item>
       <title>Default Calculation of TARGET_PDBS</title>
       <link>https://www.0xChris.dev/posts/2026-05-20-default-calculation-of-target_pdbs/</link>
       <pubDate>Wed, 20 May 2026 00:00:00 UTC</pubDate>
