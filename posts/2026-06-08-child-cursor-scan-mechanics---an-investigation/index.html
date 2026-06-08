@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Child Cursor Scan Mechanics - An Investigation | 0xChris</title>
+
+    
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="/css/custom.css" />
+
+    
+    
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Child Cursor Scan Mechanics - An Investigation">
+  <meta name="twitter:description" content="Child Cursor Scan Mechanics - An Investigation">
+
+
+<meta property="og:title" content="Child Cursor Scan Mechanics - An Investigation">
+<meta property="og:description" content="Child Cursor Scan Mechanics - An Investigation">
+<meta property="og:url" content="https://www.0xChris.dev/posts/2026-06-08-child-cursor-scan-mechanics---an-investigation/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="0xChris">
+
+
+
+<meta property="og:image" content="https://www.0xChris.dev/">
+
+
+  </head>
+
+  <body>
+    <nav>
+      <ul class="menu">
+        
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/posts/">Blog</a></li>
+        
+          <li><a href="/categories/">Categories</a></li>
+        
+          <li><a href="/tags/">Tags</a></li>
+        
+          <li><a href="/contact/">Contact</a></li>
+        
+          <li><a href="/index.xml">Subscribe</a></li>
+        
+
+        
+        
+          
+            <li class="icon">
+              <a href="https://github.com/Christoph-Lutz" aria-label="GitHub">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <title>GitHub</title>
+  <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" fill="currentColor"/>
+</svg>
+
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://x.com/chris_skyflier" aria-label="Twitter">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>X</title><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://bsky.app/profile/christophlutz.bsky.social" aria-label="Bluesky">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Bluesky</title><path d="M5.202 2.857C7.954 4.922 10.913 9.11 12 11.358c1.087-2.247 4.046-6.436 6.798-8.501C20.783 1.366 24 .213 24 3.883c0 .732-.42 6.156-.667 7.037-.856 3.061-3.978 3.842-6.755 3.37 4.854.826 6.089 3.562 3.422 6.299-5.065 5.196-7.28-1.304-7.847-2.97-.104-.305-.152-.448-.153-.327 0-.121-.05.022-.153.327-.568 1.666-2.782 8.166-7.847 2.97-2.667-2.737-1.432-5.473 3.422-6.3-2.777.473-5.899-.308-6.755-3.369C.42 10.04 0 4.615 0 3.883c0-3.67 3.217-2.517 5.202-1.026"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://sym42.org" aria-label="Sym42">
+                
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+  <path transform="scale(0.1004,0.1364) translate(11,1)" d="M0 0 C8.91 0 17.82 0 27 0 C27 32.01 27 64.02 27 97 C51.75 97 76.5 97 102 97 C102.33 118.78 102.66 140.56 103 163 C113.65023618 149.38741342 113.65023618 149.38741342 124 135.5625 C125.16793211 133.96872315 126.33590197 132.37497396 127.50390625 130.78125 C128.08156738 129.99105469 128.65922852 129.20085937 129.25439453 128.38671875 C132.14116363 124.43971809 135.0386119 120.50060445 137.9375 116.5625 C138.50952148 115.78430908 139.08154297 115.00611816 139.67089844 114.2043457 C143.34771065 109.21167043 147.06937462 104.25523259 150.81298828 99.3125 C170.98641999 74.34600723 170.98641999 74.34600723 177 44 C175.18481682 37.01549082 172.39314724 31.88945254 166.25390625 27.8515625 C158.52779633 23.46773353 150.43585329 23.37053009 141.8828125 25.125 C137.49428572 26.45701897 133.56042734 28.49182265 129.53125 30.66015625 C127 32 127 32 124 33 C124 23.76 124 14.52 124 5 C138.64493558 -0.63266753 138.64493558 -0.63266753 144.8828125 -0.62890625 C145.54860321 -0.63131821 146.21439392 -0.63373016 146.90036011 -0.63621521 C148.28308171 -0.63525162 149.66584937 -0.62222324 151.04833984 -0.59692383 C153.13124785 -0.56239643 155.20993568 -0.57639315 157.29296875 -0.59570312 C171.18361481 -0.58191047 181.8308422 3.34041929 192.00390625 12.87890625 C200.75379996 22.23354424 204.74719368 34.28009799 205.375 47 C204.41179837 64.52286038 196.17302926 80.08711875 186 94 C185.50757813 94.67724121 185.01515625 95.35448242 184.5078125 96.05224609 C180.97969681 100.89390965 177.41603046 105.70856193 173.84228516 110.51660156 C171.48040306 113.70041612 169.13374187 116.89527097 166.78710938 120.09033203 C159.52624187 129.97226581 152.18066843 139.78923387 144.81054688 149.58984375 C143.01140967 151.98481172 141.21597581 154.38250747 139.421875 156.78125 C138.8645166 157.52608643 138.3071582 158.27092285 137.73291016 159.03833008 C136.68515004 160.43879049 135.6379229 161.83964987 134.59130859 163.2409668 C131.11186653 167.88813347 131.11186653 167.88813347 130 169 C128.28134591 169.0935919 126.55884256 169.11744611 124.83764648 169.11352539 C123.73658066 169.11344986 122.63551483 169.11337433 121.50108337 169.11329651 C120.3031868 169.10813522 119.10529022 169.10297394 117.87109375 169.09765625 C116.65172623 169.0962413 115.4323587 169.09482635 114.17604065 169.09336853 C110.2631693 169.08774967 106.35035419 169.07519396 102.4375 169.0625 C99.79231853 169.05748743 97.14713617 169.0529241 94.50195312 169.04882812 C88.00126274 169.03862296 81.50069467 169.01905121 75 169 C75 154.15 75 139.3 75 124 C50.25 124 25.5 124 0 124 C0 83.08 0 42.16 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(155.8828125,0.37109375)" d="M0 0 C0.66579071 -0.00241196 1.33158142 -0.00482391 2.01754761 -0.00730896 C3.40026921 -0.00634537 4.78303687 0.00668301 6.16552734 0.03198242 C8.24843535 0.06650982 10.32712318 0.0525131 12.41015625 0.03320312 C26.30080231 0.04699578 36.9480297 3.96932554 47.12109375 13.5078125 C55.87098746 22.86245049 59.86438118 34.90900424 60.4921875 47.62890625 C59.52898587 65.15176663 51.29021676 80.716025 41.1171875 94.62890625 C40.62476563 95.30614746 40.13234375 95.98338867 39.625 96.68115234 C36.09688431 101.5228159 32.53321796 106.33746818 28.95947266 111.14550781 C26.59759056 114.32932237 24.25092937 117.52417722 21.90429688 120.71923828 C14.64342937 130.60117206 7.29785593 140.41814012 -0.07226562 150.21875 C-1.87140283 152.61371797 -3.66683669 155.01141372 -5.4609375 157.41015625 C-6.2969751 158.52741089 -6.2969751 158.52741089 -7.14990234 159.66723633 C-8.19766246 161.06769674 -9.2448896 162.46855612 -10.29150391 163.86987305 C-13.77094597 168.51703972 -13.77094597 168.51703972 -14.8828125 169.62890625 C-17.02840077 169.7166623 -19.17685671 169.73585844 -21.32421875 169.7265625 C-22.62939453 169.72333984 -23.93457031 169.72011719 -25.27929688 169.71679688 C-26.6679694 169.70844026 -28.05664127 169.6999753 -29.4453125 169.69140625 C-30.83788906 169.68639291 -32.23046731 169.68182972 -33.62304688 169.67773438 C-37.0430112 169.66590059 -40.46289094 169.64941505 -43.8828125 169.62890625 C-43.27097081 166.41918652 -42.20356776 164.38991326 -40.25 161.78515625 C-39.69892578 161.04394531 -39.14785156 160.30273438 -38.58007812 159.5390625 C-37.97873047 158.74371094 -37.37738281 157.94835937 -36.7578125 157.12890625 C-35.82098633 155.87400391 -35.82098633 155.87400391 -34.86523438 154.59375 C-32.87737817 151.93402615 -30.8807052 149.28109666 -28.8828125 146.62890625 C-27.62458729 144.95213253 -26.3667668 143.27505503 -25.109375 141.59765625 C-23.23806447 139.10192152 -21.36611031 136.60668841 -19.49169922 134.11328125 C-14.67303275 127.70001086 -9.90631899 121.24999876 -5.16113281 114.78222656 C-1.50429727 109.80538271 2.1987027 104.86635957 5.92797852 99.94360352 C26.10348636 74.9765367 26.10348636 74.9765367 32.1171875 44.62890625 C30.30200432 37.64439707 27.51033474 32.51835879 21.37109375 28.48046875 C13.64498383 24.09663978 5.55304079 23.99943634 -3 25.75390625 C-7.38852678 27.08592522 -11.32238516 29.1207289 -15.3515625 31.2890625 C-17.8828125 32.62890625 -17.8828125 32.62890625 -20.8828125 33.62890625 C-20.8828125 24.38890625 -20.8828125 15.14890625 -20.8828125 5.62890625 C-6.23787692 -0.00376128 -6.23787692 -0.00376128 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(171,143)" d="M0 0 C15.51 0 31.02 0 47 0 C47 8.91 47 17.82 47 27 C31.49 27 15.98 27 0 27 C0 18.09 0 9.18 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(135,6)" d="M0 0 C0.99 0.495 0.99 0.495 2 1 C1.67 8.92 1.34 16.84 1 25 C1.66 25 2.32 25 3 25 C2.67 25.99 2.34 26.98 2 28 C1.34 28 0.68 28 0 28 C0 18.76 0 9.52 0 0 Z"/>
+</svg>
+
+              </a>
+            </li>
+          
+        
+      </ul>
+      <hr/>
+    </nav>
+  </body>
+</html>
+<div class="article-meta">
+<h1><span class="title">Child Cursor Scan Mechanics - An Investigation</span></h1>
+
+<h2 class="date">2026/06/08</h2>
+</div>
+
+<main>
+<p>Oracle is a large and complex piece of software, and it often behaves in unexpected ways. During an investigation into a cursor sharing and high version count issue, I encountered several such surprises.</p>
+<p>During the investigation, I started wondering about the order in which Oracle scans the list of child cursors: forward, from &ldquo;older&rdquo; to &ldquo;newer&rdquo;, or backward, from &ldquo;newer&rdquo; to &ldquo;older&rdquo;. I also wondered about the computational overhead involved in inspecting all child cursors under a parent cursor, assuming a maximum of 8192 child cursors, as permitted by the default value of <code>_cursor_obsolete_threshold</code>.</p>
+<p>As is often the case with questions like this, the available information is surprisingly sparse, vague, and at times even contradictory. Therefore, I decided to conduct a systematic experiment and document my findings in this note (all findings and results are based on version 23.26.0). If you don&rsquo;t have the time or mood to read through all the gory details of this investigation, you can jump directly to the <a href="#summary">summary</a>.</p>
+<p>The experiment is structured as follows:</p>
+<ol>
+<li>Create a parent cursor with 8192 child cursors (child #0 through #8191)</li>
+<li>Access the last child cursor in the parent&rsquo;s child cursor list (child #8191) and trace the child cursor access with Oracle&rsquo;s <code>CURSORTRACE</code> event</li>
+<li>Access the last child cursor in the parent&rsquo;s child cursor list (child #8191) and trace the child cursor access with bpftrace</li>
+</ol>
+<p>Careful readers may rightly note that this wording already rests on assumptions, as the exact internal structure used by a parent cursor to maintain its child cursors is not known. It is not publicly documented whether this is a list or, as some sources suggest, an array or a hash table. Anyway, by the end of this post, we’ll have clarity on the exact structure used by Oracle.</p>
+<p>To generate a parent cursor with 8192 child cursors, I used the PL/SQL code shown in Listing 1. It is a slightly modified version of a test case originally discussed by Christian Antognini in <a href="https://antognini.ch/2010/06/optimizer-mode-mismatch-does-not-prevent-sharing-of-child-cursor/?utm_source=chatgpt.com">this blog post</a> (see also <a href="#source1">1</a>).</p>
+<p>The PL/SQL block repeatedly modifies the session-level setting of <code>optimizer_index_cost_adj</code> and executes a test query for a specified number of iterations in a loop. Each change to <code>optimizer_index_cost_adj</code> alters the session-level optimizer environment, which forces Oracle to create a new child cursor for execution of the test query.</p>
+<p>The example in Listing 1 also disables the session cursor cache by setting <code>session_cached_cursors=0</code>. Note that changing this setting requires an instance restart — this is to say you shouldn&rsquo;t blindly copy and paste the code from Listing 1.</p>
+<p>When the session cursor cache is enabled, Oracle maintains session-level pointers to child cursors, which allows a session to directly access cursors in the library cache without scanning through the parent&rsquo;s list of child cursors (see also <a href="#source2">2</a>). This optimization kicks in when a statement has been parsed three times and interferes with the experiment; disabling it ensures deterministic and reproducible behavior.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>-- Disable the session cursor cache and bounce the instance
+</span></span><span style="display:flex;"><span>alter system set session_cached_cursors=0 scope=spfile sid=&#39;*&#39;;
+</span></span><span style="display:flex;"><span>startup force
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>-- Flush the shared pool
+</span></span><span style="display:flex;"><span>alter system flush shared_pool;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>-- Create test table
+</span></span><span style="display:flex;"><span>drop table if exists t;
+</span></span><span style="display:flex;"><span>create table if not exists t(n number);
+</span></span><span style="display:flex;"><span>exec dbms_stats.gather_table_stats(ownname=&gt;user, tabname=&gt;&#39;T&#39;);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>-- Script: create_children.sql
+</span></span><span style="display:flex;"><span>-- Create a parent cursor with &amp;childno number of child cursors
+</span></span><span style="display:flex;"><span>define &amp;childno=&amp;1
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>declare
+</span></span><span style="display:flex;"><span>    l_count pls_integer;
+</span></span><span style="display:flex;"><span>begin
+</span></span><span style="display:flex;"><span>    for oica in 1..&amp;childno
+</span></span><span style="display:flex;"><span>    loop
+</span></span><span style="display:flex;"><span>        execute immediate &#39;alter session set optimizer_index_cost_adj = &#39;||oica;
+</span></span><span style="display:flex;"><span>        execute immediate &#39;select count(*) from t&#39; into l_count;
+</span></span><span style="display:flex;"><span>    end loop;
+</span></span><span style="display:flex;"><span>end;
+</span></span><span style="display:flex;"><span>/
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>-- Execute PL/SQL script
+</span></span><span style="display:flex;"><span>@create_children.sql 8192</span></span></code></pre></div>
+<figcaption>Listing 1: Create a parent cursor with 8192 child cursors</figcaption>
+</figure>
+<p>The test query from Listing 1 has sql id <code>cyzznbykb509s</code> (hash value <code>2763161912</code>), which can be used to determine the number of child cursors loaded in the library cache with a query like the following:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>SQL&gt; select sql_id, hash_value, address parent_addr, count(distinct child_address) children 
+</span></span><span style="display:flex;"><span>     from v$sql where sql_id = &#39;cyzznbykb509s&#39; group by all;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL_ID        HASH_VALUE PARENT_ADDR        CHILDREN
+</span></span><span style="display:flex;"><span>------------- ---------- ---------------- ----------
+</span></span><span style="display:flex;"><span>cyzznbykb509s 2763161912 000000058F55E140       8192</span></span></code></pre></div>
+<figcaption>Listing 2: Determining the child cursor count for sql id cyzznbykb509s</figcaption>
+</figure>
+<p>This sets the stage for the next step: capturing a runtime trace to observe how child cursors are scanned and checked, and in what order. The Oracle library cache code is quite well instrumented, and the instrumentation can be enabled using the <code>CURSORTRACE</code> event. The event supports multiple trace levels, although not all of them are publicly documented. However, My Oracle Support note <a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=755532">KB829509</a> provides a good starting point (see also <a href="#source3">3</a>).</p>
+<p>In my tests, I used trace level <code>0x898244</code> with the <code>address</code> set to <code>2763161912</code>. As explained in more detail below, this trace level enables system-wide tracing for the sql statement identified by hash value <code>2763161912</code>.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>-- Enable CURSORTRACE level 0x898244 for statement with hash value 2763161912
+</span></span><span style="display:flex;"><span>SQL&gt; alter system set events &#39;immediate trace name cursortrace level 0x898244, address 2763161912&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>-- Disable CURSORTRACE event for statement with hash value 2763161912
+</span></span><span style="display:flex;"><span>SQL&gt; alter system set events &#39;immediate trace name cursortrace level 0x80000080, address 2763161912&#39;;</span></span></code></pre></div>
+<figcaption>Listing 3: Enabling and disabling the CURSORTRACE event</figcaption>
+</figure>
+<p>The <code>CURSORTRACE</code> event level is a bitmask in which each bit enables a specific tracing feature. Multiple features can be activated by combining their corresponding bit values using a bitwise OR. Trace level <code>0x898244</code> means the following bits are set:</p>
+<ul>
+<li><code>0x4</code>: Enable debug level 3 (this includes levels 1 + 2)</li>
+<li><code>0x40</code>: Add cursor to list be traced (this enables tracing only for the sql statement identified by the hash value specified by <code>address</code>)</li>
+<li><code>0x200</code>: Trace cursor sharing criteria</li>
+<li><code>0x8000</code>: Trace sharing criteria failure</li>
+<li><code>0x10000</code>: Trace sharing criteria success</li>
+<li><code>0x80000</code>: Log timestamps (this level is undocumented)</li>
+<li><code>0x800000</code>: Trace child cursor pruning (this trace level is undocumented)</li>
+</ul>
+<p>That said, care should be taken with the <code>CURSORTRACE</code> event, as past bugs have been reported in which the trace could not be switched off properly (see <a href="#source4">4</a>, for instance).</p>
+<p>With the <code>CURSORTRACE</code> event enabled, the test query can be executed using the script shown below. The script accepts a session-level setting for <code>optimizer_index_cost_adj</code> as an input parameter.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>-- test_query.sql
+</span></span><span style="display:flex;"><span>define oica=&amp;1
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>declare
+</span></span><span style="display:flex;"><span>    l_count pls_integer;
+</span></span><span style="display:flex;"><span>begin
+</span></span><span style="display:flex;"><span>    execute immediate &#39;alter session set optimizer_index_cost_adj=&amp;oica&#39;;
+</span></span><span style="display:flex;"><span>    execute immediate &#39;select count(*) from t&#39; INTO l_count;
+</span></span><span style="display:flex;"><span>end;
+</span></span><span style="display:flex;"><span>/</span></span></code></pre></div>
+<figcaption>Listing 4: PL/SQL test script test_query.sql</figcaption>
+</figure>
+<p>It is important to execute the test query from within a PL/SQL block, because the child cursors created by the code in Listing 1 were also created from PL/SQL. Running the test query directly from SQL would result in an additional new child cursor (child #8192) due to a <code>TOP_LEVEL_RPI_CURSOR</code> mismatch. Since child cursor numbering starts at 0, child #8192 corresponds to the 8193rd child cursor. This would interfere with the experiment, as the parent cursor is marked obsolete once the <code>_cursor_obsolete_threshold</code> of 8192 is exceeded.</p>
+<p>Execute the PL/SQL script as follows to access the most recently created child cursor in the parent&rsquo;s list. This is child #8191, corresponding to the 8192nd child cursor, and presumably the last child on the list.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>-- Access child #8191 (the 8192nd child in the parent&#39;s list)
+</span></span><span style="display:flex;"><span>@test_query.sql 8192</span></span></code></pre></div>
+<figcaption>Listing 5: Access child #8191 using the PL/SQL script</figcaption>
+</figure>
+<p>Before examining the <code>CURSORTRACE</code> output in detail, I expected Oracle to scan the child cursor list in simple forward or reverse sequence, either from child #0 to child #8191 or from child #8191 back to child #0. This expectation was based on a <code>CURSORDUMP</code> trace, which showed that the parent cursor maintains a linked list running from child #0 to child #8191.</p>
+<p>This can be observed in a symbolic dump of the <code>kkscs</code> structures. Each structure represents a child cursor in the parent’s child cursor list and links to the next child cursor via a <code>nxt</code> pointer (highlighted in red in the listing below, which shows <code>kkscs</code> entries for child cursors 0, 1, 8190, and 8191). The <code>nxt</code> pointer of the last entry in the list is <code>(nil)</code>, indicating the end of the list.</p>
+<p>Note that I&rsquo;m not aware of any alternative way to dump the <code>kkscs</code> structures other than using the <code>CURSORDUMP</code> event (at level 32), which should not be used on a busy system.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>-- CURSORDUMP level 32: Dump shared cursors including kkscs structures
+SQL> alter system set events 'immediate trace name cursordump level 32';
+
+# CURSORDUMP output
+kkscs=0x58f55d5d8 <span class="hl-red">nxt=0x58f555148</span> flg=18 <span class="hl-red">cld=0</span> hd=0x58f55cd10 par=0x58f55d0e8 pdbuid=1 pdb=1
+Mutex 0x58f55d5d8(0, 0) idn 7ffd00000000
+ct=0 hsh=1eee6512 unp=(nil) unn=0 hvl=8f55df08 nhv=0 ses=(nil)
+hep=0x58f55d680 flg=80 ld=1 ob=0x58f55bbd0 ptr=0x4ffc29cf0 fex=0x4ffc29c30
+
+<span class="hl-red">kkscs=0x58f555148 nxt=0x58f555908</span> flg=18 <span class="hl-red">cld=1</span> hd=0x58f554a50 par=0x58f55d0e8 pdbuid=1 pdb=1
+Mutex 0x58f555148(0, 0) idn 7ffd00000000
+ct=1 hsh=1eee6512 unp=(nil) unn=0 hvl=8f55de40 nhv=0 ses=(nil)
+hep=0x58f5551f0 flg=80 ld=1 ob=0x58f553910 ptr=0x4ffc1fcf0 fex=0x4ffc1fc30
+...
+kkscs=0x4967fde80 <span class="hl-red">nxt=0x4967f5400</span> flg=18 <span class="hl-red">cld=8190</span> hd=0x4967f9b00 par=0x58f55d0e8 pdbuid=1 pdb=1
+Mutex 0x4967fde80(0, 0) idn 7ffd00000000
+ct=1ffe hsh=1eee6512 unp=(nil) unn=0 hvl=96847cc0 nhv=0 ses=(nil)
+hep=0x4967fdf28 flg=80 ld=1 ob=0x4967f89c0 ptr=0x4997ad0c0 fex=0x4997ad000
+
+<span class="hl-red">kkscs=0x4967f5400 nxt=(nil)</span> flg=18 <span class="hl-red">cld=8191</span> hd=0x4967f51a0 par=0x58f55d0e8 pdbuid=1 pdb=1
+Mutex 0x4967f5400(0, 0) idn 7ffd00000000
+ct=1fff hsh=1eee6512 unp=(nil) unn=0 hvl=967fe650 nhv=0 ses=(nil)
+hep=0x4967f54a8 flg=80 ld=1 ob=0x4967f4060 ptr=0x4997aa0c0 fex=0x4997aa000
+</code></pre>
+<figcaption>Listing 6: CURSORDUMP output showing the kkscs linked list from child #0 through #8191</figcaption>
+</figure>
+<p>Interestingly, the runtime <code>CURSORTRACE</code> output shows a completely different and unexpected behavior: Oracle first scans child #99 down to child #0 in reverse order, and then continues from child #100 up to child #8191 in forward order (the trace excerpt below is annotated and formatted for readability):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>PDB#1 CUR#12 XSC 0x7f26e77d23a0 CHILD#-1 CI (nil) CTX (nil)
+time=2443878804 PARSING SQLTEXT=select count(*) from t
+SQLHASH=a4b28138
+
+time=2443878820 kksfbc begin 0x108 0 0
+time=2443878875 No valid child pinned
+
+time=2443878884 Parent 0x56bd5b3e0(0x58f55e140) ready for search
+
+time=2443878895 kksCheckCursor: <span class="hl-red">next child is #99</span>   <<<<< start scan at child #99
+time=2443878923 Child was pruned
+
+time=2443878932 kksCheckCursor: <span class="hl-red">next child is #98</span>
+time=2443878949 Child was pruned
+...
+time=2443882490 kksCheckCursor: <span class="hl-red">next child is #1</span>
+time=2443882519 Child was pruned
+
+time=2443882537 kksCheckCursor: <span class="hl-red">next child is #0</span>    <<<<< scan reaches child #0
+time=2443882558 Child was pruned
+
+time=2443882569 kksCheckCursor: <span class="hl-red">next child is #100</span>  <<<<< scan child #100 through #8191
+time=2443882596 Child was pruned
+
+time=2443882610 kksCheckCursor: <span class="hl-red">next child is #101</span>
+time=2443882635 Child was pruned
+...
+time=2444160619 kksCheckCursor: <span class="hl-red">next child is #8190</span>
+time=2444160641 Child was pruned
+
+time=2444160658 kksCheckCursor: <span class="hl-red">next child is #8191</span>
+time=2444160678 kksCheckCursor: pinning child #8191 in shared mode 0x56bd5a7f8 0x4967f51a0
+...
+time=2444161768 Cursor about get executed
+</code></pre>
+<figcaption>Listing 7: CURSORTRACE of accessing child #8191</figcaption>
+</figure>
+<p>This was puzzling enough that I repeated the test case multiple times with varying numbers of child cursors and instance restarts between runs. I also executed it on other instances and in an Oracle 19c environment (19.26), consistently observing the same behavior: when there were 100 or more child cursors, Oracle always scanned the child cursor list in reverse order from child #99 down to child #0, and then in forward order from child #100 up to the highest-numbered child in the list; when there were fewer than 100 child cursors, Oracle only scanned the list in reverse order from the highest-numbered child down to child #0.</p>
+<p>At this point, I realized I had not accidentally broken the test case, and that the observed behavior must follow a systematic pattern. There had to be an underlying logic that changes once a 100-child-cursor threshold is reached. But what exactly is Oracle doing, and why doesn&rsquo;t it scan the child cursor list in linear order from head to tail or tail to head?</p>
+<p>To better understand this behavior, I examined the <code>kkscs</code> structures in more detail and discovered a second list linking them via &ldquo;next&rdquo; and &ldquo;prev&rdquo; pointers, forming a doubly linked list. Internally, this list is referred to as <code>cshsl</code> (child cursor hash list?), and there are 16 such lists per parent cursor, each associated with a hash bucket in a hash table pointed to by the <code>ht</code> pointer.</p>
+<p>The child cursor scan code path in <code>kkscsSearchChildList</code> (not shown here) computes a hash value from the pdb name (function <code>kpdbNameHash</code>) and uses it to derive a bucket index in the <code>ht</code> hash table via a modulo-16 operation. This means child cursors created in different pdbs are distributed across 16 child cursor &ldquo;sublists&rdquo; according to the pdb name hash.</p>
+<p>There are no traces or dumps that provide any details on the <code>cshsl</code> list, so it can only be reconstructed by analyzing the raw memory layout in gdb, which requires quite some manual pointer chasing.</p>
+<p>Let&rsquo;s walk through an example, given the <code>ht</code> pointer at address <code>0x58f55d268</code> and a pdb name hash of <code>0x1eee6512</code> (corresponding to &ldquo;CDB$ROOT&rdquo;). The gdb commands below use <code>ht</code> as a starting point to locate the bucket address where the <code>next</code> pointer to the first <code>cshsl</code> list node is stored.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>#~ gdb -q -p &lt;pid&gt;
+
+(gdb) set $ht = 0x58f55d268
+
+(gdb) set $hsh = 0x1eee6512
+
+(gdb) set $bucket = (*(uint64_t *) $ht) + (($hsh % 16) * 0x30)
+
+(gdb) p/x $bucket
+<span class="hl-green">0x58f55d2e8</span>
+
+(gdb) set $next = *(uint64_t *) $bucket
+
+(gdb) p/x $next
+<span class="hl-red">0x58f3c6198</span>
+</code></pre>
+<figcaption>Listing 8: Manually locating the cshsl child cursor list with gdb</figcaption>
+</figure>
+<p>The first list node pointed to by the <code>next</code> pointer (<code>0x58f3c6198</code>) resides at offset <code>+0x50</code> within the <code>kkscs</code> structure. This indicates that <code>cshsl</code> list nodes do not reference <code>kkscs</code> structures directly, but instead point to substructures within <code>kkscs</code>. This allows inspection of the full <code>kkscs</code> structure by using address <code>0x58f3c6198</code> as a starting point and subtracting <code>0x50</code> bytes from it:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>(gdb) x/20xg 0x58f3c6198 - 0x50
+0x58f3c6148:    0x0000000000000000      0x0000000000000000
+0x58f3c6158:    0x0000000000000000      0x000000058f3c1060
+<span class="hl-green">0x58f3c6168:    0x00000063</span>00630018      0x000000001eee6512
+0x58f3c6178:    0x0000000000000000      0x0000000000000000
+0x58f3c6188:    0x000000058f3c6448      0x0000000000000000
+<span class="hl-red">0x58f3c6198:</span>    <span class="hl-red">0x000000058f3c59d8</span>      <span class="hl-orange">0x000000058f55d2e8</span>
+0x58f3c61a8:    0x0000000000000000      0x000000058f3c61f0
+0x58f3c61b8:    0x000000058f55d0e8      0x000000058f3c0930
+0x58f3c61c8:    0x000000058f3c0be8      0x000000058f3c0be8
+0x58f3c61d8:    0x0000000000000001      0x0000000000000000
+</code></pre>
+<figcaption>Listing 9: Examining the kkcsc structure with gdb</figcaption>
+</figure>
+<p>The <code>kkscs</code> fields of interest are:</p>
+<ul>
+<li><span class="hl-green">Offset</span> <code class="hl-green">0x22</code>  <span class="hl-green">(address</span> <code class="hl-green">0x58f3c6168</code><span class="hl-green">)</span>: the child number, which is <span class="hl-green">0x63</span> (99); this shows that the head of the <code>cshsl</code> list points into the <code>kkscs</code> structure of child #99.</li>
+<li><span class="hl-red">Offset</span> <code class="hl-red">0x50</code> <span class="hl-red">(address </span> <code class="hl-red">0x58f3c6198</code><span class="hl-red">)</span>: the &ldquo;next&rdquo; pointer to the next node, located at address <code class="hl-red">0x58f3c59d8</code> in the <code>cshsl</code> list; as explained earlier, this points to offset <code>+0x50</code> within the next kkscs structure.</li>
+<li><span class="hl-orange">Offset </span> <code class="hl-orange">0x58</code><span class="hl-orange">(address</span> <code class="hl-orange">0x58f3c61a0</code><span class="hl-orange">)</span>: the &ldquo;prev&rdquo; pointer to the previous node in the <code>cshsl</code> list; since we are at the first node in the list, the prev pointer points back to the hash table bucket at address <code class="hl-orange">0x58f55d2e8</code>.</li>
+</ul>
+<p>Knowing the <code>kkscs</code> field offsets allows navigation of the <code>cshsl</code> list in forward and backward order to retrieve information from adjacent nodes, as illustrated in the examples below:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code># Retrieve the child number of the next child in the list
+(gdb) x/1dh (uint16_t *) (<span class="hl-red">0x58f3c59d8</span> - 0x50 + 0x22)
+0x58f3c59aa:    98
+
+# Retrieve the next pointer of the next child in the list
+(gdb) x/1xg *(uint64_t *) <span class="hl-red">0x58f3c59d8</span>
+0x58f3ce458:    0x000000058f3cdc98
+
+# Dereference the next pointer of the next child to retrieve the child number
+# of the third child in the list (child #97) 
+(gdb) x/1dh (uint16_t *) ((*(uint64_t *) <span class="hl-red">0x58f3c59d8</span>) - 0x50 + 0x22)
+0x58f3ce42a:    97
+</code></pre>
+<figcaption>Listing 10: Navigating the cshsl list using gdb</figcaption>
+</figure>
+<p>The discovery of the <code>cshsl</code> linked list made me realize the following: if the scan of this list is entirely linear, then it must be the insertion order that determines the order in which child cursors are encountered during a scan.</p>
+<p>I therefore wrote a bpftrace script (<a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/kkscsSearchChildList.bt">kkscsSearchChildList.bt</a>: see also <a href="#source5">5</a>) to trace the Oracle kernel functions that access the parent’s child cursor list, allowing closer observation of how the list is inserted into and modified at runtime.</p>
+<p>The script expects the OS PID of the session executing the test query and, by default, produces output similar to the <code>CURSORTRACE</code> output, but adds additional details (particularly in verbose mode shown further below).</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code># Start the bpftrace script
+#~ ./kkscsSearchChildList.bt &lt;pid&gt;
+
+-- Execute the test query (access child #8191, the 8192nd child in the list)
+@test_query.sql 8192
+
+# Output bpftrace script
+33594 oracle_33594_tc    kkscsSearchChildList: Parent ready for search (kglkdadr=0x56bd5a7f8, kglhdpar=0x58f55e140)
+33594 oracle_33594_tc    kpdbNameHash: pdb_name is CDB$ROOT (hsh=0x1eee6512)
+
+33594 oracle_33594_tc    kkscsCheckCursor: Iterating child #99 (cs=0x58f3c6148, pdbuid=1)
+33594 oracle_33594_tc    kkscsCheckCursor: next child is #99 (cs=0x58f3c6148, pdbuid=1)
+33594 oracle_33594_tc    kkscsPruneChild: Child was pruned
+
+33594 oracle_33594_tc    kkscsCheckCursor: Iterating child #98 (cs=0x58f3c5988, pdbuid=1)
+33594 oracle_33594_tc    kkscsCheckCursor: next child is #98 (cs=0x58f3c5988, pdbuid=1)
+33594 oracle_33594_tc    kkscsPruneChild: Child was pruned
+...
+33594 oracle_33594_tc    kkscsCheckCursor: Iterating child #1 (cs=0x58f555148, pdbuid=1)
+33594 oracle_33594_tc    kkscsCheckCursor: next child is #1 (cs=0x58f555148, pdbuid=1)
+33594 oracle_33594_tc    kkscsPruneChild: Child was pruned
+
+33594 oracle_33594_tc    kkscsCheckCursor: Iterating child #0 (cs=0x58f55d5d8, pdbuid=1)
+33594 oracle_33594_tc    kkscsCheckCursor: next child is #0 (cs=0x58f55d5d8, pdbuid=1)
+33594 oracle_33594_tc    kkscsPruneChild: Child was pruned
+
+33594 oracle_33594_tc    kkscsCheckCursor: Iterating child #100 (cs=0x58f3c1060, pdbuid=1)
+33594 oracle_33594_tc    kkscsCheckCursor: next child is #100 (cs=0x58f3c1060, pdbuid=1)
+33594 oracle_33594_tc    kkscsPruneChild: Child was pruned
+
+33594 oracle_33594_tc    kkscsCheckCursor: Iterating child #101 (cs=0x58f3c1820, pdbuid=1)
+33594 oracle_33594_tc    kkscsCheckCursor: next child is #101 (cs=0x58f3c1820, pdbuid=1)
+33594 oracle_33594_tc    kkscsPruneChild: Child was pruned
+...
+33594 oracle_33594_tc    kkscsCheckCursor: Iterating child #8190 (cs=0x4967fde80, pdbuid=1)
+33594 oracle_33594_tc    kkscsCheckCursor: next child is #8190 (cs=0x4967fde80, pdbuid=1)
+33594 oracle_33594_tc    kkscsPruneChild: Child was pruned
+
+33594 oracle_33594_tc    kkscsCheckCursor: Iterating child #8190 (cs=0x4967f5400, pdbuid=1)
+33594 oracle_33594_tc    kkscsCheckCursor: next child is #8191 (cs=0x4967f5400, pdbuid=1)
+
+33594 oracle_33594_tc    kkscsSearchChildList: complete: inspected 8192 children in 420043902 ns
+</code></pre>
+<figcaption>Listing 11: Default output bpftrace script kkscsSearchChildList.bt</figcaption>
+</figure>
+<p>In verbose mode, the script emits detailed information about the state of the parent’s child cursor list that is not exposed elsewhere. It also shows that Oracle modifies the list in the kernel function <code>kkshhcins</code> when a new child cursor is added.</p>
+<p>Repeating the test case and tracing the creation of child cursors #99 and #100 allows systematic observation of how this function modifies the list before and after the 100-child-cursor threshold is reached.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>-- Flush the shared pool
+alter system flush shared_pool;
+
+-- Create parent cursor with 99 child cursors (child #0 through #98)
+@create_children.sql 99
+
+# Start the bpftrace script
+./kkscsSearchChildList.bt &lt;pid&gt; verbose
+
+-- Insert child #99 (the 100th child)
+@test_query.sql 100
+
+-- Insert child #100 (the 101st child)
+@test_query.sql 101 
+</code></pre>
+<figcaption>Listing 12: Tracing the insertion of child #99 and #100 with bpftrace</figcaption>
+</figure>
+<p>Note that the test case in Listing 12 flushes the shared pool so that the subsequent execution of the PL/SQL scripts creates new cursors. As a result, the memory addresses in the following output examples will be different and cannot be compared directly with those shown in the previous example.</p>
+<p>The verbose bpftrace output for inserting child #99 shows the following (formatted and edited for readability):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>kkshGetNextChild: hsh=0x1eee6512, ht=0x46e1073e8, cur_hbk=0x7ffd8cffbe98, cs=0x7ffd8cffbea0, ...
+kkshGetNextChild: *ht=0x46e107408 (pdbuid=1)
+kkshGetNextChild: <span class="hl-orange">*cur_hbk=0x46e107468</span>
+kkshGetNextChild: <span class="hl-skyblue">cshsl=0x58f9cf0f0</span>[0x46e107468,0x46d91aec0]
+kkshGetNextChild: cshbk=0x46d91aec0
+kkshGetNextChild: prev: cs=(nil), cno=0
+kkshGetNextChild: curr: cs=0x58f9cf0a0, cno=98
+kkshGetNextChild: next: cs=0x46d91ae70, cno=97
+kkshGetNextChild: ret=0x0 (0)
+...
+kkshGetNextChild: hsh=0x1eee6512, ht=0x46e1073e8, cur_hbk=0x7ffd8cffbe98, cs=0x7ffd8cffbea0, ...
+kkshGetNextChild: *ht=0x46e107408 (pdbuid=1)
+kkshGetNextChild: <span class="hl-orange">*cur_hbk=0x46e107468</span>
+kkshGetNextChild: <span class="hl-green">cshsl=0x46e1077a8</span>[0x46eec7190,<span class="hl-orange">0x46e107468</span>]
+kkshGetNextChild: cshbk=0x46e107468
+kkshGetNextChild: prev: cs=0x46eec7140, cno=1
+kkshGetNextChild: curr: cs=0x46e107758, cno=0
+kkshGetNextChild: next: *cur_hbk=0x46e107468 (end of list)
+kkshGetNextChild: ret=0x0 (0)
+
+kkshhcins: 0x7f58cdfb03e8, 0x1eee6512, cshsl=0x58f9cf8b0, 0x46e1073e8
+kkshhcins: insert child into hash table bi=0x58f9cf860 cld=99 flg=30
+kkshhcins: kzxdccnum=100
+kkshhcins: cld=99
+kkshhcins: prev: cshsl=0x46e1077a8[0x46eec7190,0x46e107468] cshsl=0x46e1077a8[0x46eec7190,0x46e107468]
+kkshhcins: curr: cshsl=0x58f9cf8b0[0x58f9cf8b0,0x58f9cf8b0] cshsl=0x58f9cf8b0[<span class="hl-orange">0x46e107468</span>,<span class="hl-skyblue">0x58f9cf0f0</span>]
+kkshhcins: ret=0x1 (1)
+</code></pre>
+<figcaption>Listing 13: Verbose bpftrace output for inserting child #99</figcaption>
+</figure>
+<p>The child cursor scan begins at child #98, whose <code>cshsl</code> pointer is <code class="hl-skyblue">0x58f9cf0f0</code>, and then follows the linked list from there. Eventually, it reaches child #0, the last one in the list, whose <code>cshsl</code> pointer is <code class="hl-green">0x46e1077a8</code>. The <code>cshsl</code> next pointer points back to the hash bucket at <code class="hl-orange">0x46e107468</code>, indicating that child #0 is  the last entry in the list.</p>
+<p>As no existing child cursor can be reused, <code>kkshhcins</code> creates a new child cursor (child #99, <code>cld=99</code>) and inserts it into the list.</p>
+<p>The <code>kkshhcins</code> trace shows the state of the previous <code>cshsl</code> node (<code>prev:</code>) and the new node being inserted (<code>curr:</code>). For each node, the first <code>cshsl=[&quot;prev&quot;,&quot;next&quot;]</code> field corresponds to the state on function entry, while the second corresponds to the state on function return. Comparing the two reveals how <code>kkshhcins</code> updates the <code>prev</code> and <code>next</code> pointers when inserting a new node into the list.</p>
+<p>When child #99 is inserted, the entry and return states are identical for the <code>prev:</code> node, which represents child #0 at the end of the list. This indicates that <code>kkshhcins</code> does not modify the previous node and performs no pointer updates on it.</p>
+<p>In contrast, the insert modifies the <code>curr:</code> node and changes its <code>cshsl</code> pointers:</p>
+<ul>
+<li>the prev pointer is set to <code class="hl-orange">0x46e107468</code> (the hash bucket)</li>
+<li>the next pointer is set to <code class="hl-skyblue">0x58f9cf0f0</code> (child #98).</li>
+</ul>
+<p>This means the insert links the new node back to the hash bucket via <code class="hl-orange">0x46e107468</code> and forward to child #98 via <code class="hl-skyblue">0x58f9cf0f0</code>. This shows that child #99 is inserted at the head of the list, and the following diagram conceptually illustrates how the list is modified.</p>
+<figure style="text-align: center; margin: 0 auto;">
+  <img src="/images/Child-Cursor-Scans-Insert-Child99.png" alt="Inserting Child #99" style="width: 75%; height: auto; display: block;">
+  <figcaption>
+    Figure 1: Inserting child #99 
+  </figcaption>
+</figure>
+<p>The trace output for inserting child #100 shows the following (formatted and edited for readability):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>kkshGetNextChild: hsh=0x1eee6512, ht=0x46e1073e8, cur_hbk=0x7ffd8cffbe98, cs=0x7ffd8cffbea0, ...
+kkshGetNextChild: *ht=0x46e107408 (pdbuid=1)
+kkshGetNextChild: <span class="hl-green">*cur_hbk=0x46e107468</span>
+kkshGetNextChild: <span class="hl-orange">cshsl=0x46e1077a8</span>[0x46eec7190,<span class="hl-green">0x46e107468</span>]
+kkshGetNextChild: cshbk=0x46e107468
+kkshGetNextChild: prev: cs=0x46eec7140, cno=1
+kkshGetNextChild: curr: cs=0x46e107758, cno=0
+kkshGetNextChild: next: *cur_hbk=0x46e107468 (end of list)
+kkshGetNextChild: ret=0x0 (0)
+
+kkshhcins: 0x7f58cdfb03e8, 0x1eee6512, cshsl=0x2f0a3ba70, 0x46e1073e8
+kkshhcins: insert child into hash table bi=0x2f0a3ba20 cld=100 flg=30
+kkshhcins: kzxdccnum=100
+kkshhcins: cld=100
+kkshhcins: prev: cshsl=0x46e1077a8[0x46eec7190,0x46e107468] cshsl=0x46e1077a8[0x46eec7190,<span class="hl-skyblue">0x2f0a3ba70</span>]
+kkshhcins: curr: cshsl=0x2f0a3ba70[0x2f0a3ba70,0x2f0a3ba70] <span class="hl-skyblue">cshsl=0x2f0a3ba70</span>[<span class="hl-orange">0x46e1077a8</span>,<span class="hl-green">0x46e107468</span>]
+kkshhcins: ret=0x1 (1)
+</code></pre>
+<figcaption>Listing 14: Verbose bpftrace output for inserting child #100</figcaption>
+</figure>
+<p>When child #0 is scanned, its <code>cshsl</code> is set to <code class="hl-orange">0x46e1077a8</code>, and the next pointer points back to the hash bucket at <code class="hl-green">0x46e107468</code>, which means child #0 is the last entry in the list.</p>
+<p>When the new child #100 is inserted, the <code>prev:</code> and <code>curr:</code> nodes are modified as follows:</p>
+<ul>
+<li>the <code>prev:</code> node&rsquo;s next pointer is changed to <code class="hl-skyblue">0x2f0a3ba70</code> linking it to the newly inserted <code>curr:</code> node (child #100)</li>
+<li>the prev pointer of the newly inserted <code>curr:</code>node is set to <code class="hl-orange">0x46e1077a8</code> (child #0), and the next pointer is set to <code>0x46e107468</code> (the hash bucket).</li>
+</ul>
+<p>This means the insert links the new node back to the previous child #0 via <code class="hl-orange">0x46e1077a8</code> and forward to the hash bucket (i.e. end of the list) via <code>0x46e107468</code>.</p>
+<p>This shows that child #100 is inserted at the tail of the list. The following diagram conceptually illustrates how the list is modified.</p>
+<figure style="text-align: center; margin: 0 auto;">
+  <img src="/images/Child-Cursor-Scans-Insert-Child100.png" alt="Inserting child #100" style="width: 75%; height: auto; display: block;">
+  <figcaption>
+    Figure 2: Inserting child #100 
+  </figcaption>
+</figure>
+<p>This now explains the following: Oracle scans the child cursors on the <code>cshsl</code> list in forward order, but the insertion order changes based on the number of existing child cursors on the list:</p>
+<ul>
+<li>Up to 100 child cursors (child #0 through #99): Oracle inserts the new child cursor at the head of the list.</li>
+<li>More than 100 child cursors (child #100 through #8191): Oracle inserts the new child cursor at the tail of the list.</li>
+</ul>
+<p>The remaining question is why the &ldquo;insertion threshold&rdquo; is set to 100 and how it is defined. This is explained by the value of the <code>kdzxdccnum_</code> SGA variable, which is also exposed by the bpftrace script.</p>
+<p>This variable reflects the value of the underscore parameter <code>_xds_max_child_cursors</code>. It defaults to 100 and defines the threshold at which the insertion order changes. If the child cursor being inserted has a child number lower than <code>_xds_max_child_cursors</code>, it is inserted at the head of the list; otherwise, it is inserted at the tail.</p>
+<p>This can be verified by changing the parameter to different value and repeating the test case. In the example below, the threshold is set to 5, and then a parent cursor with 10 child cursors is created (note that the parameter can be changed dynamically without restarting the instance).</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>-- Change the child &#34;insertion threshold&#34; to 5
+</span></span><span style="display:flex;"><span>alter system set &#34;_xds_max_child_cursors=5&#34; scope=memory;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>-- Flush the shared pool
+</span></span><span style="display:flex;"><span>alter system flush shared_pool;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>-- Create parent cursor with 10 child cursors (child #0 through #9)
+</span></span><span style="display:flex;"><span>@create_children.sql 10
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>-- Run the query to access child #9 (the 10th child cursor)
+</span></span><span style="display:flex;"><span>-- and then check the CURSORTRACE output
+</span></span><span style="display:flex;"><span>@test_query.sql 10</span></span></code></pre></div>
+<figcaption>Listing 15: Repeating the test with _xds_max_child_cursors=5</figcaption>
+</figure>
+<p>In that case, the child list scan order is child #4 through #0 and then child #5 through #9 as shown by the following <code>CURSORTRACE</code> output:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>PDB#1 CUR#7 XSC 0x7fa3d7b98478 CHILD#-1 CI (nil) CTX (nil)
+time=2598908305 PARSING SQLTEXT=select count(*) from t
+SQLHASH=a4b28138
+
+time=2598908314 kksfbc begin 0x108 0 0
+time=2598908321 No valid child pinned
+
+time=2598908328 Parent 0x479091f30(0x1c3e98dc0) ready for search
+
+time=2598908337 <span class="hl-red">kksCheckCursor: next child is #4</span>   <<<<< start scan at child #4
+time=2598908352 Child was pruned
+
+time=2598908359 <span class="hl-red">kksCheckCursor: next child is #3</span>
+time=2598908380 Child was pruned
+
+time=2598908390 <span class="hl-red">kksCheckCursor: next child is #2</span>
+time=2598908411 Child was pruned
+
+time=2598908418 <span class="hl-red">kksCheckCursor: next child is #1</span>
+time=2598908430 Child was pruned
+
+time=2598908437 <span class="hl-red">kksCheckCursor: next child is #0</span>   <<<<< scan reaches child #0
+time=2598908450 Child was pruned
+
+time=2598908456 <span class="hl-red">kksCheckCursor: next child is #5</span>   <<<<< scan child #5 through #9
+time=2598908468 Child was pruned
+
+time=2598908475 <span class="hl-red">kksCheckCursor: next child is #6</span>
+time=2598908488 Child was pruned
+
+time=2598908494 <span class="hl-red">kksCheckCursor: next child is #7</span>
+time=2598908507 Child was pruned
+
+time=2598908513 <span class="hl-red">kksCheckCursor: next child is #8</span>
+time=2598908543 Child was pruned
+
+time=2598908549 <span class="hl-red">kksCheckCursor: next child is #9</span>
+time=2598908560 kksCheckCursor: pinning child #9 in shared mode 0x47b86c520 0x495d73c38
+
+time=2598909358 Cursor about get executed
+</code></pre>
+<figcaption>Listing 16: CURSORTRACE output with _xds_max_child_cursors=5</figcaption>
+</figure>
+<p>According to the parameter description, <code>_xds_max_child_cursors</code> specifies the &ldquo;maximum number of XDS user-specific child cursors&rdquo;. XDS is an internal abbreviation for Oracle Real Application Security&rsquo;s Data Security (DS) component (see also <a href="#source6">6</a>).</p>
+<p>I am not familiar with the Real Application Security feature and therefore cannot explain the rationale behind Oracle’s use of this threshold for determining child cursor insertion order in the parent&rsquo;s child cursor list. However, note that this behavior is not specific to Oracle 26ai and is identical in 19c (tested on version 19.26, but not shown here).</p>
+<p>To connect back to an earlier point, it is worth revisiting the question of what the runtime cost of scanning a child cursor list of up to 8192 entries would actually be. My initial assumption was that Oracle would inspect every child cursor on the list and evaluate the full set of cursor sharing criteria for each child cursor encountered.</p>
+<p>This approach would imply a cost of <code>O(n × m)</code>, where <code>n</code> is the number of child cursors to check and <code>m</code> the number of cursor sharing criteria checks. Depending on the number of child cursors on the list, this can become a lengthy and costly process, and in the worst case, Oracle would need to inspect and check every child cursor on the list just to determine that it still needs to create a new child cursor anyway.</p>
+<p>However, this is not what happens in practice, as Oracle has another neat optimization called Cursor Pruning and you may have noticed clues of this optimization in some of the outputs above.</p>
+<p>Internally, this mechanism works by attaching a diagnostic node to a child cursor when a sharing check fails. This node records the reason why a cursor could not be shared and preserves enough information to quickly re-evaluate that same condition later. On subsequent parse attempts, Oracle can use this stored metadata to eliminate unsuitable child cursors early, thereby pruning the search space and reducing repeated full evaluation of all sharing criteria across all cursors.</p>
+<p>The exact mechanics are a topic for another time, but the CURSORTRACE output from Listing 7 provides a rough illustration of the underlying behavior. The excerpt below shows a section of the trace file omitted from the earlier listing. It shows Oracle iterating over 8192 child cursors (child #0 through child #8191), where all cursors except the last one are pruned (as indicated by the message <code>Child was pruned</code>). As a result, only this final child cursor undergoes detailed cursor-sharing criteria checks:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>...
+time=2562704131 kksCheckCursor: next child is #8188
+time=2562704153 Child was pruned
+
+time=2562704165 kksCheckCursor: next child is #8189
+time=2562704188 Child was pruned
+
+time=2562704199 kksCheckCursor: next child is #8190
+time=2562704222 Child was pruned
+
+time=2562704234 kksCheckCursor: next child is #8191
+time=2562704255 kksCheckCursor: pinning child #8191 in shared mode 0x553dea4d8 0x4958618b0
+
+KKSCS sharing succeed xsc=0x7f26e77d23a0 childno=8191 reason=Unbound cursor(Not Fully Parsed)
+KKSCS sharing succeed xsc=0x7f26e77d23a0 childno=8191 reason=SQL type mismatch
+KKSCS sharing succeed xsc=0x7f26e77d23a0 childno=8191 reason=Optimizer mismatch
+KKSCS sharing succeed xsc=0x7f26e77d23a0 childno=8191 reason=Parallel DDL environment mismatch
+...
+KKSCS sharing succeed xsc=0x7f26e77d23a0 childno=8191 reason=SYSTEM_DATA lockdown mismatch
+KKSCS sharing succeed xsc=0x7f26e77d23a0 childno=8191 reason=Target mismatch during offload to ...
+KKSCS sharing succeed xsc=0x7f26e77d23a0 childno=8191 reason=Data Share mismatch
+KKSCS sharing succeed xsc=0x7f26e77d23a0 childno=8191 reason=Bind mismatch
+
+time=2562705538 kksfbc begin 0x102 1 1
+time=2562705596 Cursor about get executed
+</code></pre>
+<figcaption>Listing 17: CURSORTRACE of accessing child #8191 using the PL/SQL script</figcaption>
+</figure>
+<p>Note that most, but not all, of the sharing criteria are exposed in <code>V$SQL_SHARED_CURSOR</code>, and its <code>REASON</code> column contains the diagnostic node data encoded as XML. Moreover, Oracle 26ai introduces a new view, <code>SQL_SHARED_CURSOR_DIAG</code>, that exposes the same information in JSON format (see also <a href="#source7">7</a>).</p>
+<p>In closing, I was curious about how long it would take to scan different numbers of child cursors and used bpftrace to measure it (script <a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/kkscsSearchChildList-ela.bt">kkscsSearchChildList-ela.bt</a>; see also <a href="#source8">8</a>). The numbers shown here come from an Exadata X8-2M system with Intel Xeon 8260 processors (2.4 GHz) and measure the time required to scan N child cursors in a list of 8192 child cursors in total.</p>
+<table class="auto-size-table">  
+<thead>  
+<tr>  
+<th style="text-align: right;">Child Cursors</th>  
+<th style="text-align: right;">Elapsed Time (us)</th>  
+</tr>  
+</thead>  
+<tbody>  
+<tr>  
+<td style="text-align: right;">128</td>  
+<td style="text-align: right;">132</td>
+</tr>  
+<tr>
+<td style="text-align: right;">256</td>
+<td style="text-align: right;">258</td>
+</tr>
+<tr>
+<td style="text-align: right;">512</td>
+<td style="text-align: right;">477</td>
+</tr>
+<tr>
+<td style="text-align: right;">1024</td>
+<td style="text-align: right;">854</td>
+</tr>
+<tr>
+<td style="text-align: right;">2048</td>
+<td style="text-align: right;">1706</td>
+</tr>
+<tr>
+<td style="text-align: right;">4096</td>
+<td style="text-align: right;">3183</td>
+</tr>
+<tr>
+<td style="text-align: right;">8192</td>
+<td style="text-align: right;">6349</td>
+</tr>
+</tbody>
+<caption>Table 1: Child cursor scan durations</caption>  
+</table>
+<p>Note that these figures are not intended as absolute benchmarks, but rather to indicate the order of magnitude involved, and more importantly, they show that scan time increases linearly with the number of child cursors.</p>
+<h2 id="summary">Summary</h2>
+<p><a id="summary"></a>This post covers a lot of ground, so here are the key takeaways from the investigation:</p>
+<p>A parent cursor maintains 16 child cursor &ldquo;sublists&rdquo;, internally referred to as <code>cshsl</code> (probably short for cursor hash list). These lists are organized through a hash table, with the target bucket determined by <code>pdb_name_hash % 16</code>, where <code>pdb_name_hash</code> is a hash value derived from the pdb name. Note that the bucket count of 16 is a fixed constant in the oracle binary and cannot be changed or reconfigured at runtime. If multiple pdb names map to the same bucket, the corresponding list contains child cursors from more than one pdb. However, during a child cursor list scan, entries whose pdb does not match the target pdb are skipped and not checked further.</p>
+<p>The following diagram provides a conceptual illustration of how a parent cursor maps child cursors from different pdbs into separate child cursor lists (<code>cshsl</code>). It also shows how a singly linked list traverses the child cursors in ascending child-number order.</p>
+<figure style="text-align: center; margin: 0 auto;">
+  <img src="/images/Child-Cursor-Scans-Parent-Cursor.png" alt="Parent cursor with multiple child cursor lists" style="width: 90%; height: auto; display: block;">
+  <figcaption>
+    Figure 3: Parent cursor with multiple child cursor lists (cshsl)
+  </figcaption>
+</figure>
+<p>As long as the total number of child cursors is less than or equal to the threshold defined by <code>_xds_max_child_cursors</code> (which defaults to 100), newly created child cursors are inserted at the head of the lists. Once the total number of child cursors exceeds <code>_xds_max_child_cursors</code>, new child cursors are instead inserted at the tail of the lists. In an extreme scenario, a single pdb could create 100 child cursors that all end up in the same list, where they are inserted at the head. Any child cursors subsequently created by other pdbs would then be inserted at the tail of their respective lists.</p>
+<p>Cursor sharing criteria checks do not incur O(n × m) complexity because of the Cursor Pruning optimization, which allows Oracle to eliminate unsuitable child cursors early without evaluating all cursor sharing criteria for each child. Without this optimization, child cursor scan costs would increase significantly as the number of child cursors increases.</p>
+<h2 id="references">References</h2>
+<p>[1] <a id="source1"></a><a href="https://antognini.ch/2012/10/how-many-children-can-a-parent-cursor-have-1000000/">Christian Antognini, How Many Children Can a Parent Cursor Have? 1,000,000?, 2012-10-19</a><br>
+[2] <a id="source2"></a><a href="https://docs.oracle.com/en/database/oracle/oracle-database/26/tgdba/tuning-shared-pool-and-large-pool.html">Oracle Corp., Oracle AI Database, Database Performance Tuning Guide, 26ai, Section 16: Tuning the Shared Pool and the Large Pool, G43584-02, January 2026</a><br>
+[3] <a id="source3"></a><a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=755532">My Oracle Support, CURSORTRACE - Enables debugging code in shared cursor management modules, KB829509, 2025-11-28</a><br>
+[4] <a id="source4"></a><a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=1134683">My Oracle Support, Cursortrace Is Not Disabled Using Level 2147483648, Addr 1&rsquo;;, KB789544, 2025-11-29</a><br>
+[5] <a id="source5"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/kkscsSearchChildList.bt">Christoph Lutz, oracle GitHub Repository, bpftrace Script kkscsSearchChildList.bt</a> <br>
+[6] <a id="source6"></a><a href="https://docs.oracle.com/en/database/oracle/oracle-database/26/dbfsg/troubleshooting_real_application_security.html#GUID-B5B42EA3-D8A1-4F84-9C39-727A473733D0">Oracle Corp., Oracle AI Database, Real Application Security Administrator&rsquo;s and Developer&rsquo;s Guide, 26ai, Section D: Troubleshooting Oracle Database Real Application Security, G44294-01, October 2025</a><br>
+[7] <a id="source7"></a><a href="https://docs.oracle.com/en/database/oracle/oracle-database/26/refrn/V-SQL_SHARED_CURSOR_DIAG.html">Oracle Corp., Oracle AI Database, Database Reference, 26ai, Section 10.83: V$SQL_SHARED_CURSOR_DIAG, G43716-07, April 2026</a>   <br>
+[8] <a id="source8"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/kkscsSearchChildList-ela.bt">Christoph Lutz, oracle GitHub Repository, bpftrace Script kkscsSearchChildList-ela.bt</a></p>
+
+</main>
+
+  <footer>
+  
+  <hr/>
+  © <a href="https://www.0xChris.dev">Christoph Lutz</a> 2025 &ndash; 2026
+  
+  <hr/>
+  <script src="https://giscus.app/client.js"
+            data-repo="Christoph-Lutz/0xChris-Comments"
+            data-repo-id="R_kgDOQo-jcg"
+            data-category="Comments"
+            data-category-id="DIC_kwDOQo-jcs4Cz0NV"
+            data-mapping="pathname"
+            data-strict="1"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="light"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+        </script>
+    <script id="partials/analytics.html" 
+  data-goatcounter="https://0xchris.goatcounter.com/count"
+  async src="//gc.zgo.at/count.js"></script>
+
+  </footer>
+  </body>
+</html>
+
