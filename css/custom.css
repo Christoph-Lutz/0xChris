@@ -278,4 +278,9 @@ table caption {
   margin-bottom: 6px;
 }
 
+.auto-size-table {
+    border-collapse: collapse;
+    width: auto;
+    margin: 0;  
+}
 
