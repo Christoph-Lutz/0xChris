@@ -284,3 +284,9 @@ table caption {
     margin: 0;  
 }
 
+.auto-size-table-50 {
+    border-collapse: collapse;
+    width: 50%;
+    margin: 0;  
+}
+

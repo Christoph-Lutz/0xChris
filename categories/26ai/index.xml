@@ -4,6 +4,23 @@
     <link>https://www.0xChris.dev/</link>
     <description>0xChris updates</description>
     <atom:link href="https://www.0xChris.dev/categories/26ai/" rel="self" type="application/rss+xml"/><item>
+      <title>Undocumented SYS_CONTEXT Parameters</title>
+      <link>https://www.0xChris.dev/posts/2026-07-15-undocumented-sys_context-parameters/</link>
+      <pubDate>Wed, 15 Jul 2026 00:00:00 UTC</pubDate>
+      <guid>https://www.0xChris.dev/posts/2026-07-15-undocumented-sys_context-parameters/</guid>
+      <description>&lt;p&gt;In Oracle, the &lt;code&gt;SYS_CONTEXT&lt;/code&gt; function provides session and environment information to SQL and PL/SQL code. The function accepts a &lt;code&gt;namespace&lt;/code&gt;, a &lt;code&gt;parameter&lt;/code&gt;, and an optional &lt;code&gt;length&lt;/code&gt; argument (see also &lt;a href=&#34;#source1&#34;&gt;1&lt;/a&gt;):&lt;/p&gt;
+&lt;figure style=&#34;display:block; width:100%; margin:0; padding:0; box-sizing:border-box;&#34;&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-text&#34; data-lang=&#34;text&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;SYS_CONTEXT(namespace, parameter, length)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;figcaption&gt;Listing 1: SYS_CONTEXT parameters&lt;/figcaption&gt;
+&lt;/figure&gt;
+&lt;p&gt;Argument description:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;namespace&lt;/code&gt;: a built-in or user-defined context namespace&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;parameter&lt;/code&gt;: the specific attribute to retrieve&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;length&lt;/code&gt;: specifies the length of the return value (optional; defaults to 256 bytes, with a valid range from 1 to 4000 bytes in Oracle 26ai).&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Oracle provides the following built-in namespaces:&lt;/p&gt;</description>
+    </item><item>
       <title>Restricted and Undocumented oradebug Commands</title>
       <link>https://www.0xChris.dev/posts/2026-06-03-restricted-and-undocumented-oradebug-commands/</link>
       <pubDate>Wed, 03 Jun 2026 00:00:00 UTC</pubDate>

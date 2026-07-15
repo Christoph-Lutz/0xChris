@@ -3,13 +3,37 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://www.0xChris.dev/</loc>
-    <lastmod>2026-06-08T00:00:00+00:00</lastmod>
+    <lastmod>2026-07-15T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/categories/26ai/</loc>
+    <lastmod>2026-07-15T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/tags/26ai/</loc>
-    <lastmod>2026-06-08T00:00:00+00:00</lastmod>
+    <lastmod>2026-07-15T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/categories/</loc>
-    <lastmod>2026-06-08T00:00:00+00:00</lastmod>
+    <lastmod>2026-07-15T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/categories/internals/</loc>
+    <lastmod>2026-07-15T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/internals/</loc>
+    <lastmod>2026-07-15T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/posts/</loc>
+    <lastmod>2026-07-15T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/sys_context/</loc>
+    <lastmod>2026-07-15T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/</loc>
+    <lastmod>2026-07-15T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/undocumented/</loc>
+    <lastmod>2026-07-15T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/posts/2026-07-15-undocumented-sys_context-parameters/</loc>
+    <lastmod>2026-07-15T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/posts/2026-06-08-child-cursor-scan-mechanics---an-investigation/</loc>
     <lastmod>2026-06-08T00:00:00+00:00</lastmod>
@@ -35,15 +59,6 @@
     <loc>https://www.0xChris.dev/tags/librarycache/</loc>
     <lastmod>2026-06-08T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://www.0xChris.dev/posts/</loc>
-    <lastmod>2026-06-08T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/tags/</loc>
-    <lastmod>2026-06-08T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/categories/26ai/</loc>
-    <lastmod>2026-06-03T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://www.0xChris.dev/tags/binary/</loc>
     <lastmod>2026-06-03T00:00:00+00:00</lastmod>
   </url><url>
@@ -51,12 +66,6 @@
     <lastmod>2026-06-03T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/categories/gdb/</loc>
-    <lastmod>2026-06-03T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/categories/internals/</loc>
-    <lastmod>2026-06-03T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/tags/internals/</loc>
     <lastmod>2026-06-03T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/categories/oradebug/</loc>

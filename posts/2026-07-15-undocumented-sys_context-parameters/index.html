@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Posts | 0xChris</title>
+    <title>Undocumented SYS_CONTEXT Parameters | 0xChris</title>
 
     
     <link rel="stylesheet" href="/css/style.css" />
@@ -13,12 +13,13 @@
     
     
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Posts">
+  <meta name="twitter:title" content="Undocumented SYS_CONTEXT Parameters">
+  <meta name="twitter:description" content="Undocumented SYS_CONTEXT Parameters">
 
 
-<meta property="og:title" content="Posts">
-<meta property="og:description" content="">
-<meta property="og:url" content="https://www.0xChris.dev/posts/">
+<meta property="og:title" content="Undocumented SYS_CONTEXT Parameters">
+<meta property="og:description" content="Undocumented SYS_CONTEXT Parameters">
+<meta property="og:url" content="https://www.0xChris.dev/posts/2026-07-15-undocumented-sys_context-parameters/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="0xChris">
 
@@ -97,170 +98,132 @@
     </nav>
   </body>
 </html>
+<div class="article-meta">
+<h1><span class="title">Undocumented SYS_CONTEXT Parameters</span></h1>
 
+<h2 class="date">2026/07/15</h2>
+</div>
 
-<h1>Posts</h1>
-
-
-
-
+<main>
+<p>In Oracle, the <code>SYS_CONTEXT</code> function provides session and environment information to SQL and PL/SQL code. The function accepts a <code>namespace</code>, a <code>parameter</code>, and an optional <code>length</code> argument (see also <a href="#source1">1</a>):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>SYS_CONTEXT(namespace, parameter, length)</span></span></code></pre></div>
+<figcaption>Listing 1: SYS_CONTEXT parameters</figcaption>
+</figure>
+<p>Argument description:</p>
 <ul>
-  
-  
-  
-  <li>
-    
-      
-      <span class="date">2026/07/15</span>
-    
-    <a href="/posts/2026-07-15-undocumented-sys_context-parameters/">Undocumented SYS_CONTEXT Parameters</a>
-  </li>
-  
-  <li>
-    
-      
-      <span class="date">2026/06/08</span>
-    
-    <a href="/posts/2026-06-08-child-cursor-scan-mechanics---an-investigation/">Child Cursor Scan Mechanics - An Investigation</a>
-  </li>
-  
-  <li>
-    
-      
-      <span class="date">2026/06/03</span>
-    
-    <a href="/posts/2026-06-03-restricted-and-undocumented-oradebug-commands/">Restricted and Undocumented oradebug Commands</a>
-  </li>
-  
-  <li>
-    
-      
-      <span class="date">2026/05/20</span>
-    
-    <a href="/posts/2026-05-20-default-calculation-of-target_pdbs/">Default Calculation of TARGET_PDBS</a>
-  </li>
-  
-  <li>
-    
-      
-      <span class="date">2026/05/19</span>
-    
-    <a href="/posts/2026-05-19-extracting-fixed-view-definitions-from-the-oracle-binary/">Extracting Fixed View Definitions From The Oracle Binary</a>
-  </li>
-  
-  <li>
-    
-      
-      <span class="date">2026/05/07</span>
-    
-    <a href="/posts/2026-05-07-sga-changes-in-oracle-26ai---maximum-granule-size/">SGA Changes in Oracle 26ai - Maximum Granule Size</a>
-  </li>
-  
-  <li>
-    
-      
-      <span class="date">2026/05/01</span>
-    
-    <a href="/posts/2026-05-01-sga-changes-in-oracle-26ai---subpools-and-durations/">SGA Changes in Oracle 26ai - Subpools and Durations</a>
-  </li>
-  
-  <li>
-    
-      
-      <span class="date">2026/04/14</span>
-    
-    <a href="/posts/2026-04-14-bypassing-oradebug-restrictions/">Bypassing oradebug Restrictions</a>
-  </li>
-  
-  <li>
-    
-      
-      <span class="date">2026/03/27</span>
-    
-    <a href="/posts/2026-03-27-oracle-signal-handler-functions/">Oracle Signal Handler Functions</a>
-  </li>
-  
-  <li>
-    
-      
-      <span class="date">2026/03/18</span>
-    
-    <a href="/posts/2026-03-18-adaptive-scalable-lgwr-pipelined-vs-parallel-redo-writes/">Adaptive Scalable LGWR Pipelined vs Parallel Redo Writes</a>
-  </li>
-  
-  <li>
-    
-      
-      <span class="date">2026/03/03</span>
-    
-    <a href="/posts/2026-03-03-adaptive-scalable-lgwr-mode-switch-threshold-single-scalable/">Adaptive Scalable LGWR Mode Switch Threshold Single-&gt;Scalable</a>
-  </li>
-  
-  <li>
-    
-      
-      <span class="date">2026/01/11</span>
-    
-    <a href="/posts/2026-01-11-datapatch-and-the-force_terminate_blocking_sessions-option--a-look-behind-the-scenes/">Datapatch And The &ldquo;force_terminate_blocking_sessions&rdquo; Option — A Look Behind The Scenes</a>
-  </li>
-  
-  <li>
-    
-      
-      <span class="date">2026/01/06</span>
-    
-    <a href="/posts/2026-01-06-library-cache-lock-and-library-cache-pin-wait-events--identifier-vs-hash-value/">Library Cache Lock and Library Cache Pin Wait Events — Identifier vs Hash Value</a>
-  </li>
-  
-  <li>
-    
-      
-      <span class="date">2026/01/03</span>
-    
-    <a href="/posts/2026-01-03-decoding-library-cache-lock-and-library-cache-pin-wait-event-parameters/">Decoding Library Cache Lock and Library Cache Pin Wait Event Parameters</a>
-  </li>
-  
-  <li>
-    
-      
-      <span class="date">2026/01/02</span>
-    
-    <a href="/posts/2026-01-02-uuid-generation-in-oracle-26ai/">UUID Generation In Oracle 26ai</a>
-  </li>
-  
-  <li>
-    
-      
-      <span class="date">2025/12/29</span>
-    
-    <a href="/posts/2025-12-29-tracing-the-tracer-chasing-a-funny-bpftrace-bug/">Tracing The Tracer: Chasing A Funny Bpftrace Bug</a>
-  </li>
-  
-  <li>
-    
-      
-      <span class="date">2025/12/28</span>
-    
-    <a href="/posts/2025-12-28-obtain-the-source-code-for-particular-uek-kernel-versions/">Obtain The Source Code For Particular UEK Kernel Versions</a>
-  </li>
-  
-  <li>
-    
-      
-      <span class="date">2025/12/23</span>
-    
-    <a href="/posts/2025-12-23-printing-non-null-terminated-strings-with-gdb/">Printing Non-Null-Terminated Strings With GDB</a>
-  </li>
-  
-  <li>
-    
-      
-      <span class="date">2025/12/18</span>
-    
-    <a href="/posts/2025-12-18-hello-world/">Hello World</a>
-  </li>
-  
+<li><code>namespace</code>: a built-in or user-defined context namespace</li>
+<li><code>parameter</code>: the specific attribute to retrieve</li>
+<li><code>length</code>: specifies the length of the return value (optional; defaults to 256 bytes, with a valid range from 1 to 4000 bytes in Oracle 26ai).</li>
 </ul>
+<p>Oracle provides the following built-in namespaces:</p>
+<ul>
+<li><code>USERENV</code>: exposes information about the current database session and execution environment</li>
+<li><code>SYS_SESSION_ROLES</code>: shows whether a specified role is currently enabled for the current session</li>
+<li><code>SYS_CLUSTER_PROPERTIES</code>: provides cluster-related properties; this namespace is only partially documented in the Oracle documentation (see <a href="#source2">2</a> and <a href="#source3">3</a>)</li>
+</ul>
+<p>As with many things in Oracle, not all context parameters are publicly documented. This motivated me to take a closer look at the <code>USERENV</code> and <code>SYS_CLUSTER_PROPERTIES</code> namespaces and examine their parameters in more detail. The following sections provide a list of all undocumented context parameters I identified in these namespaces.</p>
+<p><strong>Note:</strong> The context parameters listed below are from Oracle version 23.26.2, and I have not reviewed and tested all of them. Since they are undocumented, their behavior may change between releases, and they may not work as expected. Use them at your own risk!</p>
+<h2 id="namespace-userenv">Namespace USERENV</h2>
+<p>The list below shows all <code>USERENV</code> context parameters that are not listed in the official Oracle 26ai documentation (source <a href="#source1">1</a>):</p>
+<ul>
+<li>APPLICATION_NAME</li>
+<li>APPLY_CROSSEDITION_TRIGGER_OBJNO</li>
+<li>APP_TRACKING_MEMORY</li>
+<li>CDB_CHARSET</li>
+<li>CDB_NCHAR_CHARSET</li>
+<li>CHUNK_ID</li>
+<li>CLIENT_REGION</li>
+<li>CLOUD_DOMAIN</li>
+<li>CLOUD_LINK_AUTH_ENABLED</li>
+<li>CLOUD_LINK_DATABASE_ID</li>
+<li>CLOUD_LINK_READ_ENABLED</li>
+<li>CLOUD_LINK_REGISTER_ENABLED</li>
+<li>CLOUD_SERVICE_VERSION</li>
+<li>COMPARTMENT_OCID</li>
+<li>CON_DBID</li>
+<li>CREDENTIAL_GUID</li>
+<li>CREDENTIAL_NICKNAME</li>
+<li>CREDENTIAL_PRINCIPAL</li>
+<li>CREDENTIAL_SUBSCRIBER</li>
+<li>CREDENTIAL_TYPE</li>
+<li>CURRENT_CURSOR</li>
+<li>CURRENT_CURSOR_ITERATION</li>
+<li>CURRENT_SCN</li>
+<li>DATABASE_OCID</li>
+<li>DBID</li>
+<li>DB_REGION</li>
+<li>ECID_ID</li>
+<li>ECID_SEQ</li>
+<li>FROM_CROSSEDITION_TRIGGER_OBJNO</li>
+<li>IDENTITY_SERVICE_TYPE</li>
+<li>IS_APPLICATION_CAPTURE_ON</li>
+<li>IS_APPLICATION_PDB</li>
+<li>IS_APPLICATION_ROOT</li>
+<li>ISCELL</li>
+<li>IS_ELASTIC_POOL_LEADER</li>
+<li>IS_ELASTIC_POOL_MEMBER</li>
+<li>IS_FIPS_140_ENABLED</li>
+<li>IS_FOLLOWER_PDB</li>
+<li>IS_GLOBAL_SERVICE</li>
+<li>IS_GROUP_LEADER</li>
+<li>IS_LEAD_CDB</li>
+<li>IS_LEADER_PDB</li>
+<li>IS_MEMBER_CDB</li>
+<li>IS_PER_PDB_SUPPLEMENTAL_LOGGING</li>
+<li>IS_REPL_META_DISABLED</li>
+<li>KERBEROS_SERVICE_NAME</li>
+<li>PRIVATE_ENDPOINT_ENABLED</li>
+<li>PRIVATE_ENDPOINT_SHAREE</li>
+<li>PX_QC_INSTANCE_ID</li>
+<li>PX_QC_SID</li>
+<li>PX_SERVER_GROUP_NUMBER</li>
+<li>PX_SERVER_LOCAL_NUMBER</li>
+<li>PX_SERVER_LOCAL_SIBLING_COUNT</li>
+<li>PX_SERVER_NUMBER</li>
+<li>PX_SERVER_SET_NUMBER</li>
+<li>PX_SERVER_SIBLING_COUNT</li>
+<li>REGION</li>
+<li>SERVER_COMPARTMENT_OCID</li>
+<li>SERVER_DATABASE_OCID</li>
+<li>SERVER_HOST_IP</li>
+<li>SERVER_TENANT_OCID</li>
+<li>SESSION_SCHEMA</li>
+<li>SQL_TRANSLATION_PROFILE_ID</li>
+<li>SQL_TRANSLATION_PROFILE_NAME</li>
+<li>SYSDBA_PRIVILEGE_SCOPE</li>
+<li>SYSTEM_DATA_VISIBLE</li>
+<li>TENANT_OCID</li>
+<li>USERMODE</li>
+<li>USER_NICKNAME</li>
+</ul>
+<h2 id="namespace-sys_cluster_properties">Namespace SYS_CLUSTER_PROPERTIES</h2>
+<p>Some of the context parameters in the <code>SYS_CLUSTER_PROPERTIES</code> namespace are documented in the official Oracle documentation (see <a href="#source-2">2</a> and <a href="#source-3">3</a>) and mentioned in other sources (see, for example, <a href="#source4">4</a> and <a href="#source5">5</a>). However, I could not find a comprehensive list of all available parameters. The list below therefore contains all parameters I identified in the <code>SYS_CLUSTER_PROPERTIES</code> namespace:</p>
+<ul>
+<li>ACFS_ENCR_INIT_STATUS</li>
+<li>ACFS_ENCR_KEY_STORE</li>
+<li>ACFS_SEC_INIT_STATUS</li>
+<li>ACFS_SUPPORTED</li>
+<li>ASM_DENSITYFACT</li>
+<li>ASM_DISKSTRING</li>
+<li>ASM_SPFILE</li>
+<li>CLUSTER_STATE</li>
+<li>CURRENT_PATCHLVL</li>
+<li>FLEXASM_STATE</li>
+<li>FLEXASM_STATE_HW</li>
+<li>MIGRATE_FROM_VERSION</li>
+<li>MIGRATE_TO_VERSION</li>
+<li>ODA_INFRASTRUCTURE</li>
+<li>ODA_TYPE</li>
+</ul>
+<h2 id="references">References</h2>
+<p>[1] <a id="source1"></a><a href="https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/SYS_CONTEXT.html#GUID-B9934A5D-D97B-4E51-B01B-80C76A5BD086">Oracle Corp., Oracle AI Database, SQL Language Reference, 26ai, Section: 7 Functions - SYS_CONTEXT, G43935-11 June 2026</a><br>
+[2] <a id="source2"></a><a href="https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-SYSTEM.html">Oracle Corp., Oracle AI Database, SQL Language Reference, 26ai, Section: 12 SQL Statements: ALTER SYNONYM to COMMENT - ALTER SYSTEM, G43935-11 June 2026</a><br>
+[3] <a id="source3"></a><a href="https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-SYSTEM.html">Oracle Corp., Oracle AI Database, SQL Language Reference, 26ai, Section: 12 SQL Statements: ALTER SYNONYM to COMMENT - ALTER SYSTEM, G43935-11 June 2026</a><br>
+[4] <a id="source4"></a><a href="https://renenyffenegger.ch/notes/development/databases/Oracle/SQL/functions/sys_context/">René Nyfenegger, Oracle function SYS_CONTEXT, undated</a><br>
+[5] <a id="source5"></a><a href="https://www.morganslibrary.org/reference/sys_context.html">Morgan&rsquo;s Library, Oracle SYS_CONTEXT, Version 26ai, undated</a></p>
+
+</main>
 
   <footer>
   
@@ -268,7 +231,21 @@
   © <a href="https://www.0xChris.dev">Christoph Lutz</a> 2025 &ndash; 2026
   
   <hr/>
-  
+  <script src="https://giscus.app/client.js"
+            data-repo="Christoph-Lutz/0xChris-Comments"
+            data-repo-id="R_kgDOQo-jcg"
+            data-category="Comments"
+            data-category-id="DIC_kwDOQo-jcs4Cz0NV"
+            data-mapping="pathname"
+            data-strict="1"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="light"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+        </script>
     <script id="partials/analytics.html" 
   data-goatcounter="https://0xchris.goatcounter.com/count"
   async src="//gc.zgo.at/count.js"></script>
@@ -276,3 +253,4 @@
   </footer>
   </body>
 </html>
+
