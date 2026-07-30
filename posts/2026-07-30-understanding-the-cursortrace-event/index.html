@@ -120,9 +120,6 @@ Note that all examples, observations, and results in this post are based on Orac
 </figure>
 <p>Note that the <code>level</code> and <code>address</code> values in the event syntax can be specified either as decimal or hexadecimal numbers. In this post, hexadecimal notation is used throughout because it makes the individual trace level bits easier to identify and combine.</p>
 <p>The exact behavior of the <code>CURSORTRACE</code> event and its trace levels are only partially documented, and My Oracle Support note <a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=755532">KB829509</a> provides a good starting point (see also <a href="#source4">4</a>). The note describes the following trace levels and explains that different trace levels can be combined by summing their values; for instance, trace level <code>812</code> is the sum of trace levels <code>4 + 8 + 32 + 256 + 512</code>.</p>
-<blockquote class="warning">
-In this post, the terms _trace level_ and _trace flag_ are used interchangeably. Technically, the `CURSORTRACE` event accepts a trace level value, which is a bit mask composed of individual trace flags. For simplicity, I use both terms depending on the context.
-</blockquote>
 <figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>-------------------------------------------------------------------------
 </span></span><span style="display:flex;"><span>Level in HEX     Brief Description                          Decimal Value 
@@ -147,6 +144,7 @@ In this post, the terms _trace level_ and _trace flag_ are used interchangeably.
 </span></span><span style="display:flex;"><span>0x80000000       Clear / disable all tracing                   2147483648 </span></span></code></pre></div>
 <figcaption>Listing 2: CURSORTRACE event levels (source <a href="#source4">4</a>)</figcaption>
 </figure>
+<p>In this post, the terms <em>trace level</em> and <em>trace flag</em> are used interchangeably. Technically, the <code>CURSORTRACE</code> event accepts a trace level value, which is a bit mask composed of individual trace flags. For simplicity, I use both terms depending on the context.</p>
 <p>The note further explains that the <code>address</code> clause must be set to the sql hash value (<code>V$SQL.HASH_VALUE</code>) of the cursor to be traced. However, the example provided in the note uses the non-existent hash value <code>1</code> in the <code>address</code> clause, which effectively enables tracing for all statements:</p>
 <figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>alter session set events &#39;immediate trace name cursortrace level 812, address 1&#39;;</span></span></code></pre></div>
