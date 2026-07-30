@@ -3,18 +3,11 @@
     <title>0xChris</title>
     <link>https://www.0xChris.dev/</link>
     <description>0xChris updates</description>
-    <atom:link href="https://www.0xChris.dev/tags/cursortrace/" rel="self" type="application/rss+xml"/><item>
+    <atom:link href="https://www.0xChris.dev/tags/traceevent/" rel="self" type="application/rss+xml"/><item>
       <title>Understanding the CURSORTRACE Event</title>
       <link>https://www.0xChris.dev/posts/2026-07-30-understanding-the-cursortrace-event/</link>
       <pubDate>Thu, 30 Jul 2026 00:00:00 UTC</pubDate>
       <guid>https://www.0xChris.dev/posts/2026-07-30-understanding-the-cursortrace-event/</guid>
       <description>&lt;p&gt;The Oracle library cache is extensively instrumented, but the instrumentation is disabled by default. It can be enabled using the &lt;code&gt;CURSORTRACE&lt;/code&gt; event, which is particularly useful for investigating library cache problems, especially cursor sharing issues related to child cursor mismatches, high version counts, or unexpected hard parses. Beyond troubleshooting, the &lt;code&gt;CURSORTRACE&lt;/code&gt; event also provides valuable insights into the internal behavior of the library cache, as explored in this &lt;a href=&#34;https://www.0xChris.dev/posts/2026-06-08-child-cursor-scan-mechanics---an-investigation/&#34;&gt;post&lt;/a&gt; (see also &lt;a href=&#34;#source1&#34;&gt;1&lt;/a&gt;).&lt;/p&gt;</description>
-    </item><item>
-      <title>Child Cursor Scan Mechanics - An Investigation</title>
-      <link>https://www.0xChris.dev/posts/2026-06-08-child-cursor-scan-mechanics---an-investigation/</link>
-      <pubDate>Mon, 08 Jun 2026 00:00:00 UTC</pubDate>
-      <guid>https://www.0xChris.dev/posts/2026-06-08-child-cursor-scan-mechanics---an-investigation/</guid>
-      <description>&lt;p&gt;Oracle is a large and complex piece of software, and it often behaves in unexpected ways. During an investigation into a cursor sharing and high version count issue, I encountered several such surprises.&lt;/p&gt;
-&lt;p&gt;During the investigation, I started wondering about the order in which Oracle scans the list of child cursors: forward, from &amp;ldquo;older&amp;rdquo; to &amp;ldquo;newer&amp;rdquo;, or backward, from &amp;ldquo;newer&amp;rdquo; to &amp;ldquo;older&amp;rdquo;. I also wondered about the computational overhead involved in inspecting all child cursors under a parent cursor, assuming a maximum of 8192 child cursors, as permitted by the default value of &lt;code&gt;_cursor_obsolete_threshold&lt;/code&gt;.&lt;/p&gt;</description>
     </item></channel>
 </rss>

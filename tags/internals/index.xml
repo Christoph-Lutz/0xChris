@@ -4,6 +4,12 @@
     <link>https://www.0xChris.dev/</link>
     <description>0xChris updates</description>
     <atom:link href="https://www.0xChris.dev/tags/internals/" rel="self" type="application/rss+xml"/><item>
+      <title>Understanding the CURSORTRACE Event</title>
+      <link>https://www.0xChris.dev/posts/2026-07-30-understanding-the-cursortrace-event/</link>
+      <pubDate>Thu, 30 Jul 2026 00:00:00 UTC</pubDate>
+      <guid>https://www.0xChris.dev/posts/2026-07-30-understanding-the-cursortrace-event/</guid>
+      <description>&lt;p&gt;The Oracle library cache is extensively instrumented, but the instrumentation is disabled by default. It can be enabled using the &lt;code&gt;CURSORTRACE&lt;/code&gt; event, which is particularly useful for investigating library cache problems, especially cursor sharing issues related to child cursor mismatches, high version counts, or unexpected hard parses. Beyond troubleshooting, the &lt;code&gt;CURSORTRACE&lt;/code&gt; event also provides valuable insights into the internal behavior of the library cache, as explored in this &lt;a href=&#34;https://www.0xChris.dev/posts/2026-06-08-child-cursor-scan-mechanics---an-investigation/&#34;&gt;post&lt;/a&gt; (see also &lt;a href=&#34;#source1&#34;&gt;1&lt;/a&gt;).&lt;/p&gt;</description>
+    </item><item>
       <title>Undocumented SYS_CONTEXT Parameters</title>
       <link>https://www.0xChris.dev/posts/2026-07-15-undocumented-sys_context-parameters/</link>
       <pubDate>Wed, 15 Jul 2026 00:00:00 UTC</pubDate>

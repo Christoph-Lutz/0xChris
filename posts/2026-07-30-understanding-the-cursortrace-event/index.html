@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Understanding the CURSORTRACE Event | 0xChris</title>
+
+    
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="/css/custom.css" />
+
+    
+    
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Understanding the CURSORTRACE Event">
+  <meta name="twitter:description" content="The Oracle library cache is extensively instrumented, but the instrumentation is disabled by default. It can be enabled using the CURSORTRACE event, which is particularly useful for investigating library cache problems, especially cursor sharing issues related to child cursor mismatches, high version counts, or unexpected hard parses. Beyond troubleshooting, the CURSORTRACE event also provides valuable insights into the internal behavior of the library cache, as explored in this post (see also 1).">
+
+
+<meta property="og:title" content="Understanding the CURSORTRACE Event">
+<meta property="og:description" content="The Oracle library cache is extensively instrumented, but the instrumentation is disabled by default. It can be enabled using the CURSORTRACE event, which is particularly useful for investigating library cache problems, especially cursor sharing issues related to child cursor mismatches, high version counts, or unexpected hard parses. Beyond troubleshooting, the CURSORTRACE event also provides valuable insights into the internal behavior of the library cache, as explored in this post (see also 1).
+">
+<meta property="og:url" content="https://www.0xChris.dev/posts/2026-07-30-understanding-the-cursortrace-event/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="0xChris">
+
+
+
+<meta property="og:image" content="https://www.0xChris.dev/">
+
+
+  </head>
+
+  <body>
+    <nav>
+      <ul class="menu">
+        
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/posts/">Blog</a></li>
+        
+          <li><a href="/categories/">Categories</a></li>
+        
+          <li><a href="/tags/">Tags</a></li>
+        
+          <li><a href="/contact/">Contact</a></li>
+        
+          <li><a href="/index.xml">Subscribe</a></li>
+        
+
+        
+        
+          
+            <li class="icon">
+              <a href="https://github.com/Christoph-Lutz" aria-label="GitHub">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <title>GitHub</title>
+  <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" fill="currentColor"/>
+</svg>
+
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://x.com/chris_skyflier" aria-label="Twitter">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>X</title><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://bsky.app/profile/christophlutz.bsky.social" aria-label="Bluesky">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Bluesky</title><path d="M5.202 2.857C7.954 4.922 10.913 9.11 12 11.358c1.087-2.247 4.046-6.436 6.798-8.501C20.783 1.366 24 .213 24 3.883c0 .732-.42 6.156-.667 7.037-.856 3.061-3.978 3.842-6.755 3.37 4.854.826 6.089 3.562 3.422 6.299-5.065 5.196-7.28-1.304-7.847-2.97-.104-.305-.152-.448-.153-.327 0-.121-.05.022-.153.327-.568 1.666-2.782 8.166-7.847 2.97-2.667-2.737-1.432-5.473 3.422-6.3-2.777.473-5.899-.308-6.755-3.369C.42 10.04 0 4.615 0 3.883c0-3.67 3.217-2.517 5.202-1.026"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://sym42.org" aria-label="Sym42">
+                
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+  <path transform="scale(0.1004,0.1364) translate(11,1)" d="M0 0 C8.91 0 17.82 0 27 0 C27 32.01 27 64.02 27 97 C51.75 97 76.5 97 102 97 C102.33 118.78 102.66 140.56 103 163 C113.65023618 149.38741342 113.65023618 149.38741342 124 135.5625 C125.16793211 133.96872315 126.33590197 132.37497396 127.50390625 130.78125 C128.08156738 129.99105469 128.65922852 129.20085937 129.25439453 128.38671875 C132.14116363 124.43971809 135.0386119 120.50060445 137.9375 116.5625 C138.50952148 115.78430908 139.08154297 115.00611816 139.67089844 114.2043457 C143.34771065 109.21167043 147.06937462 104.25523259 150.81298828 99.3125 C170.98641999 74.34600723 170.98641999 74.34600723 177 44 C175.18481682 37.01549082 172.39314724 31.88945254 166.25390625 27.8515625 C158.52779633 23.46773353 150.43585329 23.37053009 141.8828125 25.125 C137.49428572 26.45701897 133.56042734 28.49182265 129.53125 30.66015625 C127 32 127 32 124 33 C124 23.76 124 14.52 124 5 C138.64493558 -0.63266753 138.64493558 -0.63266753 144.8828125 -0.62890625 C145.54860321 -0.63131821 146.21439392 -0.63373016 146.90036011 -0.63621521 C148.28308171 -0.63525162 149.66584937 -0.62222324 151.04833984 -0.59692383 C153.13124785 -0.56239643 155.20993568 -0.57639315 157.29296875 -0.59570312 C171.18361481 -0.58191047 181.8308422 3.34041929 192.00390625 12.87890625 C200.75379996 22.23354424 204.74719368 34.28009799 205.375 47 C204.41179837 64.52286038 196.17302926 80.08711875 186 94 C185.50757813 94.67724121 185.01515625 95.35448242 184.5078125 96.05224609 C180.97969681 100.89390965 177.41603046 105.70856193 173.84228516 110.51660156 C171.48040306 113.70041612 169.13374187 116.89527097 166.78710938 120.09033203 C159.52624187 129.97226581 152.18066843 139.78923387 144.81054688 149.58984375 C143.01140967 151.98481172 141.21597581 154.38250747 139.421875 156.78125 C138.8645166 157.52608643 138.3071582 158.27092285 137.73291016 159.03833008 C136.68515004 160.43879049 135.6379229 161.83964987 134.59130859 163.2409668 C131.11186653 167.88813347 131.11186653 167.88813347 130 169 C128.28134591 169.0935919 126.55884256 169.11744611 124.83764648 169.11352539 C123.73658066 169.11344986 122.63551483 169.11337433 121.50108337 169.11329651 C120.3031868 169.10813522 119.10529022 169.10297394 117.87109375 169.09765625 C116.65172623 169.0962413 115.4323587 169.09482635 114.17604065 169.09336853 C110.2631693 169.08774967 106.35035419 169.07519396 102.4375 169.0625 C99.79231853 169.05748743 97.14713617 169.0529241 94.50195312 169.04882812 C88.00126274 169.03862296 81.50069467 169.01905121 75 169 C75 154.15 75 139.3 75 124 C50.25 124 25.5 124 0 124 C0 83.08 0 42.16 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(155.8828125,0.37109375)" d="M0 0 C0.66579071 -0.00241196 1.33158142 -0.00482391 2.01754761 -0.00730896 C3.40026921 -0.00634537 4.78303687 0.00668301 6.16552734 0.03198242 C8.24843535 0.06650982 10.32712318 0.0525131 12.41015625 0.03320312 C26.30080231 0.04699578 36.9480297 3.96932554 47.12109375 13.5078125 C55.87098746 22.86245049 59.86438118 34.90900424 60.4921875 47.62890625 C59.52898587 65.15176663 51.29021676 80.716025 41.1171875 94.62890625 C40.62476563 95.30614746 40.13234375 95.98338867 39.625 96.68115234 C36.09688431 101.5228159 32.53321796 106.33746818 28.95947266 111.14550781 C26.59759056 114.32932237 24.25092937 117.52417722 21.90429688 120.71923828 C14.64342937 130.60117206 7.29785593 140.41814012 -0.07226562 150.21875 C-1.87140283 152.61371797 -3.66683669 155.01141372 -5.4609375 157.41015625 C-6.2969751 158.52741089 -6.2969751 158.52741089 -7.14990234 159.66723633 C-8.19766246 161.06769674 -9.2448896 162.46855612 -10.29150391 163.86987305 C-13.77094597 168.51703972 -13.77094597 168.51703972 -14.8828125 169.62890625 C-17.02840077 169.7166623 -19.17685671 169.73585844 -21.32421875 169.7265625 C-22.62939453 169.72333984 -23.93457031 169.72011719 -25.27929688 169.71679688 C-26.6679694 169.70844026 -28.05664127 169.6999753 -29.4453125 169.69140625 C-30.83788906 169.68639291 -32.23046731 169.68182972 -33.62304688 169.67773438 C-37.0430112 169.66590059 -40.46289094 169.64941505 -43.8828125 169.62890625 C-43.27097081 166.41918652 -42.20356776 164.38991326 -40.25 161.78515625 C-39.69892578 161.04394531 -39.14785156 160.30273438 -38.58007812 159.5390625 C-37.97873047 158.74371094 -37.37738281 157.94835937 -36.7578125 157.12890625 C-35.82098633 155.87400391 -35.82098633 155.87400391 -34.86523438 154.59375 C-32.87737817 151.93402615 -30.8807052 149.28109666 -28.8828125 146.62890625 C-27.62458729 144.95213253 -26.3667668 143.27505503 -25.109375 141.59765625 C-23.23806447 139.10192152 -21.36611031 136.60668841 -19.49169922 134.11328125 C-14.67303275 127.70001086 -9.90631899 121.24999876 -5.16113281 114.78222656 C-1.50429727 109.80538271 2.1987027 104.86635957 5.92797852 99.94360352 C26.10348636 74.9765367 26.10348636 74.9765367 32.1171875 44.62890625 C30.30200432 37.64439707 27.51033474 32.51835879 21.37109375 28.48046875 C13.64498383 24.09663978 5.55304079 23.99943634 -3 25.75390625 C-7.38852678 27.08592522 -11.32238516 29.1207289 -15.3515625 31.2890625 C-17.8828125 32.62890625 -17.8828125 32.62890625 -20.8828125 33.62890625 C-20.8828125 24.38890625 -20.8828125 15.14890625 -20.8828125 5.62890625 C-6.23787692 -0.00376128 -6.23787692 -0.00376128 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(171,143)" d="M0 0 C15.51 0 31.02 0 47 0 C47 8.91 47 17.82 47 27 C31.49 27 15.98 27 0 27 C0 18.09 0 9.18 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(135,6)" d="M0 0 C0.99 0.495 0.99 0.495 2 1 C1.67 8.92 1.34 16.84 1 25 C1.66 25 2.32 25 3 25 C2.67 25.99 2.34 26.98 2 28 C1.34 28 0.68 28 0 28 C0 18.76 0 9.52 0 0 Z"/>
+</svg>
+
+              </a>
+            </li>
+          
+        
+      </ul>
+      <hr/>
+    </nav>
+  </body>
+</html>
+<div class="article-meta">
+<h1><span class="title">Understanding the CURSORTRACE Event</span></h1>
+
+<h2 class="date">2026/07/30</h2>
+</div>
+
+<main>
+<p>The Oracle library cache is extensively instrumented, but the instrumentation is disabled by default. It can be enabled using the <code>CURSORTRACE</code> event, which is particularly useful for investigating library cache problems, especially cursor sharing issues related to child cursor mismatches, high version counts, or unexpected hard parses. Beyond troubleshooting, the <code>CURSORTRACE</code> event also provides valuable insights into the internal behavior of the library cache, as explored in this <a href="/posts/2026-06-08-child-cursor-scan-mechanics---an-investigation/">post</a> (see also <a href="#source1">1</a>).</p>
+<blockquote class="warning">
+Note that all examples, observations, and results in this post are based on Oracle release 23.26.0. If you are not interested in the implementation details of the <code>CURSORTRACE</code> event, you may jump directly to the <a href="#practical-examples">practical examples</a> section. 
+<p>The exact behavior of the <code>CURSORTRACE</code> event is not publicly documented and is therefore likely to change across Oracle releases. Moreover, past bugs have been reported that could prevent tracing from being disabled (see also <a href="#source2">2</a> and <a href="#source3">3</a>), so use this trace event at your own risk, and thoroughly test it on a non-production system before enabling it in production.</p>
+</blockquote>
+<p>The <code>CURSORTRACE</code> event can be enabled at either the session or system level using statements such as the following:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>alter session set events &#39;immediate trace name cursortrace level &amp;level, address &amp;address&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>alter system set events &#39;immediate trace name cursortrace level &amp;level, address &amp;address&#39;;</span></span></code></pre></div>
+<figcaption>Listing 1: Enabling the CURSORTRACE event at session and system level</figcaption>
+</figure>
+<p>Note that the <code>level</code> and <code>address</code> values in the event syntax can be specified either as decimal or hexadecimal numbers. In this post, hexadecimal notation is used throughout because it makes the individual trace level bits easier to identify and combine.</p>
+<p>The exact behavior of the <code>CURSORTRACE</code> event and its trace levels are only partially documented, and My Oracle Support note <a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=755532">KB829509</a> provides a good starting point (see also <a href="#source4">4</a>). The note describes the following trace levels and explains that different trace levels can be combined by summing their values; for instance, trace level <code>812</code> is the sum of trace levels <code>4 + 8 + 32 + 256 + 512</code>.</p>
+<blockquote class="warning">
+In this post, the terms _trace level_ and _trace flag_ are used interchangeably. Technically, the `CURSORTRACE` event accepts a trace level value, which is a bit mask composed of individual trace flags. For simplicity, I use both terms depending on the context.
+</blockquote>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>-------------------------------------------------------------------------
+</span></span><span style="display:flex;"><span>Level in HEX     Brief Description                          Decimal Value 
+</span></span><span style="display:flex;"><span>-------------------------------------------------------------------------
+</span></span><span style="display:flex;"><span>0x00000001       Debug level 1                                          1
+</span></span><span style="display:flex;"><span>0x00000002       Debug level 2 (+ level 1)                              2
+</span></span><span style="display:flex;"><span>0x00000004       Debug level 3 (+ level 2)                              4 
+</span></span><span style="display:flex;"><span>0x00000008       Debug with stack                                       8
+</span></span><span style="display:flex;"><span>0x00000010       Trace only for this session                           16
+</span></span><span style="display:flex;"><span>0x00000020       Trace it globally                                     32
+</span></span><span style="display:flex;"><span>0x00000040       Add a cursor (to list)   to be traced                 64
+</span></span><span style="display:flex;"><span>0x00000080       Remove a cursor (from list) to be traced             128
+</span></span><span style="display:flex;"><span>0x00000100       Trace all reparse bits                               256
+</span></span><span style="display:flex;"><span>0x00000200       Trace cursor sharing criteria                        512 
+</span></span><span style="display:flex;"><span>0x00000400       Trace call heap (11g+)                              1024
+</span></span><span style="display:flex;"><span>0x00000800       Trace persistent heap (11g+)                        2048
+</span></span><span style="display:flex;"><span>0x00001000       Trace work heap (11g+)                              4096
+</span></span><span style="display:flex;"><span>0x00002000       Trace heap 0 (11g+)                                 8192
+</span></span><span style="display:flex;"><span>0x00004000       Trace heap 6 (11g+)                                16384
+</span></span><span style="display:flex;"><span>0x00008000       Trace sharing criteria failure (11g+)              32768
+</span></span><span style="display:flex;"><span>0x00010000       Trace sharing criteria success (11g+)              65536
+</span></span><span style="display:flex;"><span>0x80000000       Clear / disable all tracing                   2147483648 </span></span></code></pre></div>
+<figcaption>Listing 2: CURSORTRACE event levels (source <a href="#source4">4</a>)</figcaption>
+</figure>
+<p>The note further explains that the <code>address</code> clause must be set to the sql hash value (<code>V$SQL.HASH_VALUE</code>) of the cursor to be traced. However, the example provided in the note uses the non-existent hash value <code>1</code> in the <code>address</code> clause, which effectively enables tracing for all statements:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>alter session set events &#39;immediate trace name cursortrace level 812, address 1&#39;;</span></span></code></pre></div>
+<figcaption>Listing 3: CURSORTRACE example from My Oracle Support note KB829509 (source <a href="#source-1">1)</a></figcaption>
+</figure>
+<p>It is worth noting that the trace level <code>812</code> used in the example includes level <code>32</code> (<code>0x20</code>), which enables tracing globally. As a result, the example effectively traces all statements executed by all sessions.</p>
+<p>Unfortunately, there is no public documentation describing how the <code>CURSORTRACE</code> event behaves when enabled with different combinations of scope (global vs. local) and granularity (all statements vs. individual statements). This post aims to fill this gap by exploring different <code>CURSORTRACE</code> event settings at different scopes and analyzing their behavior behind the scenes.</p>
+<h2 id="cursortrace-event-scopes-and-statement-level-granularity">CURSORTRACE Event Scopes and Statement Level Granularity</h2>
+<p>The following table provides a summary of the different <code>CURSORTRACE</code> event scopes, statement level granularity options, and the contexts in which they apply.</p>
+<table class="auto-size-table">  
+<colgroup><col style="width: 100px;"> <col style="width: 200px;"><col></colgroup>
+<thead>  
+<tr>  
+<th>Scope</th>  
+<th>Granularity</th>
+<th>Context</th>
+</tr>  
+</thead>
+<tbody> 
+<tr>  
+<td>Local</td>  
+<td>All statements</td>
+<td>Current session</td>
+</tr>  
+<tr>  
+<td>Local</td>  
+<td>Specific statement(s)</td>
+<td>Current session</td>
+</tr> 
+<tr>  
+<td>Global</td>  
+<td>All statements</td>
+<td>Instance-wide; applies to all pdbs when enabled in cdb$root, and only to the current pdb when enabled within a pdb.</td>
+</tr>  
+<tr>  
+<td>Global</td>  
+<td>Specific statement(s)</td>
+<td>Instance-wide; applies to all pdbs when enabled in cdb$root, and only to the current pdb when enabled within a pdb.</td>
+</tr>  
+</tbody>
+<caption>Table 1: CURSORTRACE event scope and statement granularity</caption>  
+</table>
+<p>The local scope applies only to the current session and can be configured to either trace all statements executed in that session or select individual statements for tracing based on their cursor hash value. However, the list of cursors in the local scope is limited to a maximum of three entries, as we will see shortly.</p>
+<p>The global scope applies instance-wide to all sessions, but the behavior depends on whether the tracing is enabled at cdb or pdb level: if enabled at cdb level, the global scope applies to all sessions in cdb$root and all pdbs. When enabled in a pdb, the global scope only applies to all sessions within that pdb.</p>
+<p>Interestingly, once the <code>CURSORTRACE</code> event has been enabled in a pdb, trace settings at the cdb level no longer propagate to that pdb. In other words, once you enable tracing at pdb level, the pdb no longer inherits subsequent <code>CURSORTRACE</code> trace setting changes made at the cdb level until the instance is restarted.</p>
+<p>Similar to the local scope, the global scope also allows tracing all statements or selected individual statements based on their cursor hash value. However, the list of cursors in the global scope is also limited to three entries.</p>
+<h2 id="a-look-behind-the-scenes">A Look Behind the Scenes</h2>
+<p>To support tracing at different scopes and levels of granularity, Oracle maintains the various internal <code>CURSORTRACE</code> structures:</p>
+<p><strong>Local scope:</strong></p>
+<ol>
+<li>Session-specific trace flag for tracing all cursors in the current session</li>
+<li>Session-specific trace list (hash table) for tracing individual cursors in the current session</li>
+</ol>
+<p><strong>Global scope:</strong></p>
+<ol start="3">
+<li>Cdb-specific trace flag for tracing all cursors across the entire container database (cdb$root and all pdbs)</li>
+<li>Cdb-specific trace list (hash table) for tracing individual cursors across the entire container database</li>
+<li>Pdb-specific trace flag for tracing all cursors within a pdb</li>
+<li>Pdb-specific trace list (hash table) for tracing individual cursors within a pdb</li>
+</ol>
+<p>The local and global trace flags used by Oracle to trace all cursors (items 1, 3, and 5 in the list above) are not exposed anywhere. However, the local and global trace lists used to trace individual cursors (items 2, 4, and 6 in the list above) can be dumped using the undocumented <code>CURSORTRACE</code> level <code>0xffffffff</code>, as shown below. Note that it doesn&rsquo;t matter whether you dump the trace lists using <code>ALTER SYSTEM</code> or <code>ALTER SESSION</code>, the resulting output is the same in both cases.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>SQL&gt; alter session set events &#39;immediate trace name cursortrace level 0xffffffff, address 0x0&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL&gt; alter system set events &#39;immediate trace name cursortrace level 0xffffffff, address 0x0&#39;;</span></span></code></pre></div>
+<figcaption>Listing 4: Dump local and global trace lists (hash tables)</figcaption>
+</figure>
+<p>The trace output varies depending on whether the dump is generated from cdb$root or from within a pdb. When the dump is generated from cdb$root, it includes the global cursor trace lists for cdb$root and for every pdb in which the <code>CURSORTRACE</code> event has been enabled at least once (technically, every pdb in which the global <code>CURSORTRACE</code> hash table structure has been initialized). When the dump is generated from within a pdb, the output contains only the cursor trace list for that pdb.</p>
+<p>The following example output, generated from cdb$root, shows the global cursor trace lists for cdb$root (con_id 1) and pdb01 (con_id 4), and the local cursor trace list for the session executing the dump command:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>The CURSORTRACE event settings are as follows:
+</span></span><span style="display:flex;"><span>  CDB$ROOT (1) Global (instance wide):
+</span></span><span style="display:flex;"><span>   1. hash=0x00000000 flg=0x00000000
+</span></span><span style="display:flex;"><span>   2. hash=0x00000000 flg=0x00000000
+</span></span><span style="display:flex;"><span>   3. hash=0x00000000 flg=0x00000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  PDB01 (4) Global (instance wide):
+</span></span><span style="display:flex;"><span>   1. hash=0x00000000 flg=0x00000000
+</span></span><span style="display:flex;"><span>   2. hash=0x00000000 flg=0x00000000
+</span></span><span style="display:flex;"><span>   3. hash=0x00000000 flg=0x00000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  Local (session wide):
+</span></span><span style="display:flex;"><span>   1. hash=0x00000000 flg=0x00000000
+</span></span><span style="display:flex;"><span>   2. hash=0x00000000 flg=0x00000000
+</span></span><span style="display:flex;"><span>   3. hash=0x00000000 flg=0x00000000</span></span></code></pre></div>
+<figcaption>Listing 5: Example CURSORTRACE event dump from cdb$root</figcaption>
+</figure>
+<p>The output above is from a system where the <code>CURSORTRACE</code> event was not active when the dump was taken, which is why all entries in the cdb- and pdb-specific global cursor lists are set to zero.</p>
+<p>The next example output is from the same system, but generated from pdb01, which is why it only shows the global cursor trace list from pdb01 (con_id 4) and the local cursor trace list for the session executing the dump command:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>The CURSORTRACE event settings are as follows:
+</span></span><span style="display:flex;"><span>  PDB01 (4) Global (instance wide):
+</span></span><span style="display:flex;"><span>   1. hash=0x00000000 flg=0x00000000
+</span></span><span style="display:flex;"><span>   2. hash=0x00000000 flg=0x00000000
+</span></span><span style="display:flex;"><span>   3. hash=0x00000000 flg=0x00000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  Local (session wide):
+</span></span><span style="display:flex;"><span>   1. hash=0x00000000 flg=0x00000000
+</span></span><span style="display:flex;"><span>   2. hash=0x00000000 flg=0x00000000
+</span></span><span style="display:flex;"><span>   3. hash=0x00000000 flg=0x00000000</span></span></code></pre></div>
+<figcaption>Listing 6: Example CURSORTRACE event dump from a pdb</figcaption>
+</figure>
+<p>As mentioned earlier, the dump generated by the <code>CURSORTRACE</code> event at trace level <code>0xffffffff</code> includes only the global and local cursor trace lists used to trace individual cursors. It does not include the global trace flags that control tracing for all cursors.</p>
+<p>To overcome this restriction, I wrote a bpftrace script (<a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/kksCursorTrace.bt">kksCursorTrace.bt</a>; see also <a href="#source6">6</a>) that probes the Oracle kernel function <code>kksCursorTrace</code>. This function is invoked whenever the <code>CURSORTRACE</code> event is enabled or disabled and has the following signature (based on my understanding):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>void kksCursorTrace(uint32_t level, uint32_t hash_value)</span></span></code></pre></div>
+<figcaption>Listing 7: kksCursorTrace function signature</figcaption>
+</figure>
+<p>The <code>kksCursorTrace</code> function updates the global and local <code>CURSORTRACE</code> structures based on the trace level specified in <code>level</code>. By tracing calls to this function and inspecting the <code>CURSORTRACE</code> structures on function entry and return, we can observe how these structures are modified in real time.</p>
+<p>To observe the effects of enabling or disabling the <code>CURSORTRACE</code> event, run the bpftrace script as follows:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span># 1. Start the bpftrace script
+</span></span><span style="display:flex;"><span>~ BPFTRACE_LOG_SIZE=100000000 ./kksCursorTrace.bt
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span># 2. Dump the cursortrace event settings using trace level 0xffffffff
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set events &#39;immediate trace name cursortrace level 0xffffffff, address 0x0&#39;;</span></span></code></pre></div>
+<figcaption>Listing 8: Executing bpftrace script kksCursorTrace.bt</figcaption>
+</figure>
+<p>The script shows an output similar to the following (slightly edited for readability):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span>65740 oracle_65740_tc -&gt; kksCursorTrace: lvl=0xffffffff (4294967295), hsh=0x0 (0)
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span>65740     The CURSORTRACE event settings are as follows:
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span>65740      CON_ID=1 Global (instance wide):
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span>65740       flg_all=0x000000000                    flg_all=0x000000000
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span>65740       ht_gbl=0x0701a8238                     ht_gbl=0x0701a8238
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span>65740       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span>65740       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span>65740       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span>65740       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span>65740      CON_ID=4 Global (instance wide):
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span>65740       flg_all=0x000000000                    flg_all=0x000000000
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span>65740       ht_gbl=0x78c734980                     ht_gbl=0x78c734980
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span>65740       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span>65740       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span><span>65740       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span><span>65740       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20</span><span>65740      Local (session wide):
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21</span><span>65740       flg_all=0x000000000                    flg_all=0x000000000
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22</span><span>65740       ht_lcl=0x78e52a1d0                     ht_lcl=0x78e52a1d0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23</span><span>65740       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24</span><span>65740       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25</span><span>65740       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26</span><span>65740       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27</span><span>
+</span></span><span style="display:flex;"><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28</span><span>65740  &lt;- kksCursorTrace</span></span></code></pre></div>
+<figcaption>Listing 9: Example output bpftrace script kksCursorTrace.bt</figcaption>
+</figure>
+<p>Points worth noting are:</p>
+<ul>
+<li>line 1: call to function <code>kksCursorTrace</code> with the first argument (trace level) set to <code>0xffffffff</code> and the second argument (hash value) set to <code>0x0</code>. In the <code>CURSORTRACE</code> event syntax, the hash value is specified by the <code>address</code> clause.</li>
+<li>line 5: <code>flg_all</code> shows the <code>CURSORTRACE</code> flags used to trace all cursors at cdb level. This field is not exposed by the <code>CURSORTRACE</code> dump at level <code>0xffffffff</code>. The <code>flg_all</code> value on the left represents the value when the function is entered, while the value on the right represents the value when the function returns. If the flags are modified during the function call, the entry and return values will differ.</li>
+<li>line 6: <code>ht_gbl</code> shows the address of the global hash table structure at cdb level.</li>
+<li>line 7: <code>ht_cnt</code> shows the total number of entries in the global hash table when individual statements are traced.</li>
+<li>lines 13-15: these lines show the <code>flg_all</code>, <code>ht_gbl</code>, and <code>ht_cnt</code> values in the pdb with con_id 4. Note that the <code>ht_gbl</code> address in the pdb (line 14) differs from the <code>ht_gbl</code> address in the cdb (line 6). This indicates that the <code>CURSORTRACE</code> event was previously enabled in the pdb with con_id 4.</li>
+<li>lines 21-23: these lines show the <code>flg_all</code>, <code>ht_lcl</code>, and <code>ht_cnt</code> values for the local session that executed the dump command. Note that <code>ht_lcl</code> represents the local hash table, which has the same structure as the global hash table.</li>
+</ul>
+<p>The bpftrace script enables a systematic analysis of how the different <code>CURSORTRACE</code> event levels modify the global and local event structures. This provides detailed insights into the behavior of the following particularly interesting trace levels (see also Listing 2):</p>
+<ul>
+<li><code>0x10</code>: trace locally (session-level)</li>
+<li><code>0x20</code>: trace globally (cdb and pdb level)</li>
+<li><code>0x40</code>: add a cursor to list to be traced</li>
+<li><code>0x80</code>: remove a cursor from list to be traced</li>
+<li><code>0x80000000</code>: clear and disable all tracing</li>
+</ul>
+<h2 id="investigating-the-cursortrace-behavior">Investigating the CURSORTRACE Behavior</h2>
+<p>Let&rsquo;s start the investigation by observing what happens behind the scenes when enabling the <code>CURSORTRACE</code> event at local scope (session level). For this test, we use trace level <code>0x1</code>, which is the most basic trace level (&ldquo;debug level 1&rdquo;). Note that we do not specify a valid sql hash value in the <code>address</code> clause but instead use the value <code>0</code>, so this enables tracing for all statements executed in the current session.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span># 1. Start the bpftrace script
+</span></span><span style="display:flex;"><span>~ BPFTRACE_LOG_SIZE=100000000 ./kksCursorTrace.bt
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span># 2. Set the cursortrace event level 0x1
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set container = cdb$root;
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set events &#39;immediate trace name cursortrace level 0x1, address 0x0&#39;;</span></span></code></pre></div>
+<figcaption>Listing 10: Tracing CURSORTRACE event level 0x1</figcaption>
+</figure>
+<p>The resulting bpftrace output shows that the local flag that controls tracing of all statements (<code>flg_all</code>) changes from <code>0x0</code> to <code>0x1</code> (line 13).</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>163799 oracle_163799_t -&gt; kksCursorTrace: lvl=0x1 (1), hsh=0x0 (0)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379     The CURSORTRACE event settings are as follows:
+</span></span><span style="display:flex;"><span>16379      CON_ID=1 Global (instance wide):
+</span></span><span style="display:flex;"><span>16379       flg_all=0x000000000                    flg_all=0x000000000
+</span></span><span style="display:flex;"><span>16379       ht_gbl=0x0701a8238                     ht_gbl=0x0701a8238
+</span></span><span style="display:flex;"><span>16379       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379      Local (session wide):
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       flg_all=0x000000000                    flg_all=0x000000001
+</span></span><span style="display:flex;"><span>16379       ht_lcl=0x78e528ef0                     ht_lcl=0x78e528ef0
+</span></span><span style="display:flex;"><span>16379       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379 oracle_163799_t &lt;- kksCursorTrace</span></span></code></pre></div>
+<figcaption>Listing 11: bpftrace output when setting CURSORTRACE event level 0x1</figcaption>
+</figure>
+<p>Dumping the <code>CURSORTRACE</code> event settings from the current session only shows the global and local cursor trace lists. Since we have not modified these lists, all entries are set to <code>0</code>. Note that the <code>CURSORTRACE</code> event dump does not expose the <code>flg_all</code> value.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>SQL&gt;  alter session set events &#39;immediate trace name cursortrace level 0xffffffff, address 0x0&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>The CURSORTRACE event settings are as follows:
+</span></span><span style="display:flex;"><span>  CDB$ROOT (1) Global (instance wide):
+</span></span><span style="display:flex;"><span>   1. hash=0x00000000 flg=0x00000000
+</span></span><span style="display:flex;"><span>   2. hash=0x00000000 flg=0x00000000
+</span></span><span style="display:flex;"><span>   3. hash=0x00000000 flg=0x00000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  Local (session wide):
+</span></span><span style="display:flex;"><span>   1. hash=0x00000000 flg=0x00000000
+</span></span><span style="display:flex;"><span>   2. hash=0x00000000 flg=0x00000000
+</span></span><span style="display:flex;"><span>   3. hash=0x00000000 flg=0x00000000</span></span></code></pre></div>
+<figcaption>Listing 12: CURSORTRACE dump output with trace level 0x1 enabled</figcaption>
+</figure>
+<p>To disable tracing of all statements executed in the current session, we set the <code>CURSORTRACE</code> event to trace level <code>0x0</code>.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span># 1. Start the bpftrace script
+</span></span><span style="display:flex;"><span>~ BPFTRACE_LOG_SIZE=100000000 ./kksCursorTrace.bt
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span># 2. Set the cursortrace event level 0x0
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set container = cdb$root;
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set events &#39;immediate trace name cursortrace level 0x0, address 0x0&#39;;</span></span></code></pre></div>
+<figcaption>Listing 13: Disabling CURSORTRACE tracing with trace level 0x0</figcaption>
+</figure>
+<p>The resulting bpftrace output confirms that <code>flg_all</code> changes from <code>0x1</code> to <code>0x0</code>:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>16379  -&gt; kksCursorTrace: lvl=0x0 (0), hsh=0x0 (0)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379     The CURSORTRACE event settings are as follows:
+</span></span><span style="display:flex;"><span>16379      CON_ID=1 Global (instance wide):
+</span></span><span style="display:flex;"><span>16379       flg_all=0x000000000                    flg_all=0x000000000
+</span></span><span style="display:flex;"><span>16379       ht_gbl=0x0701a8238                     ht_gbl=0x0701a8238
+</span></span><span style="display:flex;"><span>16379       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379      Local (session wide):
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       flg_all=0x000000001                    flg_all=0x000000000
+</span></span><span style="display:flex;"><span>16379       ht_lcl=0x78e528ef0                     ht_lcl=0x78e528ef0
+</span></span><span style="display:flex;"><span>16379       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>163799 oracle_163799_t &lt;- kksCursorTrace</span></span></code></pre></div>
+<figcaption>Listing 14: bpftrace output when setting CURSORTRACE event level 0x0</figcaption>
+</figure>
+<p>According to Listing 2, there is a local trace flag with the value <code>0x10</code>. When we combine this flag with trace level <code>0x1</code> and use the <code>ALTER SESSION</code> command to set the resulting trace level <code>0x11</code> (<code>0x1 + </code>0x10<code>=</code>0x11<code>), we get the same result as in Listing 11. Similarly, if we specify trace level </code>0x10<code>with the</code>ALTER SESSION` command, Oracle disables tracing of all statements in the current session and we see the same result as shown in Listing 14.</p>
+<p>Interestingly, if trace level <code>0x11</code> is enabled with the <code>ALTER SYSTEM</code> rather than the <code>ALTER SESSION</code> command, the effect is a bit unexpected: instead of being limited to the current session, tracing is also enabled globally. As a result, the <code>CURSORTRACE</code> event becomes active system-wide and affects every statement executed by all sessions.</p>
+<p>This effect can be observed in the following bpftrace output, which shows that setting the <code>CURSORTRACE</code> event level to <code>0x11</code> with <code>ALTER SYSTEM</code> changes both the local and global <code>flg_all</code> values from <code>0x0</code> to <code>0x1</code>:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-text" data-lang="text"><span style="display:flex;"><span># 1. Start the bpftrace script
+</span></span><span style="display:flex;"><span>~ BPFTRACE_LOG_SIZE=100000000 ./kksCursorTrace.bt
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span># 2. Set the cursortrace event level 0x11 using alter system
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set container = cdb$root;
+</span></span><span style="display:flex;"><span>SQL&gt; alter system set events &#39;immediate trace name cursortrace level 0x11, address 0x0&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span># 3. bpftrace output
+</span></span><span style="display:flex;"><span>16379  -&gt; kksCursorTrace: lvl=0x11 (17), hsh=0x0 (0)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379     The CURSORTRACE event settings are as follows:
+</span></span><span style="display:flex;"><span>16379      CON_ID=1 Global (instance wide):
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       flg_all=0x000000000                    flg_all=0x000000001
+</span></span><span style="display:flex;"><span>16379       ht_gbl=0x0701a8238                     ht_gbl=0x0701a8238
+</span></span><span style="display:flex;"><span>16379       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379      Local (session wide):
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       flg_all=0x000000000                    flg_all=0x000000001
+</span></span><span style="display:flex;"><span>16379       ht_lcl=0x78e528ef0                     ht_lcl=0x78e528ef0
+</span></span><span style="display:flex;"><span>16379       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379  &lt;- kksCursorTrace</span></span></code></pre></div>
+<figcaption>Listing 15: bpftrace output when setting CURSORTRACE event level 0x11</figcaption>
+</figure>
+<p>The unexpected behavior can be disabled by setting the local trace level <code>0x10</code> with <code>ALTER SYSTEM</code>. This resets both the local and global <code>flg_all</code> values back to <code>0x0</code>, thereby disabling global and local tracing:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-text" data-lang="text"><span style="display:flex;"><span># 1. Start the bpftrace script
+</span></span><span style="display:flex;"><span>~ BPFTRACE_LOG_SIZE=100000000 ./kksCursorTrace.bt
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span># 2. Set the cursortrace event level 0x10 using alter system
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set container = cdb$root;
+</span></span><span style="display:flex;"><span>SQL&gt; alter system set events &#39;immediate trace name cursortrace level 0x10, address 0x0&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span># 3. bpftrace output
+</span></span><span style="display:flex;"><span>16379  -&gt; kksCursorTrace: lvl=0x10 (16), hsh=0x0 (0)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379     The CURSORTRACE event settings are as follows:
+</span></span><span style="display:flex;"><span>16379      CON_ID=1 Global (instance wide):
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       flg_all=0x000000001                    flg_all=0x000000000
+</span></span><span style="display:flex;"><span>16379       ht_gbl=0x0701a8238                     ht_gbl=0x0701a8238
+</span></span><span style="display:flex;"><span>16379       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379      Local (session wide):
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       flg_all=0x000000001                    flg_all=0x000000000
+</span></span><span style="display:flex;"><span>16379       ht_lcl=0x78e528ef0                     ht_lcl=0x78e528ef0
+</span></span><span style="display:flex;"><span>16379       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>163799  &lt;- kksCursorTrace</span></span></code></pre></div>
+<figcaption>Listing 16: bpftrace output when setting CURSORTRACE event level 0x10</figcaption>
+</figure>
+<p>Oracle Multitenant brings yet another surprise. If trace level <code>0x11</code> is set with <code>ALTER SYSTEM</code> after switching from cdb$root into a pdb, Oracle not only changes the local <code>flg_all</code> value, but also allocates a new pdb-specific <code>ht_gbl</code> structure.</p>
+<p>The bpftrace example output below demonstrates this behavior: for <code>con_id</code> 4, the <code>ht_gbl</code> address changes from <code>0x0701a8238</code> to <code>0x78c9aa8f8</code>. Since the <code>flg_all</code> value is stored in the first four bytes of the <code>ht_gbl</code> structure, changing the <code>ht_gbl</code> instance also changes the scope of <code>flg_all</code>. As a result, the tracing flag is no longer cdb-wide but becomes specific to that pdb. In other words, the global tracing scope effectively moves from the cdb level to the pdb level.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-text" data-lang="text"><span style="display:flex;"><span># 1. Start the bpftrace script
+</span></span><span style="display:flex;"><span>~ BPFTRACE_LOG_SIZE=100000000 ./kksCursorTrace.bt
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span># 2. Set the cursortrace event level 0x11 at pdb level
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set container = pdb01;
+</span></span><span style="display:flex;"><span>SQL&gt; alter system set events &#39;immediate trace name cursortrace level 0x11, address 0x0&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span># 3. bpftrace output
+</span></span><span style="display:flex;"><span>16379  -&gt; kksCursorTrace: lvl=0x11 (17), hsh=0x0 (0)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379     The CURSORTRACE event settings are as follows:
+</span></span><span style="display:flex;"><span>16379      CON_ID=4 Global (instance wide):
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       flg_all=0x000000000                    flg_all=0x000000001
+</span></span><span style="display:flex;"><span>16379       ht_gbl=0x0701a8238                     ht_gbl=0x78c9aa8f8
+</span></span><span style="display:flex;"><span>16379       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379      Local (session wide):
+</span></span><span style="display:flex;"><span>16379       flg_all=0x000000000                    flg_all=0x000000001
+</span></span><span style="display:flex;"><span>16379       ht_lcl=0x78e528ef0                     ht_lcl=0x78e528ef0
+</span></span><span style="display:flex;"><span>16379       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379  &lt;- kksCursorTrace</span></span></code></pre></div>
+<figcaption>Listing 17: bpftrace output when setting CURSORTRACE event level 0x11 at pdb level</figcaption>
+</figure>
+<p>After switching back to cdb$root and dumping the <code>CURSORTRACE</code> settings using trace level <code>0xffffffff</code>, we can see that the pdb-level <code>flg_all</code> value differs from the cdb-level value. Consequently, in this situation, the <code>CURSORTRACE</code> event is enabled at level <code>0x1</code> both for the local session and for all sessions in pdb01 (con_id 4), but not for sessions connected to cdb$root.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-text" data-lang="text"><span style="display:flex;"><span># 1. Start the bpftrace script
+</span></span><span style="display:flex;"><span>~ BPFTRACE_LOG_SIZE=100000000 ./kksCursorTrace.bt
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>2. Dump the cursortrace event settings from cdb$root
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set container = cdb$root;
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set events &#39;immediate trace name cursortrace level 0xffffffff, address 0x0&#39;; 
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>3. bpftrace output
+</span></span><span style="display:flex;"><span>16379  -&gt; kksCursorTrace: lvl=0xffffffff (4294967295), hsh=0x0 (0)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379     The CURSORTRACE event settings are as follows:
+</span></span><span style="display:flex;"><span>16379      CON_ID=1 Global (instance wide):
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       flg_all=0x000000000                    flg_all=0x000000000
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       ht_gbl=0x0701a8238                     ht_gbl=0x0701a8238
+</span></span><span style="display:flex;"><span>16379       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379      CON_ID=4 Global (instance wide):
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       flg_all=0x000000001                    flg_all=0x000000001
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       ht_gbl=0x78c9aa8f8                     ht_gbl=0x78c9aa8f8
+</span></span><span style="display:flex;"><span>16379       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379      Local (session wide):
+</span></span><span style="display:flex;"><span>16379       flg_all=0x000000001                    flg_all=0x000000001
+</span></span><span style="display:flex;"><span>16379       ht_lcl=0x78e528ef0                     ht_lcl=0x78e528ef0
+</span></span><span style="display:flex;"><span>16379       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379  &lt;- kksCursorTrace</span></span></code></pre></div>
+<figcaption>Listing 18: CURSORTRACE event dump from cdb$root after setting level 0x11 at pdb level</figcaption>
+</figure>
+<p>Setting trace level <code>0x10</code> with <code>ALTER SYSTEM</code> from cdb$root only resets the <code>flg_all</code> value for the local session, but not the one for pdb01 (con_id 4):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-text" data-lang="text"><span style="display:flex;"><span># 1. Start the bpftrace script
+</span></span><span style="display:flex;"><span>~ BPFTRACE_LOG_SIZE=100000000 ./kksCursorTrace.bt
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>2. Set cursortrace level 0x10 in cdb$root
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set container = cdb$root;
+</span></span><span style="display:flex;"><span>SQL&gt; alter system set events &#39;immediate trace name cursortrace level 0x10, address 0x0&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>3. bpftrace output
+</span></span><span style="display:flex;"><span>16379  -&gt; kksCursorTrace: lvl=0x10 (16), hsh=0x0 (0)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379     The CURSORTRACE event settings are as follows:
+</span></span><span style="display:flex;"><span>16379      CON_ID=1 Global (instance wide):
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       flg_all=0x000000000                    flg_all=0x000000000
+</span></span><span style="display:flex;"><span>16379       ht_gbl=0x0701a8238                     ht_gbl=0x0701a8238
+</span></span><span style="display:flex;"><span>16379       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379      CON_ID=4 Global (instance wide):
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       flg_all=0x000000001                    flg_all=0x000000001
+</span></span><span style="display:flex;"><span>16379       ht_gbl=0x78c9aa8f8                     ht_gbl=0x78c9aa8f8
+</span></span><span style="display:flex;"><span>16379       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379      Local (session wide):
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       flg_all=0x000000001                    flg_all=0x000000000
+</span></span><span style="display:flex;"><span>16379       ht_lcl=0x78e528ef0                     ht_lcl=0x78e528ef0
+</span></span><span style="display:flex;"><span>16379       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379  &lt;- kksCursorTrace</span></span></code></pre></div>
+<figcaption>Listing 19: bpftrace output when setting CURSORTRACE event level 0x10 at cdb level</figcaption>
+</figure>
+<p>To reset the pdb-specific <code>flg_all</code> value, we must switch back to pdb01 and set trace level <code>0x10</code> with the <code>ALTER SYSTEM</code> command. This changes the <code>flg_all</code> value for con_id 4 from <code>0x1</code> to <code>0x0</code>, but it doesn&rsquo;t restore the original <code>ht_gbl</code> address (which remains set to <code>0x78c9aa8f8</code>).</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-text" data-lang="text"><span style="display:flex;"><span># 1. Start the bpftrace script
+</span></span><span style="display:flex;"><span>~ BPFTRACE_LOG_SIZE=100000000 ./kksCursorTrace.bt
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span># 2. Set the cursortrace event level 0x10 at pdb level
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set container = pdb01;
+</span></span><span style="display:flex;"><span>SQL&gt; alter system set events &#39;immediate trace name cursortrace level 0x10, address 0x0&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span># 3. bpftrace output
+</span></span><span style="display:flex;"><span>16379  -&gt; kksCursorTrace: lvl=0x10 (16), hsh=0x0 (0)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379     The CURSORTRACE event settings are as follows:
+</span></span><span style="display:flex;"><span>16379      CON_ID=4 Global (instance wide):
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       flg_all=0x000000001                    flg_all=0x000000000
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       ht_gbl=0x78c9aa8f8                     ht_gbl=0x78c9aa8f8
+</span></span><span style="display:flex;"><span>16379       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379      Local (session wide):
+</span></span><span style="display:flex;"><span>16379       flg_all=0x000000000                    flg_all=0x000000000
+</span></span><span style="display:flex;"><span>16379       ht_lcl=0x78e528ef0                     ht_lcl=0x78e528ef0
+</span></span><span style="display:flex;"><span>16379       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379  &lt;- kksCursorTrace</span></span></code></pre></div>
+<figcaption>Listing 20: bpftrace output when setting CURSORTRACE event level 0x10 at pdb level</figcaption>
+</figure>
+<p>Switching back to cdb$root and setting trace level <code>0x11</code> again with <code>ALTER SYSTEM</code>, changes the <code>flg_all</code> value in the local session and at the cdb-level, but it no longer changes the <code>flg_all</code> value for pdb01 (con_id 4). This means that global container-wide tracing will no longer include pdb01 (until the pdb or instance is restarted):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>1. Start the bpftrace script
+</span></span><span style="display:flex;"><span>~ BPFTRACE_LOG_SIZE=100000000 ./kksCursorTrace.bt
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>2. 
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set container = cdb$root;
+</span></span><span style="display:flex;"><span>SQL&gt; alter system set events &#39;immediate trace name cursortrace level 0x11, address 0x0&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>3. bpftrace output
+</span></span><span style="display:flex;"><span>16379  -&gt; kksCursorTrace: lvl=0x11 (17), hsh=0x0 (0)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379     The CURSORTRACE event settings are as follows:
+</span></span><span style="display:flex;"><span>16379      CON_ID=1 Global (instance wide):
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       flg_all=0x000000000                    flg_all=0x000000001
+</span></span><span style="display:flex;"><span>16379       ht_gbl=0x0701a8238                     ht_gbl=0x0701a8238
+</span></span><span style="display:flex;"><span>16379       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379      CON_ID=4 Global (instance wide):
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       flg_all=0x000000000                    flg_all=0x000000000
+</span></span><span style="display:flex;"><span>16379       ht_gbl=0x78c9aa8f8                     ht_gbl=0x78c9aa8f8
+</span></span><span style="display:flex;"><span>16379       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379      Local (session wide):
+</span></span><span style="display:flex;"><span>16379       flg_all=0x000000000                    flg_all=0x000000001
+</span></span><span style="display:flex;"><span>16379       ht_lcl=0x78e528ef0                     ht_lcl=0x78e528ef0
+</span></span><span style="display:flex;"><span>16379       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379  &lt;- kksCursorTrace</span></span></code></pre></div>
+<figcaption>Listing 21: bpftrace output when setting CURSORTRACE event level 0x11 at cdb level</figcaption>
+</figure>
+<p>Note that the <code>CURSORTRACE</code> dump output provides no signs or indications whatsoever of this rather surprising behavior. It only shows the global and local hash tables that we are going to investigate in the next section:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>SQL&gt; alter session set container = cdb$root;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set events &#39;immediate trace name cursortrace level 0xffffffff, address 0x0&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>The CURSORTRACE event settings are as follows:
+</span></span><span style="display:flex;"><span>  CDB$ROOT (1) Global (instance wide):
+</span></span><span style="display:flex;"><span>   1. hash=0x00000000 flg=0x00000000
+</span></span><span style="display:flex;"><span>   2. hash=0x00000000 flg=0x00000000
+</span></span><span style="display:flex;"><span>   3. hash=0x00000000 flg=0x00000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  PDB01 (4) Global (instance wide):
+</span></span><span style="display:flex;"><span>   1. hash=0x00000000 flg=0x00000000
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>   2. hash=0x00000000 flg=0x00000000
+</span></span><span style="display:flex;"><span>   3. hash=0x00000000 flg=0x00000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  Local (session wide):
+</span></span><span style="display:flex;"><span>   1. hash=0x00000000 flg=0x00000000
+</span></span><span style="display:flex;"><span>   2. hash=0x00000000 flg=0x00000000
+</span></span><span style="display:flex;"><span>   3. hash=0x00000000 flg=0x00000000</span></span></code></pre></div>
+<figcaption>Listing 22: Dumping the CURSORTRACE event settings after setting level 0x10 at cdb and pdb levels</figcaption>
+</figure>
+<p>In conclusion, it is best to avoid using the local trace flag <code>0x10</code> with <code>ALTER SYSTEM</code>, as it can lead to unexpected and non-intuitive behavior.</p>
+<p>Let&rsquo;s continue the investigation by tracing a specific statement in the current session. As an example, we trace the <code>select sysdate</code> statement, which has the cursor hash value <code>0xb16f46be</code>:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>SQL&gt; select sql_id, hash_value, to_char(hash_value, &#39;xxxxxxxx&#39;) hash_hex from v$sql where sql_text = &#39;select sysdate&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL_ID        HASH_VALUE HASH_HEX
+</span></span><span style="display:flex;"><span>------------- ---------- ---------
+</span></span><span style="display:flex;"><span>bw2c1d6sqyjpy 2976859838  b16f46be</span></span></code></pre></div>
+<figcaption>Listing 23: Looking up the cursor hash value for a statement</figcaption>
+</figure>
+<p>Tracing for individual statements can be enabled using either the <code>ALTER SESSION</code> or <code>ALTER SYSTEM</code> command. With <code>ALTER SESSION</code>, Oracle defaults to local scope, so the local trace flag <code>0x10</code> does not need to be specified explicitly. With <code>ALTER SYSTEM</code>, however, Oracle defaults to global scope, requiring the local trace flag <code>0x10</code> to be specified explicitly when local tracing is intended.</p>
+<p>Trace level with <code>ALTER SESSION</code>:</p>
+<ul>
+<li><code>0x01</code>: enable debug level 1</li>
+<li><code>0x40</code>: add cursor to be traced to local hash table</li>
+</ul>
+<p>Trace level with <code>ALTER SYSTEM</code>:</p>
+<ul>
+<li><code>0x01</code>: enable debug level 1</li>
+<li><code>0x10</code>: trace locally (session-level)</li>
+<li><code>0x40</code>: add cursor to be traced to local hash table</li>
+</ul>
+<p>Note that with <code>ALTER SYSTEM</code>, the global scope applies either to the entire container when executed in cdb$root or only to the current pdb when executed within a pdb, as described in the previous section.</p>
+<p>For the example discussed here, we use <code>ALTER SESSION</code> and therefore set the trace level to <code>0x41</code> (the combination of trace levels <code>0x01</code> and <code>0x40</code>). The cursor hash value <code>0xb16f46be</code> is specified in the <code>address</code> clause.</p>
+<p>After executing this command, the following bpftrace output shows how Oracle processes the request: it increments the counter <code>ht_cnt</code> for the local hash table by one, adds the hash value <code>0xb16f46be</code> to the third slot in the local hash table, and changes the cursor-specific trace flag (<code>flg</code>) value from <code>0x0</code> to <code>0x1</code>. The reason <code>flg</code> is set to <code>0x1</code> rather than <code>0x41</code> is that the <code>kksCursorTrace</code> function mask out trace flag <code>0x40</code>.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>1. Start the bpftrace script
+</span></span><span style="display:flex;"><span>~ BPFTRACE_LOG_SIZE=100000000 ./kksCursorTrace.bt
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>2. Set cursortrace event level 0x41 for cursor hash value 0xb16f46be
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set container = cdb$root;
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set events  &#39;immediate trace name cursortrace level 0x41, address 0xb16f46be&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>3. bpftrace output
+</span></span><span style="display:flex;"><span>16379  -&gt; kksCursorTrace: lvl=0x41 (65), hsh=0xb16f46be (2976859838)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379     The CURSORTRACE event settings are as follows:
+</span></span><span style="display:flex;"><span>16379      CON_ID=1 Global (instance wide):
+</span></span><span style="display:flex;"><span>16379       flg_all=0x000000000                    flg_all=0x000000000
+</span></span><span style="display:flex;"><span>16379       ht_gbl=0x0701a8238                     ht_gbl=0x0701a8238
+</span></span><span style="display:flex;"><span>16379       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379      Local (session wide):
+</span></span><span style="display:flex;"><span>16379       flg_all=0x000000000                    flg_all=0x000000000
+</span></span><span style="display:flex;"><span>16379       ht_lcl=0x78e528ef0                     ht_lcl=0x78e528ef0
+</span></span><span style="display:flex;"><span>16379       ht_cnt=0                               ht_cnt=1
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       3. hash=0x000000000 flg=0x000000000    3. hash=0x0b16f46be flg=0x000000001
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379  &lt;- kksCursorTrace</span></span></code></pre></div>
+<figcaption>Listing 24: bpftrace output when setting trace level 0x41 for hash value 0xb16f46be</figcaption>
+</figure>
+<p>With this setting, Oracle traces all executions of the cursor with the hash value <code>0xb16f46be</code> in the current session. The reason the cursor hash value <code>0xb16f46be</code> is added to the third hash table slot is that Oracle calculates the hash table position using a modulo 3 operation on the hash value, for example:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>0xb16f46be = 2976859838
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>(2976859838 % 3) + 1 = 3</span></span></code></pre></div>
+<figcaption>Listing 25: Calculating the hash table position</figcaption>
+</figure>
+<p>To populate the remaining hash table slots, we can enable trace level <code>0x41</code> for two additional cursors, such as <code>select sysdate + 1</code> and <code>select sysdate + 2</code>, which have the hash values <code>0x25064a87</code> and <code>0xb34db460</code> and therefore map to hash table positions 1 and 2, respectively.</p>
+<p>After executing the second <code>ALTER SESSION</code> statement from the listing below, the bpftrace output shows that the local hash table now contains three entries (<code>ht_cnt=3</code>), all hash table slots are occupied, and the <code>flg</code> value of each cursor is set to <code>0x1</code>.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>1. Start the bpftrace script
+</span></span><span style="display:flex;"><span>~ BPFTRACE_LOG_SIZE=100000000 ./kksCursorTrace.bt
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>2. Determine cursor hash values and hash table positions
+</span></span><span style="display:flex;"><span>SQL&gt; select sql_id, hash_value, to_char(hash_value, &#39;xxxxxxxx&#39;) hash_hex, mod(hash_value, 3) + 1 ht_pos 
+</span></span><span style="display:flex;"><span>      from v$sql where sql_text in (&#39;select sysdate + 1&#39;, &#39;select sysdate + 2&#39;);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL_ID        HASH_VALUE HASH_HEX      HT_POS
+</span></span><span style="display:flex;"><span>------------- ---------- --------- ----------
+</span></span><span style="display:flex;"><span>dbkzuuhkhckn7  621169287  25064a87          1
+</span></span><span style="display:flex;"><span>481fy7atnvd30 3008214112  b34db460          2
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>3. Set cursortrace event level 0x41 for cursor hash values 0x25064a87 and 0xb34db460
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set events  &#39;immediate trace name cursortrace level 0x41, address 0x25064a87&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set events  &#39;immediate trace name cursortrace level 0x41, address 0xb34db460&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>4. bpftrace output
+</span></span><span style="display:flex;"><span>16379  -&gt; kksCursorTrace: lvl=0x41 (65), hsh=0xb34db460 (3008214112)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379     The CURSORTRACE event settings are as follows:
+</span></span><span style="display:flex;"><span>16379      CON_ID=1 Global (instance wide):
+</span></span><span style="display:flex;"><span>16379       flg_all=0x000000000                    flg_all=0x000000000
+</span></span><span style="display:flex;"><span>16379       ht_gbl=0x0701a8238                     ht_gbl=0x0701a8238
+</span></span><span style="display:flex;"><span>16379       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379      Local (session wide):
+</span></span><span style="display:flex;"><span>16379       flg_all=0x000000000                    flg_all=0x000000000
+</span></span><span style="display:flex;"><span>16379       ht_lcl=0x78e528ef0                     ht_lcl=0x78e528ef0
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       ht_cnt=2                               ht_cnt=3
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       1. hash=0x025064a87 flg=0x000000001    1. hash=0x025064a87 flg=0x000000001
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x0b34db460 flg=0x000000001
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       3. hash=0x0b16f46be flg=0x000000001    3. hash=0x0b16f46be flg=0x000000001
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379  &lt;- kksCursorTrace</span></span></code></pre></div>
+<figcaption>Listing 26: bpftrace output when setting trace level 0x41 for hash value 0x25064a87 and 0xb34db460</figcaption>
+</figure>
+<p>Since the local and global hash tables have a hardcoded maximum limit of three slots, this raises the question of what happens when local scope tracing with level <code>0x41</code> is enabled for a fourth cursor.</p>
+<p>Let&rsquo;s test this by enabling tracing for the cursor <code>select sysdate + 3</code>, which has the hash value <code>0xf3c06d9a</code> and maps to hash table position 3. In this case, the number of hash table entries remains at 3 (<code>ht_cnt=3</code>), but Oracle replaces the existing entry containing hash value <code>0x0b16f46be</code> with the new hash value <code>0xf3c06d9a</code>. As a result, the <code>CURSORTRACE</code> event will no longer trace the <code>select sysdate</code> statement (hash value <code>0xb16f46be</code>) in the local session, but will instead trace <code>select sysdate + 3</code> (hash value <code>0xf3c06d9a</code>).</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>1. Start the bpftrace script
+</span></span><span style="display:flex;"><span>~ BPFTRACE_LOG_SIZE=100000000 ./kksCursorTrace.bt
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>2. Determine cursor hash value and hash table position
+</span></span><span style="display:flex;"><span>SQL&gt; select sql_id, hash_value, to_char(hash_value, &#39;xxxxxxxx&#39;) hash_hex,  mod(hash_value, 3) + 1 from v$sql where sql_text = &#39;select sysdate + 3&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL_ID        HASH_VALUE HASH_HEX  MOD(HASH_VALUE,3)+1
+</span></span><span style="display:flex;"><span>------------- ---------- --------- -------------------
+</span></span><span style="display:flex;"><span>cp7bfxgtw0vcu 4089474458  f3c06d9a                   3
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>3. Set cursortrace event level 0x41 for cursor hash value 0xf3c06d9a
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set events  &#39;immediate trace name cursortrace level 0x41, address 0xf3c06d9a&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>4. bpftrace output
+</span></span><span style="display:flex;"><span>16379  -&gt; kksCursorTrace: lvl=0x41 (65), hsh=0xf3c06d9a (4089474458)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379     The CURSORTRACE event settings are as follows:
+</span></span><span style="display:flex;"><span>16379      CON_ID=1 Global (instance wide):
+</span></span><span style="display:flex;"><span>16379       flg_all=0x000000000                    flg_all=0x000000000
+</span></span><span style="display:flex;"><span>16379       ht_gbl=0x0701a8238                     ht_gbl=0x0701a8238
+</span></span><span style="display:flex;"><span>16379       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379      Local (session wide):
+</span></span><span style="display:flex;"><span>16379       flg_all=0x000000000                    flg_all=0x000000000
+</span></span><span style="display:flex;"><span>16379       ht_lcl=0x78e528ef0                     ht_lcl=0x78e528ef0
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       ht_cnt=3                               ht_cnt=3
+</span></span><span style="display:flex;"><span>16379       1. hash=0x025064a87 flg=0x000000001    1. hash=0x025064a87 flg=0x000000001
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       2. hash=0x0b34db460 flg=0x000000001    2. hash=0x0b34db460 flg=0x000000001
+</span></span><span style="display:flex;"><span>16379       3. hash=0x0b16f46be flg=0x000000001    3. hash=0x0f3c06d9a flg=0x000000001
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379  &lt;- kksCursorTrace</span></span></code></pre></div>
+<figcaption>Listing 27: bpftrace output when setting trace level 0x41 for hash value 0xf3c06d9a</figcaption>
+</figure>
+<p>While it is useful to know that the <code>CURSORTRACE</code> event can be enabled for up to three different cursors, each with its own trace level, it remains unclear why this limit is hardcoded to three and why existing entries can be overwritten.</p>
+<p>The limitation of this design becomes apparent when tracing multiple cursors. Before enabling tracing, we must carefully determine each cursor&rsquo;s slot in the hash table based on its hash value; otherwise, existing entries may be overwritten. If multiple cursor hash values map to the same hash table slot, it is not possible to trace all of them simultaneously. Note that the global hash table exhibits the same behavior.</p>
+<p>Existing cursor entries can be removed from the hash table when they are no longer needed. This can be done using trace level <code>0x80</code> together with the cursor&rsquo;s hash value in the <code>address</code> clause. For example, to remove the first hash table entry with the hash value <code>0x25064a87</code>, execute the <code>ALTER SESSION</code> command shown below.</p>
+<p>The bpftrace output shows that the number of entries in the local hash table is decremented by one (<code>ht_cnt</code> is set to <code>2</code>) and that the first hash table entry is deleted (its <code>hash</code> and <code>flg</code> values are both reset to 0).</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>1. Start the bpftrace script
+</span></span><span style="display:flex;"><span>~ BPFTRACE_LOG_SIZE=100000000 ./kksCursorTrace.bt
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>2. Set cursortrace event level 0x80 for cursor hash value 0x25064a87
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set events &#39;immediate trace name cursortrace level 0x80, address 0x25064a87&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>3. bpftrace output
+</span></span><span style="display:flex;"><span>16379  -&gt; kksCursorTrace: lvl=0x80 (128), hsh=0x25064a87 (621169287)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379     The CURSORTRACE event settings are as follows:
+</span></span><span style="display:flex;"><span>16379      CON_ID=1 Global (instance wide):
+</span></span><span style="display:flex;"><span>16379       flg_all=0x000000000                    flg_all=0x000000000
+</span></span><span style="display:flex;"><span>16379       ht_gbl=0x0701a8238                     ht_gbl=0x0701a8238
+</span></span><span style="display:flex;"><span>16379       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379      Local (session wide):
+</span></span><span style="display:flex;"><span>16379       flg_all=0x000000000                    flg_all=0x000000000
+</span></span><span style="display:flex;"><span>16379       ht_lcl=0x78e528ef0                     ht_lcl=0x78e528ef0
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       ht_cnt=3                               ht_cnt=2
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       1. hash=0x025064a87 flg=0x000000001    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x0b34db460 flg=0x000000001    2. hash=0x0b34db460 flg=0x000000001
+</span></span><span style="display:flex;"><span>16379       3. hash=0x0f3c06d9a flg=0x000000001    3. hash=0x0f3c06d9a flg=0x000000001
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379  &lt;- kksCursorTrace</span></span></code></pre></div>
+<figcaption>Listing 28: bpftrace output when setting trace level 0x80 for hash value 0x25064a87</figcaption>
+</figure>
+<p>The other two entries can be deleted in a similar way by specifying the corresponding cursor&rsquo;s hash value in the <code>address</code> clause. Here again, when using trace level <code>0x80</code> with the <code>ALTER SESSION</code> command, Oracle assumes local scope and clears the local hash table, whereas with <code>ALTER SYSTEM</code> it assumes global scope and clears the global hash table.</p>
+<p>However, it is also possible to override this behavior. For example, the <code>ALTER SYSTEM</code> command can be used to clear the local hash table by specifying trace level <code>0x90</code> (a combination of trace levels <code>0x10</code> and <code>0x80</code>). Conversely, the <code>ALTER SESSION</code> command can be used to clear the global hash table by specifying trace level <code>0xa0</code> (a combination of  trace levels <code>0x20</code> and <code>0x80</code>). As outlined in the previous section, this behavior can be quite confusing, especially since <code>ALTER SYSTEM</code> executed from within a pdb has a global scope that is limited to the current pdb. Therefore, it is best to always use <code>ALTER SESSION</code> for local scope and <code>ALTER SYSTEM</code> for global scope rather than mixing the two.</p>
+<p>Alternatively, the <code>CURSORTRACE</code> level <code>0x80000000</code> removes all entries from the global and local hash tables at once. However, doing so results in another unexpected behavior that appears to be a bug.</p>
+<p>The bpftrace output below shows that setting trace level <code>0x80000000</code> clears all existing entries from the local hash table, but leaves the hash table entry counter <code>ht_cnt</code> unchanged at <code>2</code> (since the local hash table contained two entries before trace level <code>0x80000000</code> was set).</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>1. Start the bpftrace script
+</span></span><span style="display:flex;"><span>~ BPFTRACE_LOG_SIZE=100000000 ./kksCursorTrace.bt
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>2. Set cursortrace event level 0x80000000 to clear hash tables
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set events &#39;immediate trace name cursortrace level 0x80000000, address 0x0&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>3. bpftrace output
+</span></span><span style="display:flex;"><span>16379  -&gt; kksCursorTrace: lvl=0x80000000 (2147483648), hsh=0x0 (0)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379     The CURSORTRACE event settings are as follows:
+</span></span><span style="display:flex;"><span>16379      CON_ID=1 Global (instance wide):
+</span></span><span style="display:flex;"><span>16379       flg_all=0x000000000                    flg_all=0x000000000
+</span></span><span style="display:flex;"><span>16379       ht_gbl=0x0701a8238                     ht_gbl=0x0701a8238
+</span></span><span style="display:flex;"><span>16379       ht_cnt=0                               ht_cnt=0
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x000000000 flg=0x000000000    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       3. hash=0x000000000 flg=0x000000000    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379      Local (session wide):
+</span></span><span style="display:flex;"><span>16379       flg_all=0x000000000                    flg_all=0x000000000
+</span></span><span style="display:flex;"><span>16379       ht_lcl=0x78e528ef0                     ht_lcl=0x78e528ef0
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>16379       ht_cnt=2                               ht_cnt=2
+</span></span><span style="display:flex;"><span>16379       1. hash=0x000000000 flg=0x000000000    1. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       2. hash=0x0b34db460 flg=0x000000001    2. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>16379       3. hash=0x0f3c06d9a flg=0x000000001    3. hash=0x000000000 flg=0x000000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>16379  &lt;- kksCursorTrace</span></span></code></pre></div>
+<figcaption>Listing 29: bpftrace output when clearing hash table entries with trace level 0x80000000</figcaption>
+</figure>
+<p>This has the following undesired side effect: sessions use the function <code>kksCheckForTrace</code> to determine which <code>CURSORTRACE</code> level is enabled. The function&rsquo;s trace-level evaluation logic checks the global hash table only when the local hash table does not contain any entries (that is, when the local <code>ht_cnt</code> is set to 0). In other words, as long as any entries are (seemingly) present in the local hash table, the global hash table is ignored. Consequently, if you add a cursor to the global hash table for tracing after clearing the local hash table with trace level <code>0x80000000</code>, that cursor will not be traced, even though it is globally flagged for tracing.</p>
+<p>The global hash table exhibits the same behavior when trace level <code>0x80000000</code> is used to clear its entries: the global <code>ht_cnt</code> counter is not reset. This results in another side effect: the evaluation logic in <code>kksCheckForTrace</code> only checks whether tracing for all statements in the current session is enabled when the global hash table contains no entries (that is, when <code>ht_cnt</code> is set to 0). So, as long as any entries (seemingly) exist in the global hash table, the session&rsquo;s trace-all flag <code>flg_all</code> is ignored. Consequently, if you enable session-wide tracing after clearing the global hash table with trace level <code>0x80000000</code>, no statements will be traced.</p>
+<p>To avoid side effects, it is best not to use trace level <code>0x80000000</code> for clearing cursors from the local and global hash tables, but rather delete them one by one.</p>
+<p>Tracing at global scope (all statements or individual statements) exhibits similar quirks to those observed in the investigation above, which focused primarily on local scope. I will therefore not cover global scope behavior in further detail. Instead, the table below summarizes selected trace level combinations when used with <code>ALTER SESSION</code> and <code>ALTER SYSTEM</code>; exploring additional combinations and their behavior is left as an exercise for curious readers.</p>
+<table class="auto-size-table">  
+<colgroup> <col style="width: 120px;"><col><col></colgroup>
+<thead>  
+<tr>  
+<th>Trace Level(s)</th>
+<th>Used with ALTER SESSION</th>  
+<th>Used with ALTER SYSTEM</th>
+</tr>  
+</thead>  
+<tbody> 
+<tr>  
+<td>0x10</td>  
+<td>Sets the local trace-all flag (<code>flg_all</code>). This enables tracing for the current session.</td>
+<td>Sets the local and global trace-all flags (<code>flg_all</code>). This enables tracing for the current session and globally.</td>
+</tr>  
+<tr>  
+<td>0x20</td>  
+<td>Sets the local and global trace-all flags (<code>flg_all</code>). This enables tracing for the current session and globally.</td>
+<td>Sets the global trace-all flag (<code>flg_all</code>). This enables tracing globally.</td>
+</tr> 
+<tr>  
+<td>0x40</td>  
+<td>Adds the cursor hash value specified by <code>address</code> to the local hash table.</td>
+<td>Adds the cursor hash value specified by <code>address</code> to the global hash table.</td>
+</tr>  
+<tr>  
+<td>0x80</td>  
+<td>Removes the cursor hash value specified by <code>address</code> from the local hash table.</td>
+<td>Removes the cursor hash value specified by <code>address</code> from the global hash table.</td>
+</tr>  
+<tr>
+<td>0x10 + 0x40</td>
+<td>Adds the cursor hash value specified by <code>address</code> to the local hash table.</td>
+<td>Adds the cursor hash value specified by <code>address</code> to the local and the global hash table.</td> 
+</tr>
+<tr>
+<td>0x20 + 0x40</td>
+<td>Adds the cursor hash value specified by <code>address</code> to the local and global hash table.</td>
+<td>Adds the cursor hash value specified by <code>address</code> to the global hash table.</td>
+</tr>
+<tr>
+<td>0x10 + 0x80</td>
+<td>Removes the cursor hash value specified by <code>address</code> from the local hash table.</td>
+<td>Removes the cursor hash value specified by <code>address</code> from the local and the global hash table.</td>
+</tr>
+</tbody>
+<caption>Table 2: CURSORTRACE behavior for different ALTER SESSION and ALTER SYSTEM trace level combinations</caption>  
+</table>
+<h2 id="cursortrace-evaluation-logic-and-precedence-rules">CURSORTRACE Evaluation Logic and Precedence Rules</h2>
+<p>The library cache instrumentation uses the function <code>kksCheckForTrace</code> to check at which level the <code>CURSORTRACE</code> event is enabled. The function applies the following evaluation logic and precedence rules:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>                         ┌──────────────────────────────────────┐
+</span></span><span style="display:flex;"><span>                         │ Local hash table contains entries?   │
+</span></span><span style="display:flex;"><span>                         └──────────────────┬───────────────────┘
+</span></span><span style="display:flex;"><span>                                            │
+</span></span><span style="display:flex;"><span>                         ┌──────────────────┴───────────────────┐
+</span></span><span style="display:flex;"><span>                         │                                      │
+</span></span><span style="display:flex;"><span>                        Yes                                     No
+</span></span><span style="display:flex;"><span>                         │                                      │
+</span></span><span style="display:flex;"><span>              ┌──────────▼──────────┐          ┌────────────────▼────────────────┐
+</span></span><span style="display:flex;"><span>              │     Hash found?     │          │ Global hash table contains      │
+</span></span><span style="display:flex;"><span>              └──────────┬──────────┘          │ entries?                        │
+</span></span><span style="display:flex;"><span>                         │                     └────────────────┬────────────────┘
+</span></span><span style="display:flex;"><span>              ┌──────────┴──────────┐                           │
+</span></span><span style="display:flex;"><span>              │                     │                ┌──────────┴──────────┐
+</span></span><span style="display:flex;"><span>             Yes                    No               │                     │
+</span></span><span style="display:flex;"><span>              │                     │               Yes                    No
+</span></span><span style="display:flex;"><span>              │                     │                │                     │
+</span></span><span style="display:flex;"><span>              ▼                     ▼                ▼                     ▼
+</span></span><span style="display:flex;"><span>     ┌────────────────┐  ┌──────────────────┐  ┌───────────────┐  ┌────────────────┐
+</span></span><span style="display:flex;"><span>     │ Return local   │  │ Return global    │  │  Hash found?  │  │ Return local   │
+</span></span><span style="display:flex;"><span>     │ flg            │  │ flg_all          │  └───────┬───────┘  │ flg_all        │
+</span></span><span style="display:flex;"><span>     └────────────────┘  └──────────────────┘          │          └────────────────┘
+</span></span><span style="display:flex;"><span>                                                       │
+</span></span><span style="display:flex;"><span>                                             ┌─────────┴────────┐
+</span></span><span style="display:flex;"><span>                                             │                  │
+</span></span><span style="display:flex;"><span>                                            Yes                 No
+</span></span><span style="display:flex;"><span>                                             │                  │
+</span></span><span style="display:flex;"><span>                                             ▼                  ▼
+</span></span><span style="display:flex;"><span>                                  ┌────────────────┐    ┌────────────────┐
+</span></span><span style="display:flex;"><span>                                  │ Return global  │    │ Return 0       │
+</span></span><span style="display:flex;"><span>                                  │ flg            │    └────────────────┘
+</span></span><span style="display:flex;"><span>                                  └────────────────┘</span></span></code></pre></div>
+<figcaption>Listing 30: CURSORTRACE event level evaluation logic and precedence rules</figcaption>
+</figure>
+<p><a id="practical-examples"></a></p>
+<h2 id="practical-examples">Practical Examples</h2>
+<p>As general guidelines for using the <code>CURSORTRACE</code> event, consider the following recommendations:</p>
+<ol>
+<li>
+<p><strong>Global vs. local scope</strong><br>
+Decide whether tracing should apply globally or locally. For global tracing, determine whether it should be enabled container-wide (affecting the cdb$root and all pdbs) or only within a specific pdb. To enable container-wide tracing, enable the <code>CURSORTRACE</code> event from cdb$root; for pdb-specific tracing, switch to the target pdb before enabling the event. Keep in mind that once tracing has been enabled in a pdb, the <code>CURSORTRACE</code> event settings no longer propagate from cdb$root to that pdb until that pdb or the database instance is restarted.</p>
+</li>
+<li>
+<p><strong>Trace all statements vs. individual statements</strong><br>
+Unless necessary, avoid adding multiple statements to the global or local hash table. If you decide to trace multiple statements, manually compute their hash table slots from the cursor hash values (see Listing 25) to avoid unexpected overwrites caused by hash collisions.</p>
+</li>
+<li>
+<p><strong>Trace levels</strong>
+Combine the necessary trace levels (as shown in Listing 2), but avoid using trace level <code>0x20</code> (global scope) with <code>ALTER SESSION</code>, and similarly, avoid using trace level <code>0x10</code> (local scope) with <code>ALTER SYSTEM</code>.</p>
+</li>
+<li>
+<p><strong>Removing and clearing hash table entries</strong><br>
+Do not use event level <code>0x80000000</code> to clear the global and local hash tables. Instead, remove hash table entries individually using trace flag <code>0x80</code>.</p>
+</li>
+</ol>
+<p><strong>Examples</strong>
+Note that all examples below enable tracing at &ldquo;debug level 1&rdquo;, represented by trace level <code>0x1</code>. Where necessary, this trace level is combined with other trace level bits to achieve the desired tracing behavior.</p>
+<p>Enable and disable tracing of all statements locally (in the current session):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>SQL&gt; alter session set events &#39;immediate trace name cursortrace level 0x1, address 0x0&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set events &#39;immediate trace name cursortrace level 0x0, address 0x0&#39;;</span></span></code></pre></div>
+<figcaption>Listing 31: Enable and disable tracing of all statements locally (in the current session)</figcaption>
+</figure>
+<p>Enable and disable tracing of a selected statement locally (in the current session):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>SQL&gt; alter session set events &#39;immediate trace name cursortrace level 0x41, address &amp;hash_value&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set events &#39;immediate trace name cursortrace level 0x80, address &amp;hash_value&#39;;</span></span></code></pre></div>
+<figcaption>Listing 32: Enable and disable tracing of a selected statement locally (in the current session)</figcaption>
+</figure>
+<p>Enable and disable tracing of all statements globally at container level (cdb$root and all pdbs):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>SQL&gt; alter session set container = cdb$root;
+</span></span><span style="display:flex;"><span>SQL&gt; alter system set events &#39;immediate trace name cursortrace level 0x1, address 0x0&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set container = cdb$root;
+</span></span><span style="display:flex;"><span>SQL&gt; alter system set events &#39;immediate trace name cursortrace level 0x0, address 0x0&#39;;</span></span></code></pre></div>
+<figcaption>Listing 33: Enable and disable tracing of all statements globally at container level (cdb$root and all pdbs)</figcaption>
+</figure>
+<p>Enable and disable tracing of a selected statement globally at container level (cdb$root and all pdbs):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>SQL&gt; alter session set container = cdb$root;
+</span></span><span style="display:flex;"><span>SQL&gt; alter system set events &#39;immediate trace name cursortrace level 0x41, address &amp;hash_value&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set container = cdb$root;
+</span></span><span style="display:flex;"><span>SQL&gt; alter system set events &#39;immediate trace name cursortrace level 0x80, address &amp;hash_value&#39;;</span></span></code></pre></div>
+<figcaption>Listing 34: Enable and disable tracing of a selected statement globally at container level (cdb$root and all pdbs)</figcaption>
+</figure>
+<p>Enable and disable tracing of all statements globally at pdb level (specific pdb only):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>SQL&gt; alter session set container = &amp;pdb_name;
+</span></span><span style="display:flex;"><span>SQL&gt; alter system set events &#39;immediate trace name cursortrace level 0x1, address 0x0&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set container = &amp;pdb_name;
+</span></span><span style="display:flex;"><span>SQL&gt; alter system set events &#39;immediate trace name cursortrace level 0x0, address 0x0&#39;;</span></span></code></pre></div>
+<figcaption>Listing 35: Enable and disable tracing of all statements globally at pdb level (specific pdb only)</figcaption>
+</figure>
+<p>Enable and disable tracing of a selected statement globally at pdb level (specific pdb only):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>SQL&gt; alter session set container = &amp;pdb_name;
+</span></span><span style="display:flex;"><span>SQL&gt; alter system set events &#39;immediate trace name cursortrace level 0x41, address &amp;hash_value&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set container = &amp;pdb_name;
+</span></span><span style="display:flex;"><span>SQL&gt; alter system set events &#39;immediate trace name cursortrace level 0x80, address &amp;hash_value&#39;;</span></span></code></pre></div>
+<figcaption>Listing 36: Enable and disable tracing of a selected statement globally at pdb level (specific pdb only)</figcaption>
+</figure>
+<p>Dump global and local <code>CURSORTRACE</code> hash tables at container level (cdb$root and all pdbs):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>SQL&gt; alter session set container = cdb$root;
+</span></span><span style="display:flex;"><span>SQL&gt; alter system set events &#39;immediate trace name cursortrace level 0xffffffff, address 0x0&#39;;</span></span></code></pre></div>
+<figcaption>Listing 37: Dump global and local `CURSORTRACE` hash tables at container level (cdb$root and all pdbs)</figcaption>
+</figure>
+<h2 id="undocumented-cursortrace-event-levels">Undocumented CURSORTRACE Event Levels</h2>
+<p>The listing below shows the <code>CURSORTRACE</code> event levels listed in My Oracle Support note <a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=755532">KB829509</a> (see also <a href="#source4">4</a>), plus additional undocumented trace levels that are not mentioned in that note.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>------------------------------------------------------------------------------------
+</span></span><span style="display:flex;"><span>Level in HEX     Brief Description                          Decimal Value       Doc?
+</span></span><span style="display:flex;"><span>------------------------------------------------------------------------------------
+</span></span><span style="display:flex;"><span>0x00000001       Debug level 1                                          1       Yes
+</span></span><span style="display:flex;"><span>0x00000002       Debug level 2 (+ level 1)                              2       Yes
+</span></span><span style="display:flex;"><span>0x00000004       Debug level 3 (+ level 2)                              4       Yes
+</span></span><span style="display:flex;"><span>0x00000008       Debug with stack                                       8       Yes
+</span></span><span style="display:flex;"><span>0x00000010       Trace only for this session                           16       Yes
+</span></span><span style="display:flex;"><span>0x00000020       Trace it globally                                     32       Yes
+</span></span><span style="display:flex;"><span>0x00000040       Add a cursor (to list)   to be traced                 64       Yes
+</span></span><span style="display:flex;"><span>0x00000080       Remove a cursor (from list) to be traced             128       Yes
+</span></span><span style="display:flex;"><span>0x00000100       Trace all reparse bits                               256       Yes
+</span></span><span style="display:flex;"><span>0x00000200       Trace cursor sharing criteria                        512       Yes
+</span></span><span style="display:flex;"><span>0x00000400       Trace call heap (11g+)                              1024       Yes
+</span></span><span style="display:flex;"><span>0x00000800       Trace persistent heap (11g+)                        2048       Yes
+</span></span><span style="display:flex;"><span>0x00001000       Trace work heap (11g+)                              4096       Yes
+</span></span><span style="display:flex;"><span>0x00002000       Trace heap 0 (11g+)                                 8192       Yes
+</span></span><span style="display:flex;"><span>0x00004000       Trace heap 6 (11g+)                                16384       Yes
+</span></span><span style="display:flex;"><span>0x00008000       Trace sharing criteria failure (11g+)              32768       Yes
+</span></span><span style="display:flex;"><span>0x00010000       Trace sharing criteria success (11g+)              65536       Yes
+</span></span><span style="display:flex;"><span>0x00020000       Trace execution heap details                      131072       No
+</span></span><span style="display:flex;"><span>0x00040000       Trace additional execution heap details           262144       No
+</span></span><span style="display:flex;"><span>0x00080000       Add timestamps to trace output                    524288       No
+</span></span><span style="display:flex;"><span>0x00200000       Trace bind details                               2097152       No
+</span></span><span style="display:flex;"><span>0x00800000       Trace child pruning details                      8388608       No
+</span></span><span style="display:flex;"><span>0x02000000       Trace cursor map and unmap operations           33554432       No
+</span></span><span style="display:flex;"><span>0x80000000       Clear / disable all tracing                   2147483648       Yes</span></span></code></pre></div>
+<figcaption>Listing 38: Undocumented CURSORTRACE event levels</a></figcaption>
+</figure>
+<h2 id="references">References</h2>
+<p>[1] <a id="source1"></a><a href="/posts/2026-06-08-child-cursor-scan-mechanics---an-investigation/">Christoph Lutz, Child Cursor Scan Mechanics - An Investigation, 2026-06-08</a><br>
+(<a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=755532">https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=755532</a>)<br>
+[2] <a id="source2"></a><a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=1134683">My Oracle Support, Cursortrace Is Not Disabled Using Level 2147483648, Addr 1&rsquo;;, KB789544, 2025-11-29</a><br>
+[3] <a id="source3"></a><a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=11059933">My Oracle Support, Bug 9799999 - Unable to disable cursortrace for enduring sessions, KI7856, 2025-12-12</a><br>
+[4] <a id="source4"></a><a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=755532">My Oracle Support, CURSORTRACE - Enables debugging code in shared cursor management modules, KB829509, 2025-11-28</a> <br>
+[5] <a id="source5"></a><a href="https://oraclecorner.blogspot.com/2007/03/cursortrace-event.html">Tatjana Kane, Cursortrace event, 2007-03-10</a><br>
+[6] <a id="source6"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/kksCursorTrace.bt">Christoph Lutz, oracle GitHub Repository, bpftrace Script kksCursorTrace.bt</a><br>
+[7] <a id="source7"></a><a href="/posts/2026-06-08-child-cursor-scan-mechanics---an-investigation/">Christoph Lutz, Child Cursor Scan Mechanics - An Investigation, 2026-06-08</a></p>
+
+</main>
+
+  <footer>
+  
+  <hr/>
+  © <a href="https://www.0xChris.dev">Christoph Lutz</a> 2025 &ndash; 2026
+  
+  <hr/>
+  <script src="https://giscus.app/client.js"
+            data-repo="Christoph-Lutz/0xChris-Comments"
+            data-repo-id="R_kgDOQo-jcg"
+            data-category="Comments"
+            data-category-id="DIC_kwDOQo-jcs4Cz0NV"
+            data-mapping="pathname"
+            data-strict="1"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="light"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+        </script>
+    <script id="partials/analytics.html" 
+  data-goatcounter="https://0xchris.goatcounter.com/count"
+  async src="//gc.zgo.at/count.js"></script>
+
+  </footer>
+  </body>
+</html>
+
