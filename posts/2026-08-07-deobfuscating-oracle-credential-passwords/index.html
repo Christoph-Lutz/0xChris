@@ -107,7 +107,7 @@
 <main>
 <p>In Oracle, credentials are database objects that store a username and password pair for authentication when executing external procedures (extproc callouts), remote jobs, and external jobs (see also <a href="#source1">1</a>). More recent Oracle releases also support using credentials with database links (see also <a href="#source2">2</a>).</p>
 <p>Credentials are created with the <code>dbms_credential.create_credential</code> procedure, and the associated passwords are stored in obfuscated form in the data dictionary (see also <a href="#source3">3</a>). However, Oracle does not publicly disclose the details of the internal obfuscation mechanism and I could not find any publicly available information about it either, which motivated me to take a closer look.</p>
-<p>Note that the findings in this note apply to the following Oracle releases:</p>
+<p>Note that the findings in this post apply to the following Oracle releases:</p>
 <ul>
 <li>Oracle 19c (tested on 19.28 and 19.30)</li>
 <li>Oracle 26ai (tested on 23.26.0 and 23.26.2)</li>
