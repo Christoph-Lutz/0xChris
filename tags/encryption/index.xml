@@ -1,0 +1,14 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>0xChris</title>
+    <link>https://www.0xChris.dev/</link>
+    <description>0xChris updates</description>
+    <atom:link href="https://www.0xChris.dev/tags/encryption/" rel="self" type="application/rss+xml"/><item>
+      <title>Deobfuscating Oracle Credential Passwords</title>
+      <link>https://www.0xChris.dev/posts/2026-08-07-deobfuscating-oracle-credential-passwords/</link>
+      <pubDate>Fri, 07 Aug 2026 00:00:00 UTC</pubDate>
+      <guid>https://www.0xChris.dev/posts/2026-08-07-deobfuscating-oracle-credential-passwords/</guid>
+      <description>&lt;p&gt;In Oracle, credentials are database objects that store a username and password pair for authentication when executing external procedures (extproc callouts), remote jobs, and external jobs (see also &lt;a href=&#34;#source1&#34;&gt;1&lt;/a&gt;). More recent Oracle releases also support using credentials with database links (see also &lt;a href=&#34;#source2&#34;&gt;2&lt;/a&gt;).&lt;/p&gt;
+&lt;p&gt;Credentials are created with the &lt;code&gt;dbms_credential.create_credential&lt;/code&gt; procedure, and the associated passwords are stored in obfuscated form in the data dictionary (see also &lt;a href=&#34;#source3&#34;&gt;3&lt;/a&gt;). However, Oracle does not publicly disclose the details of the internal obfuscation mechanism and I could not find any publicly available information about it either, which motivated me to take a closer look.&lt;/p&gt;</description>
+    </item></channel>
+</rss>

@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Deobfuscating Oracle Credential Passwords | 0xChris</title>
+
+    
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="/css/custom.css" />
+
+    
+    
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Deobfuscating Oracle Credential Passwords">
+  <meta name="twitter:description" content="Deobfuscating Oracle Credentials Passwords (dbms_credential)">
+
+
+<meta property="og:title" content="Deobfuscating Oracle Credential Passwords">
+<meta property="og:description" content="Deobfuscating Oracle Credentials Passwords (dbms_credential)">
+<meta property="og:url" content="https://www.0xChris.dev/posts/2026-08-07-deobfuscating-oracle-credential-passwords/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="0xChris">
+
+
+
+<meta property="og:image" content="https://www.0xChris.dev/">
+
+
+  </head>
+
+  <body>
+    <nav>
+      <ul class="menu">
+        
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/posts/">Blog</a></li>
+        
+          <li><a href="/categories/">Categories</a></li>
+        
+          <li><a href="/tags/">Tags</a></li>
+        
+          <li><a href="/contact/">Contact</a></li>
+        
+          <li><a href="/index.xml">Subscribe</a></li>
+        
+
+        
+        
+          
+            <li class="icon">
+              <a href="https://github.com/Christoph-Lutz" aria-label="GitHub">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <title>GitHub</title>
+  <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" fill="currentColor"/>
+</svg>
+
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://x.com/chris_skyflier" aria-label="Twitter">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>X</title><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://bsky.app/profile/christophlutz.bsky.social" aria-label="Bluesky">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Bluesky</title><path d="M5.202 2.857C7.954 4.922 10.913 9.11 12 11.358c1.087-2.247 4.046-6.436 6.798-8.501C20.783 1.366 24 .213 24 3.883c0 .732-.42 6.156-.667 7.037-.856 3.061-3.978 3.842-6.755 3.37 4.854.826 6.089 3.562 3.422 6.299-5.065 5.196-7.28-1.304-7.847-2.97-.104-.305-.152-.448-.153-.327 0-.121-.05.022-.153.327-.568 1.666-2.782 8.166-7.847 2.97-2.667-2.737-1.432-5.473 3.422-6.3-2.777.473-5.899-.308-6.755-3.369C.42 10.04 0 4.615 0 3.883c0-3.67 3.217-2.517 5.202-1.026"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://sym42.org" aria-label="Sym42">
+                
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+  <path transform="scale(0.1004,0.1364) translate(11,1)" d="M0 0 C8.91 0 17.82 0 27 0 C27 32.01 27 64.02 27 97 C51.75 97 76.5 97 102 97 C102.33 118.78 102.66 140.56 103 163 C113.65023618 149.38741342 113.65023618 149.38741342 124 135.5625 C125.16793211 133.96872315 126.33590197 132.37497396 127.50390625 130.78125 C128.08156738 129.99105469 128.65922852 129.20085937 129.25439453 128.38671875 C132.14116363 124.43971809 135.0386119 120.50060445 137.9375 116.5625 C138.50952148 115.78430908 139.08154297 115.00611816 139.67089844 114.2043457 C143.34771065 109.21167043 147.06937462 104.25523259 150.81298828 99.3125 C170.98641999 74.34600723 170.98641999 74.34600723 177 44 C175.18481682 37.01549082 172.39314724 31.88945254 166.25390625 27.8515625 C158.52779633 23.46773353 150.43585329 23.37053009 141.8828125 25.125 C137.49428572 26.45701897 133.56042734 28.49182265 129.53125 30.66015625 C127 32 127 32 124 33 C124 23.76 124 14.52 124 5 C138.64493558 -0.63266753 138.64493558 -0.63266753 144.8828125 -0.62890625 C145.54860321 -0.63131821 146.21439392 -0.63373016 146.90036011 -0.63621521 C148.28308171 -0.63525162 149.66584937 -0.62222324 151.04833984 -0.59692383 C153.13124785 -0.56239643 155.20993568 -0.57639315 157.29296875 -0.59570312 C171.18361481 -0.58191047 181.8308422 3.34041929 192.00390625 12.87890625 C200.75379996 22.23354424 204.74719368 34.28009799 205.375 47 C204.41179837 64.52286038 196.17302926 80.08711875 186 94 C185.50757813 94.67724121 185.01515625 95.35448242 184.5078125 96.05224609 C180.97969681 100.89390965 177.41603046 105.70856193 173.84228516 110.51660156 C171.48040306 113.70041612 169.13374187 116.89527097 166.78710938 120.09033203 C159.52624187 129.97226581 152.18066843 139.78923387 144.81054688 149.58984375 C143.01140967 151.98481172 141.21597581 154.38250747 139.421875 156.78125 C138.8645166 157.52608643 138.3071582 158.27092285 137.73291016 159.03833008 C136.68515004 160.43879049 135.6379229 161.83964987 134.59130859 163.2409668 C131.11186653 167.88813347 131.11186653 167.88813347 130 169 C128.28134591 169.0935919 126.55884256 169.11744611 124.83764648 169.11352539 C123.73658066 169.11344986 122.63551483 169.11337433 121.50108337 169.11329651 C120.3031868 169.10813522 119.10529022 169.10297394 117.87109375 169.09765625 C116.65172623 169.0962413 115.4323587 169.09482635 114.17604065 169.09336853 C110.2631693 169.08774967 106.35035419 169.07519396 102.4375 169.0625 C99.79231853 169.05748743 97.14713617 169.0529241 94.50195312 169.04882812 C88.00126274 169.03862296 81.50069467 169.01905121 75 169 C75 154.15 75 139.3 75 124 C50.25 124 25.5 124 0 124 C0 83.08 0 42.16 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(155.8828125,0.37109375)" d="M0 0 C0.66579071 -0.00241196 1.33158142 -0.00482391 2.01754761 -0.00730896 C3.40026921 -0.00634537 4.78303687 0.00668301 6.16552734 0.03198242 C8.24843535 0.06650982 10.32712318 0.0525131 12.41015625 0.03320312 C26.30080231 0.04699578 36.9480297 3.96932554 47.12109375 13.5078125 C55.87098746 22.86245049 59.86438118 34.90900424 60.4921875 47.62890625 C59.52898587 65.15176663 51.29021676 80.716025 41.1171875 94.62890625 C40.62476563 95.30614746 40.13234375 95.98338867 39.625 96.68115234 C36.09688431 101.5228159 32.53321796 106.33746818 28.95947266 111.14550781 C26.59759056 114.32932237 24.25092937 117.52417722 21.90429688 120.71923828 C14.64342937 130.60117206 7.29785593 140.41814012 -0.07226562 150.21875 C-1.87140283 152.61371797 -3.66683669 155.01141372 -5.4609375 157.41015625 C-6.2969751 158.52741089 -6.2969751 158.52741089 -7.14990234 159.66723633 C-8.19766246 161.06769674 -9.2448896 162.46855612 -10.29150391 163.86987305 C-13.77094597 168.51703972 -13.77094597 168.51703972 -14.8828125 169.62890625 C-17.02840077 169.7166623 -19.17685671 169.73585844 -21.32421875 169.7265625 C-22.62939453 169.72333984 -23.93457031 169.72011719 -25.27929688 169.71679688 C-26.6679694 169.70844026 -28.05664127 169.6999753 -29.4453125 169.69140625 C-30.83788906 169.68639291 -32.23046731 169.68182972 -33.62304688 169.67773438 C-37.0430112 169.66590059 -40.46289094 169.64941505 -43.8828125 169.62890625 C-43.27097081 166.41918652 -42.20356776 164.38991326 -40.25 161.78515625 C-39.69892578 161.04394531 -39.14785156 160.30273438 -38.58007812 159.5390625 C-37.97873047 158.74371094 -37.37738281 157.94835937 -36.7578125 157.12890625 C-35.82098633 155.87400391 -35.82098633 155.87400391 -34.86523438 154.59375 C-32.87737817 151.93402615 -30.8807052 149.28109666 -28.8828125 146.62890625 C-27.62458729 144.95213253 -26.3667668 143.27505503 -25.109375 141.59765625 C-23.23806447 139.10192152 -21.36611031 136.60668841 -19.49169922 134.11328125 C-14.67303275 127.70001086 -9.90631899 121.24999876 -5.16113281 114.78222656 C-1.50429727 109.80538271 2.1987027 104.86635957 5.92797852 99.94360352 C26.10348636 74.9765367 26.10348636 74.9765367 32.1171875 44.62890625 C30.30200432 37.64439707 27.51033474 32.51835879 21.37109375 28.48046875 C13.64498383 24.09663978 5.55304079 23.99943634 -3 25.75390625 C-7.38852678 27.08592522 -11.32238516 29.1207289 -15.3515625 31.2890625 C-17.8828125 32.62890625 -17.8828125 32.62890625 -20.8828125 33.62890625 C-20.8828125 24.38890625 -20.8828125 15.14890625 -20.8828125 5.62890625 C-6.23787692 -0.00376128 -6.23787692 -0.00376128 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(171,143)" d="M0 0 C15.51 0 31.02 0 47 0 C47 8.91 47 17.82 47 27 C31.49 27 15.98 27 0 27 C0 18.09 0 9.18 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(135,6)" d="M0 0 C0.99 0.495 0.99 0.495 2 1 C1.67 8.92 1.34 16.84 1 25 C1.66 25 2.32 25 3 25 C2.67 25.99 2.34 26.98 2 28 C1.34 28 0.68 28 0 28 C0 18.76 0 9.52 0 0 Z"/>
+</svg>
+
+              </a>
+            </li>
+          
+        
+      </ul>
+      <hr/>
+    </nav>
+  </body>
+</html>
+<div class="article-meta">
+<h1><span class="title">Deobfuscating Oracle Credential Passwords</span></h1>
+
+<h2 class="date">2026/08/07</h2>
+</div>
+
+<main>
+<p>In Oracle, credentials are database objects that store a username and password pair for authentication when executing external procedures (extproc callouts), remote jobs, and external jobs (see also <a href="#source1">1</a>). More recent Oracle releases also support using credentials with database links (see also <a href="#source2">2</a>).</p>
+<p>Credentials are created with the <code>dbms_credential.create_credential</code> procedure, and the associated passwords are stored in obfuscated form in the data dictionary (see also <a href="#source3">3</a>). However, Oracle does not publicly disclose the details of the internal obfuscation mechanism and I could not find any publicly available information about it either, which motivated me to take a closer look.</p>
+<p>Note that the findings in this note apply to the following Oracle releases:</p>
+<ul>
+<li>Oracle 19c (tested on 19.28 and 19.30)</li>
+<li>Oracle 26ai (tested on 23.26.0 and 23.26.2)</li>
+</ul>
+<p>If you are not interested in the low-level technical details, you can jump directly to the section <a href="#obfuscation-deobfuscation-step-by-step">Password Obfuscation and Deobfuscation Step by Step</a>, which summarizes how Oracle obfuscates and deobfuscates credential passwords.</p>
+<p>My investigation started by tracing the creation of a new credential using Oracle sql trace (trace event 10046). The example below creates a new credential named <code>CRED_TEST</code> and associates the password <code>1234</code> with the user <code>TEST_USER</code>.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>SQL&gt; alter session set container = pdb;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set events &#39;10046 trace name context forever, level 12&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL&gt; exec dbms_credential.create_credential(&#39;CRED_TEST&#39;, &#39;TEST_USER&#39;, &#39;1234&#39;)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL&gt; alter session set events &#39;10046 trace name context off&#39;;</span></span></code></pre></div>
+<figcaption>Listing 1: Enable SQL trace to trace the creation of a new credential</figcaption>
+</figure>
+<p>In the resulting trace file, we can see an insert into the dictionary table <code>sys.scheduler$_credential</code>. However, the bind variable details do not reveal the actual <code>password</code> value. The <code>value=*</code> field shown in the <code>Bind #1</code> section (highlighted in red) rather indicates that Oracle intentionally masks the bind value because it contains sensitive information that should not be exposed in trace files.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>PARSING IN CURSOR #139859047858472 len=154 dep=1 uid=0 oct=2 lid=0 tim=6157091079973 hv=1828141163 ad='5d3982998' sqlid='66zrmndqgff3b'
+insert into sys.scheduler$_credential (username, password, domain, comments, flags, key, connect_identifier, obj#) values (:1, :2, :3, :4, :5, :6, :7, :8)
+END OF STMT
+PARSE #139859047858472:c=268,e=267,p=0,cr=0,cu=0,mis=1,r=0,dep=1,og=1,plh=0,tim=6157091079972
+BINDS #139859047858472:
+
+ Bind#0
+  oacdty=01 mxl=32767(24000) mxlc=00 mal=00 scl=00 pre=00
+  oacflg=13 fl2=0000 frm=01 csi=873 siz=32767 off=0
+  kxsbbbfp=57b6290b0  bln=32767  avl=09  flg=09
+  value="TEST_USER"
+ Bind#1
+  oacdty=01 mxl=32767(32767) mxlc=00 mal=00 scl=00 pre=00
+  oacflg=13 fl2=0000 frm=01 csi=873 siz=32767 off=0
+  kxsbbbfp=57b6290d0  bln=32767  avl=44  flg=09
+  <span class="hl-red">value=*</span>
+  …
+</code></pre>
+<figcaption>Listing 2: SQL trace output</figcaption>
+</figure>
+<p>In any case, the trace confirms that creating a new credential inserts a value into the <code>password</code> column of the <code>sys.scheduler$_credential</code> table. The table is defined as follows:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>SQL&gt; desc sys.scheduler$_credential
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span> Name                                      Null?    Type
+</span></span><span style="display:flex;"><span> ----------------------------------------- -------- ----------------------------
+</span></span><span style="display:flex;"><span> OBJ#                                      NOT NULL NUMBER
+</span></span><span style="display:flex;"><span> USERNAME                                           VARCHAR2(32767)
+</span></span><span style="display:flex;"><span> PASSWORD                                           VARCHAR2(32767)
+</span></span><span style="display:flex;"><span> DOMAIN                                             VARCHAR2(30)
+</span></span><span style="display:flex;"><span> COMMENTS                                           VARCHAR2(4000)
+</span></span><span style="display:flex;"><span> FLAGS                                              NUMBER
+</span></span><span style="display:flex;"><span> KEY                                                VARCHAR2(32767)
+</span></span><span style="display:flex;"><span> CONNECT_IDENTIFIER                                 VARCHAR2(2000)</span></span></code></pre></div>
+<figcaption>Listing 3: Definition of table sys.scheduler$_credential</figcaption>
+</figure>
+<p>Let&rsquo;s access the table directly and query its contents:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>SQL&gt;  select username, password from sys.scheduler$_credential where username = &#39;TEST_USER&#39;; 
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>USERNAME   PASSWORD
+</span></span><span style="display:flex;"><span>---------- --------------------------------------------
+</span></span><span style="display:flex;"><span>TEST_USER  FT3taqsBjyo7k2d5hjYyv7iMJLAegJo13pk2i/FihaqD</span></span></code></pre></div>
+<figcaption>Listing 4: Querying table sys.scheduler$_credential</figcaption>
+</figure>
+<p>The value stored in the <code>password</code> column is represented as a base64-encoded string. Interestingly, when the credential is dropped and recreated, the base64-encoded <code>password</code> value changes. I repeated this test multiple times, and the <code>password</code> value was different each time. This strongly suggests that the obfuscation mechanism incorporates a random component.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>SQL&gt; exec dbms_credential.drop_credential(&#39;CRED_TEST&#39;)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL&gt; exec dbms_credential.create_credential(&#39;CRED_TEST&#39;, &#39;TEST_USER&#39;, &#39;1234&#39;)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SQL&gt; select username, password from sys.scheduler$_credential where username = &#39;TEST_USER&#39;; 
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>USERNAME   PASSWORD
+</span></span><span style="display:flex;"><span>---------- --------------------------------------------
+</span></span><span style="display:flex;"><span>TEST_USER  Fdq+wrX6gif4CBVAePye824PZxGjA3sQf8QMcm9GexxY</span></span></code></pre></div>
+<figcaption>Listing 5: Querying sys.scheduler$_credential</figcaption>
+</figure>
+<p>Decoding the base64-encoded <code>password</code> value from Listing 5 reveals the following underlying raw byte sequence:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>$ b64=Fdq+wrX6gif4CBVAePye824PZxGjA3sQf8QMcm9GexxY
+
+$ echo $b64 | base64 -d | od -An -tx1 -v
+  15 <span class="hl-red">da be c2 b5 fa 82 27 f8 08 15 40 78 fc 9e f3
+  6e</span> <span class="hl-green">0f 67 11 a3 03 7b 10 7f c4 0c 72 6f 46 7b 1c
+  58</span>
+</code></pre>
+<figcaption>Listing 6: Decoding the base64-encoded password value</figcaption>
+</figure>
+<p>While this raw byte sequence does not reveal much by itself, it provides a starting point for identifying patterns in an annotated function flow trace, such as the one shown in Listing 7 and generated with the bpftrace script <a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/jsciObfuscatePassword.bt">jsciObfuscatePassword.bt</a> (see also <a href="#source4">4</a>). The coloring in Listing 6 highlights two byte sequences of interest that are also observed in the function flow trace. Understanding the origin of these byte sequences reveals how Oracle obfuscates credential passwords.</p>
+<p>Note that the function flow trace in Listing 7 is limited to key Oracle kernel and library functions of interest and does not capture the complete call path executed by Oracle when creating a new credential. The prefixes used in the traced function names provide a basic indication of the components involved and the functionality implemented by these functions:</p>
+<ul>
+<li><code>jsci</code>: Oracle job scheduler functions</li>
+<li><code>zt</code>: Security and encryption/decryption related functions from Oracle&rsquo;s libnnzsrv.so library</li>
+<li><code>aesni</code>: Low-level OpenSSL encryption functions that are optimized to use AES-NI hardware acceleration</li>
+</ul>
+<p>The trace also captures the values of function arguments supplied when the functions are invoked. Some of these arguments are pointers, and in some cases, it is necessary to observe how the function modifies the memory areas they reference. For this purpose, the trace prints the referenced data on function entry and function return. For example, <code>buf e:</code> represents the data in the memory area pointed to by <code>buf</code> on function entry, while <code>buf r:</code> represents the data on function return.</p>
+<p>Note that the output below has been edited for better readability.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>
+# ./jsciObfuscatePassword.bt 67345
+
+-> jsciObfuscatePassword: pwd=0x7f01de9eb484, len=4, ...
+   str(0x7f01de9eb484) = 1234
+
+   -> ztcsh: buf=0x7f01dec70000, ..., pwd=0x7f01de9eb484, len=4, ...
+
+      -> ztcr2rnd: buf=0x7ffc243938c0, num=16
+         buf e: 0x00 0x00 0x00 0x00 0x20 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+
+          -> RAND_bytes: <span class="hl-red">buf=0x7ffc243938c0, num=16
+             buf e: 0x00 0x00 0x00 0x00 0x20 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+             buf r: 0xda 0xbe 0xc2 0xb5 0xfa 0x82 0x27 0xf8 0x08 0x15 0x40 0x78 0xfc 0x9e 0xf3 0x6e</span>
+          <- RAND_bytes: 0x1
+
+          buf r: 0xda 0xbe 0xc2 0xb5 0xfa 0x82 0x27 0xf8 0x08 0x15 0x40 0x78 0xfc 0x9e 0xf3 0x6e
+      <- ztcr2rnd: 0x0 (0)
+
+      -> ztceenc: ..., ..., ..., pwd=0x7f01de9eb484, len=4, buf=0x7f01dec70011
+
+         -> aesni_set_encrypt_key: <span class="hl-red">userKey=0x4f4b9c90</span>, bits=128, key=0x4f4bb790
+            <span class="hl-red">userKey e: 0xda 0xbe 0xc2 0xb5 0xfa 0x82 0x27 0xf8 0x08 0x15 0x40 0x78 0xfc 0x9e 0xf3 0x6e</span>
+         <- aesni_set_encrypt_key: 0x0 (0)
+
+         -> aesni_cbc_encrypt: in=0x4f4bb6e0, out=0x7f01dec70011, length=16, key=0x4f4bb790, 
+                               ivec=0x4f4bb6f0, enc=1
+            in e   : 0x31 0x32 0x33 0x34 0x0c 0x0c 0x0c 0x0c 0x0c 0x0c 0x0c 0x0c 0x0c 0x0c 0x0c 0x0c
+            ivec e : 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+            out r  : <span class="hl-green">0x0f 0x67 0x11 0xa3 0x03 0x7b 0x10 0x7f 0xc4 0x0c 0x72 0x6f 0x46 0x7b 0x1c 0x58</span>
+         <- aesni_cbc_encrypt
+
+      <- ztceenc: 0x0 (0)
+
+         buf r: 0x15 <span class="hl-red">0xda 0xbe 0xc2 0xb5 0xfa 0x82 0x27 0xf8 0x08 0x15 0x40 0x78 0xfc 0x9e 0xf3
+                0x6e</span> <span class="hl-green">0x0f 0x67 0x11 0xa3 0x03 0x7b 0x10 0x7f 0xc4 0x0c 0x72 0x6f 0x46 0x7b 0x1c
+                0x58</span> 0x41 0x54 0x53 0x12 0x00 0x00 0x00 0x08 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+   <- ztcsh: 0x0 (0)
+
+   -> jsciEncodeBase64: buf=0x7f01dec70000, bytes=33, 0x7f01dec50000, 0x7ffc24393d22
+   <- jsciEncodeBase64: 0x0 (0)
+
+<- jsciObfuscatePassword: 0x0 (0)
+</code></pre>
+<figcaption>Listing 7: Function flow trace showing credential creation and encryption</figcaption>
+</figure>
+<p>Let&rsquo;s start the function flow analysis by looking at the <code>aesni_set_encrypt_key</code> and <code>aesni_cbc_encrypt</code> functions and their arguments. Both functions are low-level OpenSSL routines that use the processor&rsquo;s AES-NI instruction set to perform hardware-accelerated AES encryption.</p>
+<p>The optimized <code>aesni</code> functions take the same arguments as their non-optimized counterparts, which, according to the man pages (see also <a href="#source5">5</a>), are as follows:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>int
+</span></span><span style="display:flex;"><span>AES_set_encrypt_key(const unsigned char *userKey, const int bits, AES_KEY *key);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>void
+</span></span><span style="display:flex;"><span>AES_cbc_encrypt(const unsigned char *in, unsigned char *out, size_t length,
+</span></span><span style="display:flex;"><span>               const AES_KEY *key, unsigned char *ivec, const int enc);</span></span></code></pre></div>
+<figcaption>Listing 8: aesni_set_encrypt_key and aesni_cbc_encrypt function prototypes</figcaption>
+</figure>
+<p>The <code>aesni_set_encrypt_key</code> function accepts a <code>userKey</code> pointer and key length defined by <code>bits</code>. In this case, <code>bits</code> is set to <code>128</code>, meaning the provided encryption key consists of 128 bits (16 bytes) and is expanded into an AES key schedule stored in an AES_KEY structure pointed to by the <code>key</code> argument. The key schedule contains the round keys derived from the original AES key (<code>userKey</code>) and is used by subsequent AES encryption routines to perform the individual AES encryption rounds (see also <a href="#source6">6</a>).</p>
+<p>Note that the 16-byte sequence pointed to by <code>userKey</code> matches the sequence highlighted in red in the decoded base64 output shown in Listing 6. This means that the 16 bytes starting at offset 1 and ending at offset 16 (using zero-based indexing) in the decoded base64 output contain an AES-128 encryption key. We will examine the origin and generation of the key value (<code>userKey</code>) shortly, but first focus on how the <code>key</code> is used by the <code>aesni_cbc_encrypt</code> function.</p>
+<p>The function <code>aesni_cbc_encrypt</code> reads a 16-byte block (<code>length=16</code>) from the memory area pointed to by <code>in</code> and encrypts it using the expanded AES_KEY structure pointed to by <code>key</code>. The CBC initialization vector used for the encryption is provided through the <code>ivec</code> argument. The resulting ciphertext is then written to the memory location pointed to by <code>out</code>.</p>
+<p>The buffer pointed to by <code>in</code> contains the byte sequence <code>0x31 0x32 0x33 0x34</code>, corresponding to the ascii characters <code>1234</code>, followed by twelve bytes with the value <code>0x0c</code>. These trailing bytes are PKCS#7 padding added before encryption. Since the password consists of only four characters, twelve additional bytes are required to fill the final 16-byte AES block. Therefore, the padding value is <code>0x0c</code> (decimal 12), repeated twelve times.</p>
+<p>The padding is part of the encrypted data and is therefore also processed by AES; the corresponding decryption routine must validate and remove it after decrypting the ciphertext. Note that <code>aesni_cbc_encrypt</code> can be called multiple times depending on the password length. In this case, the password is only four characters long and fits into a single 16-byte AES block, so <code>aesni_cbc_encrypt</code> is called only once.</p>
+<p>Interestingly, Oracle does not use a randomly generated initialization vector and instead, the <code>ivec</code> argument points to a 16-byte sequence consisting entirely of zeros (as indicated by <code>ivec e:</code>).</p>
+<p>When <code>aesni_cbc_encrypt</code> returns, the ciphertext byte sequence in the buffer pointed to by <code>out</code> matches the sequence highlighted in green in the decoded base64 output shown in Listing 6. This means that the 16 bytes starting at offset 17 and ending at offset 32 (using zero-based indexing) in the decoded base64 output contain the encrypted ciphertext.</p>
+<p>So, analysis of the function flow trace reveals that the obfuscated <code>password</code> value stores two components: an AES-128 encryption key and the ciphertext of the encrypted password. For deobfuscation, Oracle first extracts the embedded AES-128 encryption key (offsets 1 through 16) and uses it to decrypt the associated ciphertext (offsets 17 through 33).</p>
+<p>There are still two details we have not covered yet. What is the meaning of the value <code>0x15</code> at offset position 0 in the decoded base64 output, and how exactly does Oracle generate the encryption key?</p>
+<p>I do not know the exact meaning of the leading byte value <code>0x15</code>, but it is a fixed value set by the <code>ztcsh</code> function. I strongly suspect that it represents a header or version flag. However, since the value is always constant, we do not need to consider it further for this analysis.</p>
+<p>Having addressed the meaning of the leading byte <code>0x15</code>, we can now return to the more interesting question of how Oracle generates the AES-128 encryption key. The answer can be observed in the call to <code>RAND_bytes</code>, another OpenSSL that, according to the <a href="https://docs.openssl.org/3.1/man3/RAND_bytes/">documentation</a> (see also <a href="#source7">7</a>), generates <code>num</code> random bytes using a cryptographically secure pseudo random generator (CSPRNG) and stores them in <code>buf</code>.</p>
+<blockquote class="note">
+Oracle incorporates OpenSSL functions into its <code>libnnzsrv.so</code> shared library. A previous <a href="/posts/2026-01-02-uuid-generation-in-oracle-26ai/">post</a> analyzing how Oracle 26ai generates UUIDs already identified this integration (see also <a href="#source8">8</a>). Interestingly, the internal code path for UUID generation (function `ztcr2rnd`) is also used to generate the 128-bit AES encryption key used in the credential password obfuscation process.
+</blockquote>
+<p>In the example trace shown in Listing 7, <code>RAND_bytes</code> is called with <code>num=16</code> and <code>buf</code> pointing to <code>0x7ffc243938c0</code>. This means that the function generates 16 random bytes and stores them at the memory address <code>0x7ffc243938c0</code>. Inspecting the 16-byte sequence at that address on function entry (<code>buf e:</code>) and function return (<code>buf r:</code>) confirms that this random byte sequence is the same 16-byte sequence later passed as the encryption key (<code>userKey</code>) to the <code>aesni_set_encrypt_key</code> function.</p>
+<p>This shows that Oracle uses a randomly generated 128-bit AES key to transform the credential password into ciphertext, storing the key alongside the ciphertext in the resulting obfuscated value.</p>
+<p>The generation of a random AES-128-bit encryption key is particularly interesting, given that the obfuscation code path also invokes a function named <code>jsciGetObfKey</code> (not shown in the analysis above). This function concatenates the following data into a single string, suggesting that Oracle uses an additional obfuscation key.</p>
+<ul>
+<li>DBID of the container (cdb or pdb) in which the credential is created (<code>4093572297</code>)</li>
+<li>Credential user name (<code>TCTEST</code>)</li>
+<li>Database unique name (<code>DB_UQ_NAME</code>, anonymized the example below)</li>
+<li>Credential owner name (<code>SYS</code>)</li>
+<li>OS-specific platform string (<code>Linux x86 64-bit</code>)</li>
+</ul>
+<p>This can be observed by executing the <code>jsciObfuscatePassword.bt</code> script with the <code>verbose</code> option, which shows that the function <code>jsciGetObfKey</code> concatenates these values into a combined string (stored at address <code>0x7ffc24393970</code>):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code># ./jsciObfuscatePassword.bt 67345 verbose
+
+    -> jsciGetObfKey: buf=0x7ffc24393970, ..., cred_user=0x7ffc24393ca1, cred_user_len=9, 
+                      cred_owner=0x7ffc24393c20, cred_owner_len=3
+
+       -> sprintf: str=0x7ffc24393970, ..., value=4093572297
+
+       -> __intel_sse2_strncat: 0x7ffc243936a0, 0x199fc112, src=0x7ffc24393ca1, ...
+          str(src) = CRED_TEST
+
+       -> __intel_sse2_strncat: 0x1382, 0x8, src=0x791a29088, ...
+          str(src) = DB_UQ_NAME
+
+       -> __intel_sse2_strncat: 0x1382, 0x8, src=0x7ffc24393c20, ...
+          str(src) = SYS
+
+       -> __intel_sse2_strncat: 0x1382, 0x8, src=0x1af3963c, ...
+          str(src) = Linux x86 64-bit
+   
+       <span class="hl-red">str(0x7ffc24393970) = 4093572297CRED_TESTTCAS2ES1SYSLinux x86 64-bit</span>
+    <- jsciGetObfKey: 0x0 (0)
+</code></pre>
+<figcaption>Listing 9: Obfuscation key generation</figcaption>
+</figure>
+<p>However, note that this &ldquo;obfuscation key&rdquo; string is not used in the password obfuscation process at all. Therefore, it is unclear why it is called and whether its omission from the obfuscation process is intentional or accidental. If it were used in the obfuscation process, deobfuscating a credential password would require access to the obfuscation key, and without it, it would not be possible to deobfuscate a password. The drawback would be that this would tie the obfuscation scheme to a specific database, preventing credentials from being used across different databases, for example after duplicating a database under a different name.</p>
+<p>On a related note, the <code>sys.scheduler$_credential</code> table also contains a <code>key</code> column that stores a base64-encoded value:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>SQL&gt; select username, key from sys.scheduler$_credential where username = &#39;TEST_USER&#39;;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>USERNAME   KEY
+</span></span><span style="display:flex;"><span>---------- ------------------------------
+</span></span><span style="display:flex;"><span>TEST_USER  FYdeXh9i71DKeaKmWD1TQ1Y=</span></span></code></pre></div>
+<figcaption>Listing 10: Key column in sys.scheduler$_credential</figcaption>
+</figure>
+<p>Decoding the value produces the following raw byte sequence:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>$ b64=FYdeXh9i71DKeaKmWD1TQ1Y=
+$ echo $b64 | base64 -d | od -An -tx1 -v
+  15 <span class="hl-red">87 5e 5e 1f 62 ef 50 ca 79 a2 a6 58 3d 53 43
+  56</span>
+</code></pre>
+<figcaption>Listing 11: Decoding the base64-encoded key column value</figcaption>
+</figure>
+<p>I don&rsquo;t know the purpose of the <code>key</code> column value in <code>sys.scheduler$_credential</code> or why Oracle generates it when a new credential is created, but it plays no role whatsoever in the obfuscation of the credential password. Therefore, it is worth mentioning only as an additional observation.</p>
+<p>Note that the creation of a new credential results in two calls to the <code>jsciObfuscatePassword</code> function. The first call to this function, analyzed above, generates the base64-encoded <code>password</code> value; the second invocation, only visible when the bpftrace script is executed with the <code>verbose all</code> options, generates the base64-encoded <code>key</code> column value.</p>
+<p>This can be observed in the following stripped-down trace output. It shows that the second call to <code>jsciObfuscatePassword</code> sets the <code>len</code> argument to <code>0</code> and that the <code>key</code> column value is also a random 16-byte value generated by the OpenSSL <code>RAND_bytes</code> function:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>-> jsciObfuscatePassword: pwd=0x7f01de9e95ac, len=0, ...
+   …
+   -> ztcsh: buf=0x7f01de8d0000, ..., pwd=0x7f01de9e95ac, len=0, ...
+
+          -> RAND_bytes: buf=0x7ffc24393350, num=16
+             buf e: 0x00 0x00 0x00 0x00 0x20 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+             <span class="hl-red">buf r: 0x87 0x5e 0x5e 0x1f 0x62 0xef 0x50 0xca 0x79 0xa2 0xa6 0x58 0x3d 0x53 0x43 0x56</span>
+          <- RAND_bytes: 0x1
+   …
+      buf r: 0x15 <span class="hl-red">0x87 0x5e 0x5e 0x1f 0x62 0xef 0x50 0xca 0x79 0xa2 0xa6 0x58 0x3d 0x53 0x43
+             0x56</span>
+   <- ztcsh: 0x0 (0)
+   …
+   -> jsciEncodeBase64: buf=0x7f01de8d0000, bytes=17, 0x7f01de9ffc38, 0x7ffc24393a20
+   <- jsciEncodeBase64: 0x0 (0)
+<- jsciObfuscatePassword: 0x0 (0)
+  </code></pre>
+<figcaption>Listing 12: Tracing generation of the key colvalue</figcaption>
+</figure>
+<p><a id="obfuscation-deobfuscation-step-by-step"></a></p>
+<h3 id="password-obfuscation-and-deobfuscation-step-by-step">Password Obfuscation and Deobfuscation Step by Step</h3>
+<p>To obfuscate a credential password, Oracle constructs a buffer containing a header value, a randomly generated AES-128 encryption key, and the encrypted password ciphertext, and finally encodes the complete buffer using Base64.</p>
+<p>The individual steps are as follows:</p>
+<ol>
+<li>Write the constant one-byte header/flag value <code>0x15</code> to buffer offset 0</li>
+<li>Write a randomly generated AES-128 encryption key (generated by the OpenSSL <code>RAND_bytes</code> function) to buffer offsets 1–16</li>
+<li>Write the ciphertext produced by encrypting the plaintext with the AES-128 key stored at offsets 1–16 to buffer offset 17–end</li>
+<li>Encode the complete buffer (offsets 0–end) using base64 encoding and store the resulting base64-encoded string in <code>sys.scheduler$_credential</code></li>
+</ol>
+<p>To deobfuscate a credential password, Oracle reverses the steps described above:</p>
+<ol>
+<li>Decode the base64-encoded password string from <code>sys.scheduler$_credential</code> and recover the original buffer</li>
+<li>Extract the AES-128 encryption key from offsets 1–16</li>
+<li>Extract the encrypted ciphertext from offsets 17–end and decrypt it using the AES-128 bit encryption key</li>
+<li>The header/flag value at offset 0 is ignored</li>
+</ol>
+<p>The following example code illustrates the principle and shows how to deobfuscate a credential password in PL/SQL (see also <a href="#source9">9</a>):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>set serveroutput on size unlimited
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>define base64=Fdq+wrX6gif4CBVAePye824PZxGjA3sQf8QMcm9GexxY
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>declare
+</span></span><span style="display:flex;"><span>    l_raw  raw(32767) := utl_encode.base64_decode(utl_raw.cast_to_raw(&#39;&amp;base64&#39;));
+</span></span><span style="display:flex;"><span>    l_pfx  raw(1);
+</span></span><span style="display:flex;"><span>    l_key  raw(16);
+</span></span><span style="display:flex;"><span>    l_sec  raw(32767);
+</span></span><span style="display:flex;"><span>    l_pwd  raw(32767);
+</span></span><span style="display:flex;"><span>    l_iv   raw(16) := hextoraw(&#39;00000000000000000000000000000000&#39;);
+</span></span><span style="display:flex;"><span>begin
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    l_pfx := utl_raw.substr(l_raw, 1, 1);
+</span></span><span style="display:flex;"><span>    l_key := utl_raw.substr(l_raw, 2, 16);
+</span></span><span style="display:flex;"><span>    l_sec := utl_raw.substr(l_raw, 18);
+</span></span><span style="display:flex;"><span>    l_pwd := dbms_crypto.decrypt(
+</span></span><span style="display:flex;"><span>               src =&gt; l_sec,
+</span></span><span style="display:flex;"><span>               typ =&gt; DBMS_CRYPTO.AES_CBC_PKCS5,
+</span></span><span style="display:flex;"><span>               key =&gt; l_key,
+</span></span><span style="display:flex;"><span>               iv  =&gt; l_iv);
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    dbms_output.put_line(&#39;Base64  : &amp;base64&#39;);
+</span></span><span style="display:flex;"><span>    dbms_output.put_line(&#39;Dec b64 : &#39; ||rawtohex(l_raw));
+</span></span><span style="display:flex;"><span>    dbms_output.put_line(&#39;Prefix  : &#39; ||rawtohex(l_pfx));
+</span></span><span style="display:flex;"><span>    dbms_output.put_line(&#39;Key     : &#39; ||rawtohex(l_key));
+</span></span><span style="display:flex;"><span>    dbms_output.put_line(&#39;Secret  : &#39; ||rawtohex(l_sec));
+</span></span><span style="display:flex;"><span>    dbms_output.put_line(&#39;Pwd     : &#39; ||utl_raw.cast_to_varchar2(l_pwd));
+</span></span><span style="display:flex;"><span>end;
+</span></span><span style="display:flex;"><span>/
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Base64  : Fdq+wrX6gif4CBVAePye824PZxGjA3sQf8QMcm9GexxY
+</span></span><span style="display:flex;"><span>Dec b64 : 15DABEC2B5FA8227F808154078FC9EF36E0F6711A3037B107FC40C726F467B1C58
+</span></span><span style="display:flex;"><span>Prefix  : 15
+</span></span><span style="display:flex;"><span>Key     : DABEC2B5FA8227F808154078FC9EF36E
+</span></span><span style="display:flex;"><span>Secret  : 0F6711A3037B107FC40C726F467B1C58
+</span></span><span style="display:flex;"><span>Pwd     : 1234</span></span></code></pre></div>
+<figcaption>Listing 13: Deobfuscating credential passwords in PL/SQL</figcaption>
+</figure>
+<p>Similarly, we can encapsulate the PL/SQL logic into a function and use it to deobfuscate all <code>password</code> values stored in <code>sys.scheduler$_credential</code> (see also <a href="#source10">10</a>):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>exec dbms_credential.create_credential(&#39;CRED_TEST1&#39;, &#39;TEST_USER1&#39;, &#39;1234&#39;)
+</span></span><span style="display:flex;"><span>exec dbms_credential.create_credential(&#39;CRED_TEST2&#39;, &#39;TEST_USER2&#39;, &#39;1234_4321&#39;)
+</span></span><span style="display:flex;"><span>exec dbms_credential.create_credential(&#39;CRED_TEST3&#39;, &#39;TEST_USER3&#39;, &#39;a_longer_password_string_1234&#39;)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>with
+</span></span><span style="display:flex;"><span>  function deobfuscate(p_base64 varchar2)
+</span></span><span style="display:flex;"><span>    return varchar2
+</span></span><span style="display:flex;"><span>  is
+</span></span><span style="display:flex;"><span>    l_raw raw(32767);
+</span></span><span style="display:flex;"><span>    l_key raw(16);
+</span></span><span style="display:flex;"><span>    l_sec raw(32767);
+</span></span><span style="display:flex;"><span>    l_pwd raw(32767);
+</span></span><span style="display:flex;"><span>    l_iv  raw(16) := hextoraw(&#39;00000000000000000000000000000000&#39;);
+</span></span><span style="display:flex;"><span>  begin
+</span></span><span style="display:flex;"><span>    l_raw := utl_encode.base64_decode(utl_raw.cast_to_raw(p_base64));
+</span></span><span style="display:flex;"><span>    l_key := utl_raw.substr(l_raw, 2, 16);
+</span></span><span style="display:flex;"><span>    l_sec := utl_raw.substr(l_raw, 18);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    l_pwd := dbms_crypto.decrypt(
+</span></span><span style="display:flex;"><span>                 src =&gt; l_sec,
+</span></span><span style="display:flex;"><span>                 typ =&gt; DBMS_CRYPTO.AES_CBC_PKCS5,
+</span></span><span style="display:flex;"><span>                 key =&gt; l_key,
+</span></span><span style="display:flex;"><span>                 iv  =&gt; l_iv);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    return utl_raw.cast_to_varchar2(l_pwd);
+</span></span><span style="display:flex;"><span>  end;
+</span></span><span style="display:flex;"><span>select 
+</span></span><span style="display:flex;"><span>    username,
+</span></span><span style="display:flex;"><span>    password pwd_obfuscated,
+</span></span><span style="display:flex;"><span>    deobfuscate(password) pwd_deobfuscated
+</span></span><span style="display:flex;"><span>from
+</span></span><span style="display:flex;"><span>    sys.scheduler$_credential
+</span></span><span style="display:flex;"><span>/
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>USERNAME             PWD_OBFUSCATED                                   PWD_DEOBFUSCATED
+</span></span><span style="display:flex;"><span>-------------------- ------------------------------------------------ -----------------------------
+</span></span><span style="display:flex;"><span>TEST_USER1           FbbWTYgZWkyJUqGRfSDC5/E17TDD8/ublfEuosPj3plK     1234
+</span></span><span style="display:flex;"><span>TEST_USER2           FT7FGpxk+6zz1vHv7CQ/RCn3X6J5LmzGyarNk3TaQD0N     1234_4321
+</span></span><span style="display:flex;"><span>TEST_USER3           FVS1pV4WgUuvqYKoOYjgkmqGWkPb1bdA0Y4vBjSvrK0gCeI+ a_longer_password_string_1234
+</span></span><span style="display:flex;"><span>                     pFOsikwZxX+FZOFnhQ==</span></span></code></pre></div>
+<figcaption>Listing 14: Deobfuscating credential passwords in sys.scheduler$_credential</figcaption>
+</figure>
+<h3 id="obfuscation-is-not-encryption">Obfuscation is not Encryption</h3>
+<p>Although obfuscation can make sensitive data appear unreadable, it should not be considered a replacement for encryption. Encryption protects confidentiality through the use of a secret key, whereas obfuscation merely adds a layer of obscurity without strong confidentiality guarantees. Once the obfuscation scheme is understood, the original data can typically be recovered, as demonstrated in this note.</p>
+<p>Oracle also supports encrypting credentials stored in the data dictionary instead of using the default obfuscation mechanism. However, the encryption of credentials is not enabled by default and must be explicitly enabled. The steps required to do so are outlined in the Oracle documentation, and Oracle recommends encrypting credentials as a security best practice (see also <a href="#source11">11</a>).</p>
+<p>Encryption of credentials in the data dictionary requires that the database has a keystore and an encryption key configured. Unlike other forms of encryption in Oracle, however, this does not require an Advanced Security Option license (see <a href="#source1">11</a>). A drawback, however, is that once an encryption key has been configured in a wallet, the wallet can no longer be removed (see also <a href="#source12">12</a>).</p>
+<h2 id="references">References</h2>
+<ol>
+<li><a id="source1"></a><a href="https://docs.oracle.com/en/database/oracle/oracle-database/26/admin/scheduling-jobs-with-oracle-scheduler.html#GUID-BCB91872-760D-43CA-A5E2-135C6A2DB2F5">Oracle Corp., Oracle AI Database, Database Administrator’s Guide, 26ai, Chapter 29 Scheduling Jobs with Oracle Scheduler, Section: Specifying Scheduler Job Credentials, July 2026</a></li>
+<li><a id="source2"></a><a href="https://mvelikikh.blogspot.com/2021/12/using-credentials-with-database-links.html">Mikhail Velikikh, Using credentials with database links in 21c, 2021-12-17</a></li>
+<li><a id="source3"></a><a href="https://docs.oracle.com/en/database/oracle/oracle-database/26/arpls/DBMS_CREDENTIAL.html">Oracle Corp., Oracle AI Database, PL/SQL Packages and Types Reference, 26ai, Chapter 57 DBMS_CREDENTIAL, G43677-17, July 2026</a></li>
+<li><a id="source4"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/jsciObfuscatePassword.bt">Christoph Lutz, oracle GitHub Repository, bpftrace Script jsciObfuscatePassword.bt</a></li>
+<li><a id="source5"></a> <a href="https://man.freebsd.org/cgi/man.cgi?query=AES_set_encrypt_key&amp;sektion=3&amp;manpath=FreeBSD+13.2-RELEASE+and+Ports">FreeBSD Manual Pages, AES_ENCRYPT(3), 2019-08-28</a></li>
+<li><a id="source6"></a><a href="https://braincoke.fr/blog/2020/08/the-aes-key-schedule-explained/">Braincoke, The AES Key Schedule Explained, 2020-08-01</a></li>
+<li><a id="source7"></a> <a href="https://docs.openssl.org/3.1/man3/RAND_bytes/">OpenSSL Documentation RAND_bytes, OpenSSL 3.1, undated</a></li>
+<li><a id="source8"></a><a href="/posts/2026-01-02-uuid-generation-in-oracle-26ai/">Christoph Lutz, UUID Generation In Oracle 26ai, 2026-01-02</a></li>
+<li><a id="source9"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/sql/deobf-cred-pwd-step-by-step.sql">Christoph Lutz, oracle GitHub Repository, SQL Script deobf-cred-pwd-step-by-step.sql</a></li>
+<li><a id="source10"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/sql/deobf-cred-pwd.sql">Christoph Lutz, oracle GitHub Repository, SQL Script deobf-cred-pwd.sql</a></li>
+<li><a id="source11"></a><a href="https://docs.oracle.com/en/database/oracle/oracle-database/26/dbseg/encrypt-sensitive-data.html#GUID-F9451BB4-8BF5-4E0B-8C49-8CE9C0C4AB1F">Oracle Corp., Oracle AI Database, Security Guide, 26ai, Chapter 16 Encryption of Sensitive Credential Data in the Data Dictionary, G43025-06, July 2026</a></li>
+<li><a id="source12"></a><a href="https://support.oracle.com/support/?anchorId=&amp;kmContentId=2488898">My Oracle Support, How To Disable TDE?, KB118449, 2026-03-31</a></li>
+</ol>
+
+</main>
+
+  <footer>
+  
+  <hr/>
+  © <a href="https://www.0xChris.dev">Christoph Lutz</a> 2025 &ndash; 2026
+  
+  <hr/>
+  <script src="https://giscus.app/client.js"
+            data-repo="Christoph-Lutz/0xChris-Comments"
+            data-repo-id="R_kgDOQo-jcg"
+            data-category="Comments"
+            data-category-id="DIC_kwDOQo-jcs4Cz0NV"
+            data-mapping="pathname"
+            data-strict="1"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="light"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+        </script>
+    <script id="partials/analytics.html" 
+  data-goatcounter="https://0xchris.goatcounter.com/count"
+  async src="//gc.zgo.at/count.js"></script>
+
+  </footer>
+  </body>
+</html>
+

@@ -3,10 +3,43 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://www.0xChris.dev/</loc>
-    <lastmod>2026-07-30T00:00:00+00:00</lastmod>
+    <lastmod>2026-08-07T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/categories/</loc>
-    <lastmod>2026-07-30T00:00:00+00:00</lastmod>
+    <lastmod>2026-08-07T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/credentials/</loc>
+    <lastmod>2026-08-07T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/dbms_credential/</loc>
+    <lastmod>2026-08-07T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/posts/2026-08-07-deobfuscating-oracle-credential-passwords/</loc>
+    <lastmod>2026-08-07T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/deobfuscation/</loc>
+    <lastmod>2026-08-07T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/categories/encryption/</loc>
+    <lastmod>2026-08-07T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/encryption/</loc>
+    <lastmod>2026-08-07T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/password/</loc>
+    <lastmod>2026-08-07T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/posts/</loc>
+    <lastmod>2026-08-07T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/categories/security/</loc>
+    <lastmod>2026-08-07T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/security/</loc>
+    <lastmod>2026-08-07T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/</loc>
+    <lastmod>2026-08-07T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/categories/cursors/</loc>
     <lastmod>2026-07-30T00:00:00+00:00</lastmod>
@@ -18,12 +51,6 @@
     <lastmod>2026-07-30T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/tags/internals/</loc>
-    <lastmod>2026-07-30T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/posts/</loc>
-    <lastmod>2026-07-30T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/tags/</loc>
     <lastmod>2026-07-30T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/tags/traceevent/</loc>
