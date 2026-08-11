@@ -105,8 +105,8 @@
 </div>
 
 <main>
-<p>In Oracle, credentials are database objects that store a username and password pair for authentication when executing external procedures (extproc callouts), remote jobs, and external jobs (see also <a href="#source1">1</a>). More recent Oracle releases also support using credentials with database links (see also <a href="#source2">2</a>).</p>
-<p>Credentials are created with the <code>dbms_credential.create_credential</code> procedure, and the associated passwords are stored in obfuscated form in the data dictionary (see also <a href="#source3">3</a>). However, Oracle does not publicly disclose the details of the internal obfuscation mechanism and I could not find any publicly available information about it either, which motivated me to take a closer look.</p>
+<p>In Oracle, credentials are database objects that store a username and password pair for authentication when executing external procedures (extproc callouts), remote jobs, and external jobs (see also <a href="#source1">1</a>). More recent Oracle releases also support using credentials with database links (see also <a href="#source2">2</a> and <a href="#source3">3</a>).</p>
+<p>Credentials are created with the <code>dbms_credential.create_credential</code> procedure, and the associated passwords are stored in obfuscated form in the data dictionary (see also <a href="#source4">4</a>). However, Oracle does not publicly disclose the details of the internal obfuscation mechanism and I could not find any publicly available information about it either, which motivated me to take a closer look.</p>
 <p>Note that the findings in this post apply to the following Oracle releases:</p>
 <ul>
 <li>Oracle 19c (tested on 19.28 and 19.30)</li>
@@ -195,7 +195,7 @@ $ echo $b64 | base64 -d | od -An -tx1 -v
 </code></pre>
 <figcaption>Listing 6: Decoding the base64-encoded password value</figcaption>
 </figure>
-<p>While this raw byte sequence does not reveal much by itself, it provides a starting point for identifying patterns in an annotated function flow trace, such as the one shown in Listing 7 and generated with the bpftrace script <a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/jsciObfuscatePassword.bt">jsciObfuscatePassword.bt</a> (see also <a href="#source4">4</a>). The coloring in Listing 6 highlights two byte sequences of interest that are also observed in the function flow trace. Understanding the origin of these byte sequences reveals how Oracle obfuscates credential passwords.</p>
+<p>While this raw byte sequence does not reveal much by itself, it provides a starting point for identifying patterns in an annotated function flow trace, such as the one shown in Listing 7 and generated with the bpftrace script <a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/jsciObfuscatePassword.bt">jsciObfuscatePassword.bt</a> (see also <a href="#source5">5</a>). The coloring in Listing 6 highlights two byte sequences of interest that are also observed in the function flow trace. Understanding the origin of these byte sequences reveals how Oracle obfuscates credential passwords.</p>
 <p>Note that the function flow trace in Listing 7 is limited to key Oracle kernel and library functions of interest and does not capture the complete call path executed by Oracle when creating a new credential. The prefixes used in the traced function names provide a basic indication of the components involved and the functionality implemented by these functions:</p>
 <ul>
 <li><code>jsci</code>: Oracle job scheduler functions</li>
@@ -252,7 +252,7 @@ $ echo $b64 | base64 -d | od -An -tx1 -v
 <figcaption>Listing 7: Function flow trace showing credential creation and encryption</figcaption>
 </figure>
 <p>Let&rsquo;s start the function flow analysis by looking at the <code>aesni_set_encrypt_key</code> and <code>aesni_cbc_encrypt</code> functions and their arguments. Both functions are low-level OpenSSL routines that use the processor&rsquo;s AES-NI instruction set to perform hardware-accelerated AES encryption.</p>
-<p>The optimized <code>aesni</code> functions take the same arguments as their non-optimized counterparts, which, according to the man pages (see also <a href="#source5">5</a>), are as follows:</p>
+<p>The optimized <code>aesni</code> functions take the same arguments as their non-optimized counterparts, which, according to the man pages (see also <a href="#source6">6</a>), are as follows:</p>
 <figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>int
 </span></span><span style="display:flex;"><span>AES_set_encrypt_key(const unsigned char *userKey, const int bits, AES_KEY *key);
@@ -262,7 +262,7 @@ $ echo $b64 | base64 -d | od -An -tx1 -v
 </span></span><span style="display:flex;"><span>               const AES_KEY *key, unsigned char *ivec, const int enc);</span></span></code></pre></div>
 <figcaption>Listing 8: aesni_set_encrypt_key and aesni_cbc_encrypt function prototypes</figcaption>
 </figure>
-<p>The <code>aesni_set_encrypt_key</code> function accepts a <code>userKey</code> pointer and key length defined by <code>bits</code>. In this case, <code>bits</code> is set to <code>128</code>, meaning the provided encryption key consists of 128 bits (16 bytes) and is expanded into an AES key schedule stored in an AES_KEY structure pointed to by the <code>key</code> argument. The key schedule contains the round keys derived from the original AES key (<code>userKey</code>) and is used by subsequent AES encryption routines to perform the individual AES encryption rounds (see also <a href="#source6">6</a>).</p>
+<p>The <code>aesni_set_encrypt_key</code> function accepts a <code>userKey</code> pointer and key length defined by <code>bits</code>. In this case, <code>bits</code> is set to <code>128</code>, meaning the provided encryption key consists of 128 bits (16 bytes) and is expanded into an AES key schedule stored in an AES_KEY structure pointed to by the <code>key</code> argument. The key schedule contains the round keys derived from the original AES key (<code>userKey</code>) and is used by subsequent AES encryption routines to perform the individual AES encryption rounds (see also <a href="#source7">7</a>).</p>
 <p>Note that the 16-byte sequence pointed to by <code>userKey</code> matches the sequence highlighted in red in the decoded base64 output shown in Listing 6. This means that the 16 bytes starting at offset 1 and ending at offset 16 (using zero-based indexing) in the decoded base64 output contain an AES-128 encryption key. We will examine the origin and generation of the key value (<code>userKey</code>) shortly, but first focus on how the <code>key</code> is used by the <code>aesni_cbc_encrypt</code> function.</p>
 <p>The function <code>aesni_cbc_encrypt</code> reads a 16-byte block (<code>length=16</code>) from the memory area pointed to by <code>in</code> and encrypts it using the expanded AES_KEY structure pointed to by <code>key</code>. The CBC initialization vector used for the encryption is provided through the <code>ivec</code> argument. The resulting ciphertext is then written to the memory location pointed to by <code>out</code>.</p>
 <p>The buffer pointed to by <code>in</code> contains the byte sequence <code>0x31 0x32 0x33 0x34</code>, corresponding to the ascii characters <code>1234</code>, followed by twelve bytes with the value <code>0x0c</code>. These trailing bytes are PKCS#7 padding added before encryption. Since the password consists of only four characters, twelve additional bytes are required to fill the final 16-byte AES block. Therefore, the padding value is <code>0x0c</code> (decimal 12), repeated twelve times.</p>
@@ -272,13 +272,15 @@ $ echo $b64 | base64 -d | od -An -tx1 -v
 <p>So, analysis of the function flow trace reveals that the obfuscated <code>password</code> value stores two components: an AES-128 encryption key and the ciphertext of the encrypted password. For deobfuscation, Oracle first extracts the embedded AES-128 encryption key (offsets 1 through 16) and uses it to decrypt the associated ciphertext (offsets 17 through 33).</p>
 <p>There are still two details we have not covered yet. What is the meaning of the value <code>0x15</code> at offset position 0 in the decoded base64 output, and how exactly does Oracle generate the encryption key?</p>
 <p>I do not know the exact meaning of the leading byte value <code>0x15</code>, but it is a fixed value set by the <code>ztcsh</code> function. I strongly suspect that it represents a header or version flag. However, since the value is always constant, we do not need to consider it further for this analysis.</p>
-<p>Having addressed the meaning of the leading byte <code>0x15</code>, we can now return to the more interesting question of how Oracle generates the AES-128 encryption key. The answer can be observed in the call to <code>RAND_bytes</code>, another OpenSSL that, according to the <a href="https://docs.openssl.org/3.1/man3/RAND_bytes/">documentation</a> (see also <a href="#source7">7</a>), generates <code>num</code> random bytes using a cryptographically secure pseudo random generator (CSPRNG) and stores them in <code>buf</code>.</p>
+<p>Having addressed the meaning of the leading byte <code>0x15</code>, we can now return to the more interesting question of how Oracle generates the AES-128 encryption key. The answer can be observed in the call to <code>RAND_bytes</code>, another OpenSSL function that, according to the <a href="https://docs.openssl.org/3.1/man3/RAND_bytes/">documentation</a> (see also <a href="#source8">8</a>), generates <code>num</code> random bytes using a cryptographically secure pseudo random generator (CSPRNG) and stores them in <code>buf</code>.</p>
 <blockquote class="note">
-Oracle incorporates OpenSSL functions into its <code>libnnzsrv.so</code> shared library. A previous <a href="/posts/2026-01-02-uuid-generation-in-oracle-26ai/">post</a> analyzing how Oracle 26ai generates UUIDs already identified this integration (see also <a href="#source8">8</a>). Interestingly, UUID generation and the generation of the 128-bit AES encryption key for the credential password obfuscation process both use the same internal code path (function <code>ztcr2rnd</code>).
+Oracle incorporates OpenSSL functions into its <code>libnnzsrv.so</code> shared library. A previous <a href="/posts/2026-01-02-uuid-generation-in-oracle-26ai/">post</a> analyzing how Oracle 26ai generates UUIDs already identified this integration (see also <a href="#source9">9</a>). Interestingly, UUID generation and the generation of the 128-bit AES encryption key for the credential password obfuscation process both use the same internal code path (function <code>ztcr2rnd</code>).
 </blockquote>
 <p>In the example trace shown in Listing 7, <code>RAND_bytes</code> is called with <code>num=16</code> and <code>buf</code> pointing to <code>0x7ffc243938c0</code>. This means that the function generates 16 random bytes and stores them at the memory address <code>0x7ffc243938c0</code>. Inspecting the 16-byte sequence at that address on function entry (<code>buf e:</code>) and function return (<code>buf r:</code>) confirms that this random byte sequence is the same 16-byte sequence later passed as the encryption key (<code>userKey</code>) to the <code>aesni_set_encrypt_key</code> function.</p>
 <p>This shows that Oracle uses a randomly generated 128-bit AES key to transform the credential password into ciphertext, storing the key alongside the ciphertext in the resulting obfuscated value.</p>
-<p>The generation of a random AES-128-bit encryption key is particularly interesting, given that the obfuscation code path also invokes a function named <code>jsciGetObfKey</code> (not shown in the analysis above). This function concatenates the following data into a single string, suggesting that Oracle uses an additional obfuscation key.</p>
+<h3 id="additional-observations">Additional Observations</h3>
+<p>During the investigation, I came across additional observations that are not relevant to the password obfuscation process itself, but are worth mentioning nonetheless. While they do not contribute to understanding how the password is obfuscated, they may provide useful insights or prove relevant in other contexts, perhaps in future investigations.</p>
+<p>Besides generating a random 128-bit AES encryption key (as shown above), the obfuscation code path also invokes a function named <code>jsciGetObfKey</code> (not shown in the analysis above). This function concatenates the following data into a single string, suggesting that Oracle uses an additional obfuscation key.</p>
 <ul>
 <li>DBID of the container (cdb or pdb) in which the credential is created (<code>4093572297</code>)</li>
 <li>Credential user name (<code>TCTEST</code>)</li>
@@ -356,7 +358,7 @@ $ echo $b64 | base64 -d | od -An -tx1 -v
 </figure>
 <p><a id="obfuscation-deobfuscation-step-by-step"></a></p>
 <h3 id="password-obfuscation-and-deobfuscation-step-by-step">Password Obfuscation and Deobfuscation Step by Step</h3>
-<p>To obfuscate a credential password, Oracle constructs a buffer containing a header value, a randomly generated AES-128 encryption key, and the encrypted password ciphertext, and finally encodes the complete buffer using Base64.</p>
+<p>To obfuscate a credential password, Oracle constructs a buffer containing a header value, a randomly generated AES-128 encryption key, and the encrypted password ciphertext, and finally encodes the complete buffer using base64.</p>
 <p>The individual steps are as follows:</p>
 <ol>
 <li>Write the constant one-byte header/flag value <code>0x15</code> to buffer offset 0</li>
@@ -371,7 +373,7 @@ $ echo $b64 | base64 -d | od -An -tx1 -v
 <li>Extract the encrypted ciphertext from offsets 17–end and decrypt it using the AES-128 bit encryption key</li>
 <li>The header/flag value at offset 0 is ignored</li>
 </ol>
-<p>The following example code illustrates the principle and shows how to deobfuscate a credential password in PL/SQL (see also <a href="#source9">9</a>):</p>
+<p>The following example code illustrates the principle and shows how to deobfuscate a credential password in PL/SQL (see also <a href="#source10">10</a>):</p>
 <figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>set serveroutput on size unlimited
 </span></span><span style="display:flex;"><span>
@@ -400,7 +402,7 @@ $ echo $b64 | base64 -d | od -An -tx1 -v
 </span></span><span style="display:flex;"><span>    dbms_output.put_line(&#39;Prefix  : &#39; ||rawtohex(l_pfx));
 </span></span><span style="display:flex;"><span>    dbms_output.put_line(&#39;Key     : &#39; ||rawtohex(l_key));
 </span></span><span style="display:flex;"><span>    dbms_output.put_line(&#39;Secret  : &#39; ||rawtohex(l_sec));
-</span></span><span style="display:flex;"><span>    dbms_output.put_line(&#39;Pwd     : &#39; ||utl_raw.cast_to_varchar2(l_pwd));
+</span></span><span style="display:flex;"><span>    dbms_output.put_line(&#39;Pwd     : &#39; ||utl_i18n.raw_to_char(l_pwd));
 </span></span><span style="display:flex;"><span>end;
 </span></span><span style="display:flex;"><span>/
 </span></span><span style="display:flex;"><span>
@@ -412,7 +414,7 @@ $ echo $b64 | base64 -d | od -An -tx1 -v
 </span></span><span style="display:flex;"><span>Pwd     : 1234</span></span></code></pre></div>
 <figcaption>Listing 13: Deobfuscating credential passwords in PL/SQL</figcaption>
 </figure>
-<p>Similarly, we can encapsulate the PL/SQL logic into a function and use it to deobfuscate all <code>password</code> values stored in <code>sys.scheduler$_credential</code> (see also <a href="#source10">10</a>):</p>
+<p>Similarly, we can encapsulate the PL/SQL logic into a function and use it to deobfuscate all <code>password</code> values stored in <code>sys.scheduler$_credential</code> (see also <a href="#source11">11</a>):</p>
 <figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
 <div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>exec dbms_credential.create_credential(&#39;CRED_TEST1&#39;, &#39;TEST_USER1&#39;, &#39;1234&#39;)
 </span></span><span style="display:flex;"><span>exec dbms_credential.create_credential(&#39;CRED_TEST2&#39;, &#39;TEST_USER2&#39;, &#39;1234_4321&#39;)
@@ -438,7 +440,7 @@ $ echo $b64 | base64 -d | od -An -tx1 -v
 </span></span><span style="display:flex;"><span>                 key =&gt; l_key,
 </span></span><span style="display:flex;"><span>                 iv  =&gt; l_iv);
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    return utl_raw.cast_to_varchar2(l_pwd);
+</span></span><span style="display:flex;"><span>    return utl_i18n.raw_to_char(l_pwd);
 </span></span><span style="display:flex;"><span>  end;
 </span></span><span style="display:flex;"><span>select 
 </span></span><span style="display:flex;"><span>    username,
@@ -457,23 +459,24 @@ $ echo $b64 | base64 -d | od -An -tx1 -v
 <figcaption>Listing 14: Deobfuscating credential passwords in sys.scheduler$_credential</figcaption>
 </figure>
 <h3 id="obfuscation-is-not-encryption">Obfuscation is not Encryption</h3>
-<p>Although obfuscation can make sensitive data appear unreadable, it should not be considered a replacement for encryption. Encryption protects confidentiality through the use of a secret key, whereas obfuscation merely adds a layer of obscurity without strong confidentiality guarantees. Once the obfuscation scheme is understood, the original data can typically be recovered, as demonstrated in this note.</p>
-<p>Oracle also supports encrypting credentials stored in the data dictionary instead of using the default obfuscation mechanism. However, the encryption of credentials is not enabled by default and must be explicitly enabled. The steps required to do so are outlined in the Oracle documentation, and Oracle recommends encrypting credentials as a security best practice (see also <a href="#source11">11</a>).</p>
-<p>Encryption of credentials in the data dictionary requires that the database has a keystore and an encryption key configured. Unlike other forms of encryption in Oracle, however, this does not require an Advanced Security Option license (see <a href="#source1">11</a>). A drawback, however, is that once an encryption key has been configured in a wallet, the wallet can no longer be removed (see also <a href="#source12">12</a>).</p>
+<p>Although obfuscation can make sensitive data appear unreadable, it should not be considered a replacement for encryption. Encryption protects confidentiality through the use of a secret key, whereas obfuscation merely adds a layer of obscurity without strong confidentiality guarantees. Once the obfuscation scheme is understood, the original data can typically be recovered, as demonstrated in this post.</p>
+<p>Oracle also supports encrypting credentials stored in the data dictionary instead of using the default obfuscation mechanism. However, the encryption of credentials is not enabled by default and must be explicitly enabled. The steps required to do so are outlined in the Oracle documentation, and Oracle recommends encrypting credentials as a security best practice (see also <a href="#source12">12</a>).</p>
+<p>Encryption of credentials in the data dictionary requires that the database has a keystore and an encryption key configured. Unlike other forms of encryption in Oracle, however, this does not require an Advanced Security Option license (see <a href="#source12">12</a>). A drawback, however, is that once an encryption key has been configured in a wallet, the wallet can no longer be removed (see also <a href="#source13">13</a>).</p>
 <h2 id="references">References</h2>
 <ol>
 <li><a id="source1"></a><a href="https://docs.oracle.com/en/database/oracle/oracle-database/26/admin/scheduling-jobs-with-oracle-scheduler.html#GUID-BCB91872-760D-43CA-A5E2-135C6A2DB2F5">Oracle Corp., Oracle AI Database, Database Administrator’s Guide, 26ai, Chapter 29 Scheduling Jobs with Oracle Scheduler, Section: Specifying Scheduler Job Credentials, July 2026</a></li>
 <li><a id="source2"></a><a href="https://mvelikikh.blogspot.com/2021/12/using-credentials-with-database-links.html">Mikhail Velikikh, Using credentials with database links in 21c, 2021-12-17</a></li>
-<li><a id="source3"></a><a href="https://docs.oracle.com/en/database/oracle/oracle-database/26/arpls/DBMS_CREDENTIAL.html">Oracle Corp., Oracle AI Database, PL/SQL Packages and Types Reference, 26ai, Chapter 57 DBMS_CREDENTIAL, G43677-17, July 2026</a></li>
-<li><a id="source4"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/jsciObfuscatePassword.bt">Christoph Lutz, oracle GitHub Repository, bpftrace Script jsciObfuscatePassword.bt</a></li>
-<li><a id="source5"></a> <a href="https://man.freebsd.org/cgi/man.cgi?query=AES_set_encrypt_key&amp;sektion=3&amp;manpath=FreeBSD+13.2-RELEASE+and+Ports">FreeBSD Manual Pages, AES_ENCRYPT(3), 2019-08-28</a></li>
-<li><a id="source6"></a><a href="https://braincoke.fr/blog/2020/08/the-aes-key-schedule-explained/">Braincoke, The AES Key Schedule Explained, 2020-08-01</a></li>
-<li><a id="source7"></a> <a href="https://docs.openssl.org/3.1/man3/RAND_bytes/">OpenSSL Documentation RAND_bytes, OpenSSL 3.1, undated</a></li>
-<li><a id="source8"></a><a href="/posts/2026-01-02-uuid-generation-in-oracle-26ai/">Christoph Lutz, UUID Generation In Oracle 26ai, 2026-01-02</a></li>
-<li><a id="source9"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/sql/deobf-cred-pwd-step-by-step.sql">Christoph Lutz, oracle GitHub Repository, SQL Script deobf-cred-pwd-step-by-step.sql</a></li>
-<li><a id="source10"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/sql/deobf-cred-pwd.sql">Christoph Lutz, oracle GitHub Repository, SQL Script deobf-cred-pwd.sql</a></li>
-<li><a id="source11"></a><a href="https://docs.oracle.com/en/database/oracle/oracle-database/26/dbseg/encrypt-sensitive-data.html#GUID-F9451BB4-8BF5-4E0B-8C49-8CE9C0C4AB1F">Oracle Corp., Oracle AI Database, Security Guide, 26ai, Chapter 16 Encryption of Sensitive Credential Data in the Data Dictionary, G43025-06, July 2026</a></li>
-<li><a id="source12"></a><a href="https://support.oracle.com/support/?anchorId=&amp;kmContentId=2488898">My Oracle Support, How To Disable TDE?, KB118449, 2026-03-31</a></li>
+<li><a id="source3"></a><a href="https://connor-mcdonald.com/2026/01/29/26ai-quick-tip-for-database-links/">Connor McDonald, 26ai Quick Tip for Database Links, 2026-01-29</a></li>
+<li><a id="source4"></a><a href="https://docs.oracle.com/en/database/oracle/oracle-database/26/arpls/DBMS_CREDENTIAL.html">Oracle Corp., Oracle AI Database, PL/SQL Packages and Types Reference, 26ai, Chapter 57 DBMS_CREDENTIAL, G43677-17, July 2026</a></li>
+<li><a id="source5"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/jsciObfuscatePassword.bt">Christoph Lutz, oracle GitHub Repository, bpftrace Script jsciObfuscatePassword.bt</a></li>
+<li><a id="source6"></a> <a href="https://man.freebsd.org/cgi/man.cgi?query=AES_set_encrypt_key&amp;sektion=3&amp;manpath=FreeBSD+13.2-RELEASE+and+Ports">FreeBSD Manual Pages, AES_ENCRYPT(3), 2019-08-28</a></li>
+<li><a id="source7"></a><a href="https://braincoke.fr/blog/2020/08/the-aes-key-schedule-explained/">Braincoke, The AES Key Schedule Explained, 2020-08-01</a></li>
+<li><a id="source8"></a> <a href="https://docs.openssl.org/3.1/man3/RAND_bytes/">OpenSSL Documentation RAND_bytes, OpenSSL 3.1, undated</a></li>
+<li><a id="source9"></a><a href="/posts/2026-01-02-uuid-generation-in-oracle-26ai/">Christoph Lutz, UUID Generation In Oracle 26ai, 2026-01-02</a></li>
+<li><a id="source10"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/sql/deobf-cred-pwd-step-by-step.sql">Christoph Lutz, oracle GitHub Repository, SQL Script deobf-cred-pwd-step-by-step.sql</a></li>
+<li><a id="source11"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/sql/deobf-cred-pwd.sql">Christoph Lutz, oracle GitHub Repository, SQL Script deobf-cred-pwd.sql</a></li>
+<li><a id="source12"></a><a href="https://docs.oracle.com/en/database/oracle/oracle-database/26/dbseg/encrypt-sensitive-data.html#GUID-F9451BB4-8BF5-4E0B-8C49-8CE9C0C4AB1F">Oracle Corp., Oracle AI Database, Security Guide, 26ai, Chapter 16 Encryption of Sensitive Credential Data in the Data Dictionary, G43025-06, July 2026</a></li>
+<li><a id="source13"></a><a href="https://support.oracle.com/support/?anchorId=&amp;kmContentId=2488898">My Oracle Support, How To Disable TDE?, KB118449, 2026-03-31</a></li>
 </ol>
 
 </main>
