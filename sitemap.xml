@@ -38,10 +38,10 @@
     <loc>https://www.0xChris.dev/posts/</loc>
     <lastmod>2026-08-12T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://www.0xChris.dev/tags/security/</loc>
+    <loc>https://www.0xChris.dev/categories/security/</loc>
     <lastmod>2026-08-12T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://www.0xChris.dev/categories/security/</loc>
+    <loc>https://www.0xChris.dev/tags/security/</loc>
     <lastmod>2026-08-12T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/tags/</loc>
@@ -54,9 +54,6 @@
     <lastmod>2026-08-07T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/posts/2026-08-07-deobfuscating-oracle-credential-passwords/</loc>
-    <lastmod>2026-08-07T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/categories/security/</loc>
     <lastmod>2026-08-07T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/categories/cursors/</loc>

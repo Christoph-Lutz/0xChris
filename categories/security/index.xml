@@ -28,5 +28,12 @@
 &lt;figcaption&gt;Listing 1: Script error on Oracle 26ai&lt;/figcaption&gt;
 &lt;/figure&gt;
 &lt;p&gt;According to this &lt;a href=&#34;https://mahmoudhatem.wordpress.com/2016/12/08/reverse-engineering-db-link-password-decryption-in-plsql/&#34;&gt;blog post&lt;/a&gt;, in which Hatem describes in detail how Oracle obfuscates database link passwords (see also &lt;a href=&#34;#source3&#34;&gt;3&lt;/a&gt;), the obfuscated password is stored in the &lt;code&gt;passwordx&lt;/code&gt; column of the &lt;code&gt;sys.link$&lt;/code&gt; table. However, this appears to have changed in Oracle 26ai, where the &lt;code&gt;passwordx&lt;/code&gt; column no longer contains a value:&lt;/p&gt;</description>
+    </item><item>
+      <title>Deobfuscating Oracle Credential Passwords</title>
+      <link>https://www.0xChris.dev/posts/2026-08-07-deobfuscating-oracle-credential-passwords/</link>
+      <pubDate>Fri, 07 Aug 2026 00:00:00 UTC</pubDate>
+      <guid>https://www.0xChris.dev/posts/2026-08-07-deobfuscating-oracle-credential-passwords/</guid>
+      <description>&lt;p&gt;In Oracle, credentials are database objects that store a username and password pair for authentication when executing external procedures (extproc callouts), remote jobs, and external jobs (see also &lt;a href=&#34;#source1&#34;&gt;1&lt;/a&gt;). More recent Oracle releases also support using credentials with database links (see also &lt;a href=&#34;#source2&#34;&gt;2&lt;/a&gt; and &lt;a href=&#34;#source3&#34;&gt;3&lt;/a&gt;).&lt;/p&gt;
+&lt;p&gt;Credentials are created with the &lt;code&gt;dbms_credential.create_credential&lt;/code&gt; procedure, and the associated passwords are stored in obfuscated form in the data dictionary (see also &lt;a href=&#34;#source4&#34;&gt;4&lt;/a&gt;). However, Oracle does not publicly disclose the details of the internal obfuscation mechanism and I could not find any publicly available information about it either, which motivated me to take a closer look.&lt;/p&gt;</description>
     </item></channel>
 </rss>
