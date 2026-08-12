@@ -4,6 +4,31 @@
     <link>https://www.0xChris.dev/</link>
     <description>0xChris updates</description>
     <atom:link href="https://www.0xChris.dev/tags/deobfuscation/" rel="self" type="application/rss+xml"/><item>
+      <title>Deobfuscating Database Link Passwords in Oracle 26ai</title>
+      <link>https://www.0xChris.dev/posts/2026-08-12-deobfuscating-database-link-passwords-in-oracle-26ai/</link>
+      <pubDate>Wed, 12 Aug 2026 00:00:00 UTC</pubDate>
+      <guid>https://www.0xChris.dev/posts/2026-08-12-deobfuscating-database-link-passwords-in-oracle-26ai/</guid>
+      <description>&lt;p&gt;I recently encountered a scenario where I needed to deobfuscate the password of a database link user in Oracle 26ai. So, my plan was to quickly execute the &lt;a href=&#34;https://github.com/hatem-mahmoud/scripts/blob/master/db_link_password_decrypt_standalone.sql&#34;&gt;db_link_password_decrypt_standalone.sql&lt;/a&gt; script written by Hatem Mahmoud (see also &lt;a href=&#34;#source1&#34;&gt;1&lt;/a&gt;), but unfortunately, it failed with an error on Oracle 26ai.&lt;/p&gt;
+&lt;p&gt;The following test case shows the problem:&lt;/p&gt;
+&lt;figure style=&#34;display:block; width:100%; margin:0; padding:0; box-sizing:border-box;&#34;&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-text&#34; data-lang=&#34;text&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;-- Create new database link
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;SQL&amp;gt; create database link test connect to test_user identified by p1234 using &amp;#39;myhost:1521/myservice.mydomain&amp;#39;;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;-- Deobfuscate database link password using db_link_password_decrypt_standalone.sql
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;SQL&amp;gt; define owner=TEST_USER
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;SQL&amp;gt; define dblink=TEST
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;SQL&amp;gt; @db_link_password_decrypt_standalone.sql
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;ERROR at line 1:
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;ORA-06502: PL/SQL: value or conversion error
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;ORA-06512: at &amp;#34;SYS.UTL_RAW&amp;#34;, line 380
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;ORA-06512: at line 103
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;ORA-06512: at line 162
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;Help: https://docs.oracle.com/error-help/db/ora-06502/&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;figcaption&gt;Listing 1: Script error on Oracle 26ai&lt;/figcaption&gt;
+&lt;/figure&gt;
+&lt;p&gt;According to this &lt;a href=&#34;https://mahmoudhatem.wordpress.com/2016/12/08/reverse-engineering-db-link-password-decryption-in-plsql/&#34;&gt;blog post&lt;/a&gt;, in which Hatem describes in detail how Oracle obfuscates database link passwords (see also &lt;a href=&#34;#source3&#34;&gt;3&lt;/a&gt;), the obfuscated password is stored in the &lt;code&gt;passwordx&lt;/code&gt; column of the &lt;code&gt;sys.link$&lt;/code&gt; table. However, this appears to have changed in Oracle 26ai, where the &lt;code&gt;passwordx&lt;/code&gt; column no longer contains a value:&lt;/p&gt;</description>
+    </item><item>
       <title>Deobfuscating Oracle Credential Passwords</title>
       <link>https://www.0xChris.dev/posts/2026-08-07-deobfuscating-oracle-credential-passwords/</link>
       <pubDate>Fri, 07 Aug 2026 00:00:00 UTC</pubDate>

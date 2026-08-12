@@ -3,7 +3,7 @@
     <title>0xChris</title>
     <link>https://www.0xChris.dev/</link>
     <description>0xChris updates</description>
-    <atom:link href="https://www.0xChris.dev/categories/security/" rel="self" type="application/rss+xml"/><item>
+    <atom:link href="https://www.0xChris.dev/tags/databaselinks/" rel="self" type="application/rss+xml"/><item>
       <title>Deobfuscating Database Link Passwords in Oracle 26ai</title>
       <link>https://www.0xChris.dev/posts/2026-08-12-deobfuscating-database-link-passwords-in-oracle-26ai/</link>
       <pubDate>Wed, 12 Aug 2026 00:00:00 UTC</pubDate>
