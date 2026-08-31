@@ -105,7 +105,7 @@
 </div>
 
 <main>
-<p>After looking into how Oracle obfuscates <a href="/posts/2026-08-07-deobfuscating-oracle-credential-passwords/">credential passwords</a> and <a href="posts/2026-08-12-deobfuscating-database-link-passwords-in-oracle-26ai/">database link passwords</a> in version 26ai (see also <a href="#source1">1</a> and <a href="#source2">2</a>), I started wondering how auto-login wallets are obfuscated and whether the obfuscation has changed in 26ai as well.</p>
+<p>After looking into how Oracle obfuscates <a href="/posts/2026-08-07-deobfuscating-oracle-credential-passwords/">credential passwords</a> and <a href="/posts/2026-08-12-deobfuscating-database-link-passwords-in-oracle-26ai/">database link passwords</a> in version 26ai (see also <a href="#source1">1</a> and <a href="#source2">2</a>), I started wondering how auto-login wallets are obfuscated and whether the obfuscation has changed in 26ai as well.</p>
 <p>Prior public research on that topic dates back to Oracle 11g (see also <a href="#source3">3</a>, <a href="#source4">4</a>, and <a href="#source5">5</a>), and I couldn&rsquo;t find any information related to 26ai, so I decided to have a look myself.</p>
 <p>According to the Oracle 26ai <a href="">documentation</a>, an auto-login wallet is protected by an obfuscated random password (see also <a href="#source6">6</a>):</p>
 <blockquote class="note">
