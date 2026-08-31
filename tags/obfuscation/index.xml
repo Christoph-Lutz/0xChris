@@ -1,0 +1,15 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>0xChris</title>
+    <link>https://www.0xChris.dev/</link>
+    <description>0xChris updates</description>
+    <atom:link href="https://www.0xChris.dev/tags/obfuscation/" rel="self" type="application/rss+xml"/><item>
+      <title>Deobfuscating Auto-Login Wallets in Oracle 26ai</title>
+      <link>https://www.0xChris.dev/posts/2026-08-31-deobfuscating-auto-login-wallets-in-oracle-26ai/</link>
+      <pubDate>Mon, 31 Aug 2026 00:00:00 UTC</pubDate>
+      <guid>https://www.0xChris.dev/posts/2026-08-31-deobfuscating-auto-login-wallets-in-oracle-26ai/</guid>
+      <description>&lt;p&gt;After looking into how Oracle obfuscates &lt;a href=&#34;https://www.0xChris.dev/posts/2026-08-07-deobfuscating-oracle-credential-passwords/&#34;&gt;credential passwords&lt;/a&gt; and &lt;a href=&#34;posts/2026-08-12-deobfuscating-database-link-passwords-in-oracle-26ai/&#34;&gt;database link passwords&lt;/a&gt; in version 26ai (see also &lt;a href=&#34;#source1&#34;&gt;1&lt;/a&gt; and &lt;a href=&#34;#source2&#34;&gt;2&lt;/a&gt;), I started wondering how auto-login wallets are obfuscated and whether the obfuscation has changed in 26ai as well.&lt;/p&gt;
+&lt;p&gt;Prior public research on that topic dates back to Oracle 11g (see also &lt;a href=&#34;#source3&#34;&gt;3&lt;/a&gt;, &lt;a href=&#34;#source4&#34;&gt;4&lt;/a&gt;, and &lt;a href=&#34;#source5&#34;&gt;5&lt;/a&gt;), and I couldn&amp;rsquo;t find any information related to 26ai, so I decided to have a look myself.&lt;/p&gt;
+&lt;p&gt;According to the Oracle 26ai &lt;a href=&#34;&#34;&gt;documentation&lt;/a&gt;, an auto-login wallet is protected by an obfuscated random password (see also &lt;a href=&#34;#source6&#34;&gt;6&lt;/a&gt;):&lt;/p&gt;</description>
+    </item></channel>
+</rss>

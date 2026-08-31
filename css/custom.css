@@ -198,6 +198,16 @@ code {
     font-weight: 500;
 }
 
+.hl-blue-medium {
+    color: #2F75B5;  /* medium blue */
+    font-weight: 500;
+}
+
+.hl-skyblue {
+    color: #56B4E9;
+    font-weight: 500;
+}
+
 .hl-green {
     color: #2e7d32;
     font-weight: 500;
@@ -215,11 +225,6 @@ code {
 
 .hl-grey {
     color: #8a8a8a;
-    font-weight: 500;
-}
-
-.hl-skyblue {
-    color: #56B4E9;
     font-weight: 500;
 }
 

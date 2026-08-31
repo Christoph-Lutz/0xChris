@@ -3,16 +3,52 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://www.0xChris.dev/</loc>
-    <lastmod>2026-08-12T00:00:00+00:00</lastmod>
+    <lastmod>2026-09-01T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/posts/</loc>
+    <lastmod>2026-09-01T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/categories/26ai/</loc>
-    <lastmod>2026-08-12T00:00:00+00:00</lastmod>
+    <lastmod>2026-08-31T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/tags/26ai/</loc>
-    <lastmod>2026-08-12T00:00:00+00:00</lastmod>
+    <lastmod>2026-08-31T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/autologinwallets/</loc>
+    <lastmod>2026-08-31T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/categories/</loc>
-    <lastmod>2026-08-12T00:00:00+00:00</lastmod>
+    <lastmod>2026-08-31T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/posts/2026-08-31-deobfuscating-auto-login-wallets-in-oracle-26ai/</loc>
+    <lastmod>2026-08-31T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/categories/encryption/</loc>
+    <lastmod>2026-08-31T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/encryption/</loc>
+    <lastmod>2026-08-31T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/obfuscation/</loc>
+    <lastmod>2026-08-31T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/openssl/</loc>
+    <lastmod>2026-08-31T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/categories/security/</loc>
+    <lastmod>2026-08-31T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/security/</loc>
+    <lastmod>2026-08-31T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/</loc>
+    <lastmod>2026-08-31T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/categories/wallets/</loc>
+    <lastmod>2026-08-31T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.0xChris.dev/tags/wallets/</loc>
+    <lastmod>2026-08-31T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/categories/database-links/</loc>
     <lastmod>2026-08-12T00:00:00+00:00</lastmod>
@@ -26,25 +62,7 @@
     <loc>https://www.0xChris.dev/tags/deobfuscation/</loc>
     <lastmod>2026-08-12T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://www.0xChris.dev/categories/encryption/</loc>
-    <lastmod>2026-08-12T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/tags/encryption/</loc>
-    <lastmod>2026-08-12T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://www.0xChris.dev/tags/password/</loc>
-    <lastmod>2026-08-12T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/posts/</loc>
-    <lastmod>2026-08-12T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/categories/security/</loc>
-    <lastmod>2026-08-12T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/tags/security/</loc>
-    <lastmod>2026-08-12T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/tags/</loc>
     <lastmod>2026-08-12T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/tags/credentials/</loc>
@@ -274,9 +292,6 @@
   </url><url>
     <loc>https://www.0xChris.dev/posts/2026-01-03-decoding-library-cache-lock-and-library-cache-pin-wait-event-parameters/</loc>
     <lastmod>2026-01-03T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.0xChris.dev/tags/openssl/</loc>
-    <lastmod>2026-01-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.0xChris.dev/categories/oracle/</loc>
     <lastmod>2026-01-02T00:00:00+00:00</lastmod>

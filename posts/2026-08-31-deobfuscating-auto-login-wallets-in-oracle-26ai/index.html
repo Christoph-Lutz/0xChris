@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Deobfuscating Auto-Login Wallets in Oracle 26ai | 0xChris</title>
+
+    
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="/css/custom.css" />
+
+    
+    
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Deobfuscating Auto-Login Wallets in Oracle 26ai">
+  <meta name="twitter:description" content="Deobfuscating Auto-Login Wallets in Oracle 26ai (cwallet.sso)">
+
+
+<meta property="og:title" content="Deobfuscating Auto-Login Wallets in Oracle 26ai">
+<meta property="og:description" content="Deobfuscating Auto-Login Wallets in Oracle 26ai (cwallet.sso)">
+<meta property="og:url" content="https://www.0xChris.dev/posts/2026-08-31-deobfuscating-auto-login-wallets-in-oracle-26ai/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="0xChris">
+
+
+
+<meta property="og:image" content="https://www.0xChris.dev/">
+
+
+  </head>
+
+  <body>
+    <nav>
+      <ul class="menu">
+        
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/posts/">Blog</a></li>
+        
+          <li><a href="/categories/">Categories</a></li>
+        
+          <li><a href="/tags/">Tags</a></li>
+        
+          <li><a href="/contact/">Contact</a></li>
+        
+          <li><a href="/index.xml">Subscribe</a></li>
+        
+
+        
+        
+          
+            <li class="icon">
+              <a href="https://github.com/Christoph-Lutz" aria-label="GitHub">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <title>GitHub</title>
+  <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" fill="currentColor"/>
+</svg>
+
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://x.com/chris_skyflier" aria-label="Twitter">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>X</title><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://bsky.app/profile/christophlutz.bsky.social" aria-label="Bluesky">
+                
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Bluesky</title><path d="M5.202 2.857C7.954 4.922 10.913 9.11 12 11.358c1.087-2.247 4.046-6.436 6.798-8.501C20.783 1.366 24 .213 24 3.883c0 .732-.42 6.156-.667 7.037-.856 3.061-3.978 3.842-6.755 3.37 4.854.826 6.089 3.562 3.422 6.299-5.065 5.196-7.28-1.304-7.847-2.97-.104-.305-.152-.448-.153-.327 0-.121-.05.022-.153.327-.568 1.666-2.782 8.166-7.847 2.97-2.667-2.737-1.432-5.473 3.422-6.3-2.777.473-5.899-.308-6.755-3.369C.42 10.04 0 4.615 0 3.883c0-3.67 3.217-2.517 5.202-1.026"/></svg>
+              </a>
+            </li>
+          
+            <li class="icon">
+              <a href="https://sym42.org" aria-label="Sym42">
+                
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+  <path transform="scale(0.1004,0.1364) translate(11,1)" d="M0 0 C8.91 0 17.82 0 27 0 C27 32.01 27 64.02 27 97 C51.75 97 76.5 97 102 97 C102.33 118.78 102.66 140.56 103 163 C113.65023618 149.38741342 113.65023618 149.38741342 124 135.5625 C125.16793211 133.96872315 126.33590197 132.37497396 127.50390625 130.78125 C128.08156738 129.99105469 128.65922852 129.20085937 129.25439453 128.38671875 C132.14116363 124.43971809 135.0386119 120.50060445 137.9375 116.5625 C138.50952148 115.78430908 139.08154297 115.00611816 139.67089844 114.2043457 C143.34771065 109.21167043 147.06937462 104.25523259 150.81298828 99.3125 C170.98641999 74.34600723 170.98641999 74.34600723 177 44 C175.18481682 37.01549082 172.39314724 31.88945254 166.25390625 27.8515625 C158.52779633 23.46773353 150.43585329 23.37053009 141.8828125 25.125 C137.49428572 26.45701897 133.56042734 28.49182265 129.53125 30.66015625 C127 32 127 32 124 33 C124 23.76 124 14.52 124 5 C138.64493558 -0.63266753 138.64493558 -0.63266753 144.8828125 -0.62890625 C145.54860321 -0.63131821 146.21439392 -0.63373016 146.90036011 -0.63621521 C148.28308171 -0.63525162 149.66584937 -0.62222324 151.04833984 -0.59692383 C153.13124785 -0.56239643 155.20993568 -0.57639315 157.29296875 -0.59570312 C171.18361481 -0.58191047 181.8308422 3.34041929 192.00390625 12.87890625 C200.75379996 22.23354424 204.74719368 34.28009799 205.375 47 C204.41179837 64.52286038 196.17302926 80.08711875 186 94 C185.50757813 94.67724121 185.01515625 95.35448242 184.5078125 96.05224609 C180.97969681 100.89390965 177.41603046 105.70856193 173.84228516 110.51660156 C171.48040306 113.70041612 169.13374187 116.89527097 166.78710938 120.09033203 C159.52624187 129.97226581 152.18066843 139.78923387 144.81054688 149.58984375 C143.01140967 151.98481172 141.21597581 154.38250747 139.421875 156.78125 C138.8645166 157.52608643 138.3071582 158.27092285 137.73291016 159.03833008 C136.68515004 160.43879049 135.6379229 161.83964987 134.59130859 163.2409668 C131.11186653 167.88813347 131.11186653 167.88813347 130 169 C128.28134591 169.0935919 126.55884256 169.11744611 124.83764648 169.11352539 C123.73658066 169.11344986 122.63551483 169.11337433 121.50108337 169.11329651 C120.3031868 169.10813522 119.10529022 169.10297394 117.87109375 169.09765625 C116.65172623 169.0962413 115.4323587 169.09482635 114.17604065 169.09336853 C110.2631693 169.08774967 106.35035419 169.07519396 102.4375 169.0625 C99.79231853 169.05748743 97.14713617 169.0529241 94.50195312 169.04882812 C88.00126274 169.03862296 81.50069467 169.01905121 75 169 C75 154.15 75 139.3 75 124 C50.25 124 25.5 124 0 124 C0 83.08 0 42.16 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(155.8828125,0.37109375)" d="M0 0 C0.66579071 -0.00241196 1.33158142 -0.00482391 2.01754761 -0.00730896 C3.40026921 -0.00634537 4.78303687 0.00668301 6.16552734 0.03198242 C8.24843535 0.06650982 10.32712318 0.0525131 12.41015625 0.03320312 C26.30080231 0.04699578 36.9480297 3.96932554 47.12109375 13.5078125 C55.87098746 22.86245049 59.86438118 34.90900424 60.4921875 47.62890625 C59.52898587 65.15176663 51.29021676 80.716025 41.1171875 94.62890625 C40.62476563 95.30614746 40.13234375 95.98338867 39.625 96.68115234 C36.09688431 101.5228159 32.53321796 106.33746818 28.95947266 111.14550781 C26.59759056 114.32932237 24.25092937 117.52417722 21.90429688 120.71923828 C14.64342937 130.60117206 7.29785593 140.41814012 -0.07226562 150.21875 C-1.87140283 152.61371797 -3.66683669 155.01141372 -5.4609375 157.41015625 C-6.2969751 158.52741089 -6.2969751 158.52741089 -7.14990234 159.66723633 C-8.19766246 161.06769674 -9.2448896 162.46855612 -10.29150391 163.86987305 C-13.77094597 168.51703972 -13.77094597 168.51703972 -14.8828125 169.62890625 C-17.02840077 169.7166623 -19.17685671 169.73585844 -21.32421875 169.7265625 C-22.62939453 169.72333984 -23.93457031 169.72011719 -25.27929688 169.71679688 C-26.6679694 169.70844026 -28.05664127 169.6999753 -29.4453125 169.69140625 C-30.83788906 169.68639291 -32.23046731 169.68182972 -33.62304688 169.67773438 C-37.0430112 169.66590059 -40.46289094 169.64941505 -43.8828125 169.62890625 C-43.27097081 166.41918652 -42.20356776 164.38991326 -40.25 161.78515625 C-39.69892578 161.04394531 -39.14785156 160.30273438 -38.58007812 159.5390625 C-37.97873047 158.74371094 -37.37738281 157.94835937 -36.7578125 157.12890625 C-35.82098633 155.87400391 -35.82098633 155.87400391 -34.86523438 154.59375 C-32.87737817 151.93402615 -30.8807052 149.28109666 -28.8828125 146.62890625 C-27.62458729 144.95213253 -26.3667668 143.27505503 -25.109375 141.59765625 C-23.23806447 139.10192152 -21.36611031 136.60668841 -19.49169922 134.11328125 C-14.67303275 127.70001086 -9.90631899 121.24999876 -5.16113281 114.78222656 C-1.50429727 109.80538271 2.1987027 104.86635957 5.92797852 99.94360352 C26.10348636 74.9765367 26.10348636 74.9765367 32.1171875 44.62890625 C30.30200432 37.64439707 27.51033474 32.51835879 21.37109375 28.48046875 C13.64498383 24.09663978 5.55304079 23.99943634 -3 25.75390625 C-7.38852678 27.08592522 -11.32238516 29.1207289 -15.3515625 31.2890625 C-17.8828125 32.62890625 -17.8828125 32.62890625 -20.8828125 33.62890625 C-20.8828125 24.38890625 -20.8828125 15.14890625 -20.8828125 5.62890625 C-6.23787692 -0.00376128 -6.23787692 -0.00376128 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(171,143)" d="M0 0 C15.51 0 31.02 0 47 0 C47 8.91 47 17.82 47 27 C31.49 27 15.98 27 0 27 C0 18.09 0 9.18 0 0 Z"/>
+  
+  <path transform="scale(0.1004,0.1364) translate(135,6)" d="M0 0 C0.99 0.495 0.99 0.495 2 1 C1.67 8.92 1.34 16.84 1 25 C1.66 25 2.32 25 3 25 C2.67 25.99 2.34 26.98 2 28 C1.34 28 0.68 28 0 28 C0 18.76 0 9.52 0 0 Z"/>
+</svg>
+
+              </a>
+            </li>
+          
+        
+      </ul>
+      <hr/>
+    </nav>
+  </body>
+</html>
+<div class="article-meta">
+<h1><span class="title">Deobfuscating Auto-Login Wallets in Oracle 26ai</span></h1>
+
+<h2 class="date">2026/08/31</h2>
+</div>
+
+<main>
+<p>After looking into how Oracle obfuscates <a href="/posts/2026-08-07-deobfuscating-oracle-credential-passwords/">credential passwords</a> and <a href="posts/2026-08-12-deobfuscating-database-link-passwords-in-oracle-26ai/">database link passwords</a> in version 26ai (see also <a href="#source1">1</a> and <a href="#source2">2</a>), I started wondering how auto-login wallets are obfuscated and whether the obfuscation has changed in 26ai as well.</p>
+<p>Prior public research on that topic dates back to Oracle 11g (see also <a href="#source3">3</a>, <a href="#source4">4</a>, and <a href="#source5">5</a>), and I couldn&rsquo;t find any information related to 26ai, so I decided to have a look myself.</p>
+<p>According to the Oracle 26ai <a href="">documentation</a>, an auto-login wallet is protected by an obfuscated random password (see also <a href="#source6">6</a>):</p>
+<blockquote class="note">
+An auto-login wallet is a read/write wallet that consists of both a PKCS #12 file called <code>ewallet.p12</code> and a single sign-on (SSO) file called <code>cwallet.sso</code>. Both files contain the same content except that the <code>ewallet.p12</code> is protected with a user password while <code>cwallet.sso</code> is protected with an obfuscated random password.
+</blockquote>
+<p>Keep in mind that auto-login wallets (SSO wallets) are different from <em>local</em> auto-login wallets (LSSO wallets): SSO wallets are portable across systems, whereas LSSO wallets are bound to the host on which they were created, preventing them from being used on other hosts. This is also why LSSO wallets cannot be used with RAC (see also <a href="#source6">6</a>).</p>
+<p>Historically, LSSO wallets have used an additional obfuscation key derived from the username and hostname on which they were created, but this appears to have changed in 26ai as well, with the documentation stating that &ldquo;local auto-login wallets are more secure now&rdquo; (see also <a href="#source7">7</a>). In any case, the focus of this post is on SSO wallets, and I plan to cover the changes to LSSO wallets in Oracle 26ai in another post. That said, note that all findings in this post apply to Oracle version 23.26.0.</p>
+<h3 id="auto-login-wallet-obfuscation">Auto-Login Wallet Obfuscation</h3>
+<p>When an auto-login wallet is created, Oracle 26ai generates a random 16-byte sequence from which it derives a password, along with a random 128-bit AES key used to obfuscate that password. The AES key and the resulting obfuscated password are both then stored in the header of the auto-login wallet file (<code>cwallet.sso</code>), followed by the PKCS#12 wallet contents (<code>ewallet.p12</code>), which are protected by the derived password.</p>
+<p>The listing below provides a summary of the <code>cwallet.sso</code> file structure in Oracle 26ai (similar to the description of the Oracle 11g file structure described by Tjado Mäcke in <a href="#source3">3</a>):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>0x00 - 0x2C     Header:
+</span></span><span style="display:flex;"><span>    0x00 - 0x02     First 3 bytes are always A1 F8 4E (wallet recognition, defined in nzurrf_wf_31)
+</span></span><span style="display:flex;"><span>    0x03            Wallet type: 36=SSO; 38=LSSO
+</span></span><span style="display:flex;"><span>    0x04 - 0x07     Wallet version: 06=26ai SSO; 07=26ai LSSO 
+</span></span><span style="display:flex;"><span>    0x08 - 0x0C     Unknown
+</span></span><span style="display:flex;"><span>    0x0D - 0x1C     Random 128-bit AES key (16 bytes)
+</span></span><span style="display:flex;"><span>    0x1D - 0x2C     PKCS#12 password encrypted using the random 128-bit AES key (16 bytes)
+</span></span><span style="display:flex;"><span>0x2D - EOF      PKCS#12 data (ASN.1 block)</span></span></code></pre></div>
+<figcaption>Listing 1: cwallet.sso file structure in 26ai</figcaption>
+</figure>
+<p>The following steps describe the Oracle 26ai obfuscation process in detail:</p>
+<ol>
+<li> Generate a random 16-byte sequence (<code>rand_seq</code>).</li>
+<li> Transform each byte of <code>rand_seq</code> independently by applying a modulo-127 operation followed by a <code>+1</code> increment. This maps each byte of <code>rand_seq</code> to a value in the 1–127 range, i.e. the 7-bit ASCII code range excluding <code>NUL</code> (0). The resulting byte sequence is used as the SSO wallet <code>password</code>:
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>for(int i=0; i&lt;16; i++) {
+</span></span><span style="display:flex;"><span>    password[i] = rand_seq[i] % 127 + 1;
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+</figure>
+</li>
+<li>Generate a second random 16-byte sequence and use it as a 128-bit AES key (<code>aes_key</code>). The <code>aes_key</code> is stored at offset <code>+13 (0xd)</code> in the <code>cwallet.sso</code> file.</li>
+<li>Encrypt the <code>password</code> using <code>aes_key</code> and the following initialization vector: <code>c0 34 d8 31 1c 02 ce f8 51 f0 14 4b 81 ed 4b f2</code>. This initialization vector value is embedded and hard-coded in the Oracle binary in functions <code>nzurcsh</code> (encryption) and <code>nzurcsc</code> (decryption).</li>
+<li>Store the resulting 16-byte ciphertext at offset <code>+29 (0x1d)</code> in the <code>cwallet.sso</code> file. This is the obfuscated random password mentioned in the Oracle documentation.</li>
+<li>Read the original <code>ewallet.p12</code> file, protect it with the randomly generated <code>password</code>, and write its contents to the <code>cwallet.sso</code> file starting at offset <code>+45 (0x2d)</code></li>
+</ol>
+<p>When Oracle reads the auto-login wallet at instance startup, it retrieves the <code>aes_key</code> and obfuscated <code>password</code> from the <code>cwallet.sso</code> header and then uses the <code>aes_key</code> to recover the original <code>password</code>, with which it subsequently decrypts the embedded <code>ewallet.p12</code> contents and retrieves the master encryption key.</p>
+<p>Knowing how the process works, we can reproduce the steps performed by Oracle and manually extract the <code>ewallet.p12</code> contents. The next section walks through this process in detail. Before doing so, however, let’s examine an example of the auto-login wallet obfuscation in action.</p>
+<p>The <code>ADMINISTER KEY MANAGEMENT</code> command shown below creates a new <code>cwallet.sso</code> file in the <code>$WALLET_ROOT/tde</code> subdirectory (in all subsequent examples, <code>$WALLET_ROOT</code> refers to the os directory specified in the initialization parameter <code>wallet_root</code>).</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>SQL&gt; administer key management create auto_login keystore from keystore identified by p12345;</span></span></code></pre></div>
+<figcaption>Listing 2: Creating a new auto-login wallet (cwallet.sso)</figcaption>
+</figure>
+<p>In my example, the byte contents of the <code>cwallet.sso</code> file are as follows (first four lines):</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>od -An -tx1 -v $WALLET_ROOT/tde/cwallet.sso | head -n 4
+ a1 f8 4e 36 00 00 00 06 00 00 00 21 06 <span class="hl-blue-medium">34 74 13
+ a4 50 54 22 2c 8e f5 05 c5 11 27 32 15</span> <span class="hl-red">d8 3e 85
+ b3 e6 0a f4 1a fc 7e 05 a7 b5 c9 99 e9</span> <span class="hl-purple">30 82 0e
+ ef 02 01 03 30 82 0e b5 06 09 2a 86 48 86 f7 0d</span>
+</code></pre>
+<figcaption>Listing 3: Examining the auto-login wallet contents (cwallet.sso)</figcaption>
+</figure>
+<p>The bytes at positions 13–28 (highlighted in blue) contain the randomly generated 128-bit AES key, while the bytes at positions 29–44 (highlighted in red) contain the obfuscated auto-login password encrypted with this key. The remaining bytes, from position 45 to the end of the file, contain the contents of the PKCS#12 file <code>ewallet.p12</code>, which are protected by the obfuscated password (highlighted in purple).</p>
+<p>This is confirmed by a runtime trace of the <code>ADMINISTER KEY MANAGEMENT</code> command in Listing 2 using the bpftrace script <a href="https://github.com/Christoph-Lutz/oracle/bpftrace/nzurrf_wf_rf_31.bt">nzurrf_wf_rf_31.bt</a> (see also <a href="#source8">8</a>). The script probes the Oracle <code>libnnz.so</code> library functions <code>nzurrf_wf_31</code> and <code>nzurrf_rf_31</code>, which are called when an auto-login wallet is written and read, respectively (Oracle calls both these functions when a new auto-login wallet is created).</p>
+<p>The edited and annotated bpftrace outputs below illustrate Oracle’s internal function flow and show how the function <code>nzurrf_wf_31</code> generates a random 128-bit AES key and uses it to obfuscate the randomly generated auto-login password.</p>
+<p>The first part of the bpftrace output in Listing 4 below shows that <code>nzurrf_wf_31</code> calls <code>nzty_random</code>, which in turn calls the OpenSSL library function <code>RAND_bytes_ex</code> (see also <a href="#source9">9</a>) to generate a random 16-byte sequence (highlighted in green).</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>-> nzurrf_wf_31
+   -> nzty_random_get: ?, buf=0x7ffdc63bb004, num=16
+      -> RAND_bytes_ex: ctx=0x47601010, buf=0x7ffdc63bb004, num=16
+         <span class="hl-green">buf r: 0x3f 0x2e 0x55 0x9d 0x62 0x29 0xef 0x06 0x0d 0xa7 0x9f 0x68 0xb7 0x25 0x3b 0xfd</span>
+      <- RAND_bytes_ex: 0x1 (1)                                                                                  
+                                                                                                                
+      <span class="hl-green">buf r: 0x3f 0x2e 0x55 0x9d 0x62 0x29 0xef 0x06 0x0d 0xa7 0x9f 0x68 0xb7 0x25 0x3b 0xfd</span> 
+   <- nzty_random_get: 0x0
+   …
+</code></pre>
+<figcaption>Listing 4: bpftrace output nzurrf_wf_rf_31.bt (part 1/4)</figcaption>
+</figure>
+<p>Each byte of the 16-byte random sequence is then mapped to the US 7-bit ASCII range (1–127) using the modulo-127 operation <code>rand_seq[n] % 127 + 1</code>. The resulting 16-byte sequence forms the auto-login wallet password (highlighted in green), which is then passed to <code>nzurcsh</code> through a pointer (<code>buf=0x7ffdc63bb004</code>).</p>
+<p>Next, Oracle calls <code>nzty_random_get</code> and <code>RAND_bytes_ex</code> again to generate another random 16-byte sequence, which is stored in the buffer pointed to by <code>buf</code> (<code>0x7ffdc63baef0</code>). This byte sequence forms the 128-bit AES key (highlighted in blue) and corresponds to the 16-byte sequence visible in the <code>cwallet.sso</code> file at offsets 13–28 in Listing 3 above.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>   -> nzurcsh: ?, ?, ? buf=0x7ffdc63bb004, num=16
+      <span class="hl-green">buf e: 0x40 0x2f 0x56 0x1f 0x63 0x2a 0x71 0x07 0x0e 0x29 0x21 0x69 0x39 0x26 0x3c 0x7f</span>
+
+      -> nzty_random_get: ?, buf=0x7ffdc63baef0, num=16
+         -> RAND_bytes_ex: ctx=0x47601010, buf=0x7ffdc63baef0, num=16
+            <span class="hl-blue-medium">buf r: 0x34 0x74 0x13 0xa4 0x50 0x54 0x22 0x2c 0x8e 0xf5 0x05 0xc5 0x11 0x27 0x32 0x15</span>
+         <- RAND_bytes_ex: 0x1 (1)
+
+         <span class="hl-blue-medium">buf r: 0x34 0x74 0x13 0xa4 0x50 0x54 0x22 0x2c 0x8e 0xf5 0x05 0xc5 0x11 0x27 0x32 0x15</span>
+      <- nzty_random_get: 0x0
+</code></pre>
+<figcaption>Listing 5: bpftrace output nzurrf_wf_rf_31.bt (part 2/4)</figcaption>
+</figure>
+<p>As its final step before returning, <code>nzurrf_wf_31</code> calls into <code>nzty_encrypt</code>, which in turn calls into the OpenSSL low-level functions <code>aesni_set_encrypt</code> and <code>aesni_cbc_encrypt</code> (see also <a href="#source10">10</a>) to encrypt the randomly generated password (highlighted in green) with the randomly generated 128-bit AES key (highlighted in blue). Note that Oracle uses a fixed, hard-coded 16-byte initialization vector (IV), which is passed from <code>nzty_encrypt</code> to <code>aesni_cbc_encrypt</code> (highlighted in orange).</p>
+<p>The <code>aesni_cbc_encrypt</code> function writes the resulting ciphertext representing the obfuscated auto-login wallet password to the buffer pointed to by the <code>out</code> argument (highlighted in red). This 16-byte ciphertext corresponds to the same 16-byte sequence visible in the <code>cwallet.sso</code> file at offsets 29–44 in Listing 3 above.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>      -> nzty_encrypt: ?, ?, ?, buf=0x7ffdc63baef0, num=16, iv=0x7ffdc63baee0, ...
+         <span class="hl-orange">iv e: 0xc0 0x34 0xd8 0x31 0x1c 0x02 0xce 0xf8 0x51 0xf0 0x14 0x4b 0x81 0xed 0x4b 0xf2</span>
+
+         -> aesni_set_encrypt_key: userKey=0x7ffdc63baef0, bits=128, key=0x478d97d0
+            <span class="hl-blue-medium">uk e : 0x34 0x74 0x13 0xa4 0x50 0x54 0x22 0x2c 0x8e 0xf5 0x05 0xc5 0x11 0x27 0x32 0x15</span>
+         <- aesni_set_encrypt_key: 0x0 (0)
+
+         -> aesni_cbc_encrypt: in=0x7ffdc63bb004, out=0x7ffdc63baf91, length=16, key=0x478d97d0, 
+                               ivec=0x478d9730, enc=1
+            <span class="hl-green">in e : 0x40 0x2f 0x56 0x1f 0x63 0x2a 0x71 0x07 0x0e 0x29 0x21 0x69 0x39 0x26 0x3c 0x7f</span>
+            <span class="hl-orange">iv e : 0xc0 0x34 0xd8 0x31 0x1c 0x02 0xce 0xf8 0x51 0xf0 0x14 0x4b 0x81 0xed 0x4b 0xf2</span>
+            <span class="hl-red">out r: 0xd8 0x3e 0x85 0xb3 0xe6 0x0a 0xf4 0x1a 0xfc 0x7e 0x05 0xa7 0xb5 0xc9 0x99 0xe9</span>
+         <- aesni_cbc_encrypt
+
+      <- nzty_encrypt: 0x0 (0)
+
+   <- nzurcsh: 0x0 (0)
+<- nzurrf_wf_31: 0x0 (0)
+</code></pre>
+<figcaption>Listing 6: bpftrace output nzurrf_wf_rf_31.bt (part 3/4)</figcaption>
+</figure>
+<p>After obfuscating the auto-login password, the creation of a new auto-login wallet with the <code>ADMINISTER KEY MANAGEMENT</code> command shown in Listing 2 invokes the <code>nzurrf_rf_31</code> function, which deobfuscates the randomly generated password.</p>
+<p>The trace excerpt below shows that Oracle calls the OpenSSL low-level function <code>aesni_set_encrypt_key</code> to initialize the randomly generated 128-bit AES key (highlighted in blue), which is then passed to <code>aesni_cbc_encrypt</code> to decrypt the password (highlighted in red) using the fixed initialization vector (highlighted in orange). The deobfuscated password is stored in the buffer pointed to by <code>out</code>:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>-> nzurrf_rf_31
+   -> nzurcsc: ...
+      -> nzty_decrypt: ?, ?, ?, ?, ?, iv=0x7ffdc63baeb0, ...
+         <span class="hl-orange">iv e: 0xc0 0x34 0xd8 0x31 0x1c 0x02 0xce 0xf8 0x51 0xf0 0x14 0x4b 0x81 0xed 0x4b 0xf2</span>
+         -> aesni_set_encrypt_key: userKey=0x7ffdc63baec0, bits=128, key=0x478d97d0
+            <span class="hl-blue-medium">uk e : 0x34 0x74 0x13 0xa4 0x50 0x54 0x22 0x2c 0x8e 0xf5 0x05 0xc5 0x11 0x27 0x32 0x15</span>
+         <- aesni_set_encrypt_key: 0x0 (0)
+
+         -> aesni_cbc_encrypt: in=0x7f897de4ea19, out=0x7ffdc63baf38, length=16, key=0x478d97d0, 
+                               ivec=0x478d9730, enc=0
+            <span class="hl-red">in e : 0xd8 0x3e 0x85 0xb3 0xe6 0x0a 0xf4 0x1a 0xfc 0x7e 0x05 0xa7 0xb5 0xc9 0x99 0xe9</span>
+            <span class="hl-orange">iv e : 0xc0 0x34 0xd8 0x31 0x1c 0x02 0xce 0xf8 0x51 0xf0 0x14 0x4b 0x81 0xed 0x4b 0xf2</span>
+            <span class="hl-green">out r: 0x40 0x2f 0x56 0x1f 0x63 0x2a 0x71 0x07 0x0e 0x29 0x21 0x69 0x39 0x26 0x3c 0x7f</span>
+         <- aesni_cbc_encrypt
+      <- nzty_decrypt: 0x0 (0)
+   <- nzurcsc: 0x0 (0)
+<- nzurrf_rf_31: 0x0 (0)
+</code></pre>
+<figcaption>Listing 7: bpftrace output nzurrf_wf_rf_31.bt (part 4/4)</figcaption>
+</figure>
+<h3 id="auto-login-wallet-deobfuscation">Auto-Login Wallet Deobfuscation</h3>
+<p>This section walks through a practical test case illustrating how to deobfuscate the randomly generated SSO wallet password and extract the protected <code>ewallet.p12</code> contents from the <code>cwallet.sso</code> file.</p>
+<p>The test case demonstrates that anyone with access to the obfuscated <code>cwallet.sso</code> file can deobfuscate the wallet password and access the protected <code>ewallet.p12</code> contents, which contain the TDE master key. Simply put, this means that anyone with access to the <code>cwallet.sso</code> file can decrypt the encrypted data in your database!</p>
+<p>In summary, this section covers the following steps, which follow a similar approach to that described by Tjado Mäcke in <a href="#source3">3</a>.</p>
+<ol>
+<li>Extract the obfuscated random password from the <code>cwallet.sso</code> header and deobfuscate it.</li>
+<li>Extract the embedded <code>ewallet.p12</code> contents from the <code>cwallet.sso</code> file and save them as a new PKCS#12 file.</li>
+<li>Open and read the extracted PKCS#12 file using the deobfuscated password.</li>
+<li>Change the password of the extracted PKCS#12 file.</li>
+<li>Replace the original <code>ewallet.p12</code> file with the extracted PKCS#12 file to verify the deobfuscation and extraction process.</li>
+</ol>
+<p>We first create a new encrypted tablespace and a test table in it. If we can access the data in that table after replacing the original <code>ewallet.p12</code> file with the PKCS#12 file extracted from the <code>cwallet.sso</code> file, the test is successful. Note that I created the tablespace and test table in the cdb$root container to keep things simple.</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>-- Create new encrypted tablespace
+</span></span><span style="display:flex;"><span>SQL&gt; create tablespace ts_enc datafile &#39;+DATA&#39; size 64M encryption using &#39;AES256&#39; encrypt;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>-- Check encrypted tablespace
+</span></span><span style="display:flex;"><span>SQL&gt; select name, encryptionalg, encryptedts, status from v$tablespace t, v$encrypted_tablespaces e where t.ts# = e.ts# and t.name = &#39;TS_ENC&#39;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>NAME   ENCRYPT ENCRYPTEDTS STATUS
+</span></span><span style="display:flex;"><span>------ ------- ----------- ------
+</span></span><span style="display:flex;"><span>TS_ENC AES256  YES         NORMAL
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>-- Create new table in encrypted tablespace
+</span></span><span style="display:flex;"><span>SQL&gt; create table t_enc(txt varchar2(128)) tablespace ts_enc;
+</span></span><span style="display:flex;"><span>SQL&gt; insert into t_enc (txt) values(&#39;encryption test&#39;);
+</span></span><span style="display:flex;"><span>SQL&gt; commit;</span></span></code></pre></div>
+<figcaption>Listing 8: Creating a new encrypted tablespace and test table</figcaption>
+</figure>
+<p>The shell commands below show how to extract the <code>aes_key</code> and the obfuscated <code>password</code> from the <code>cwallet.sso</code> file and deobfuscate the <code>password</code> using the <code>aes_key</code> and the hard-coded initialization vector:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code># Set wallet root location
+WALLET_ROOT=/path/to/wallet_root
+
+# Initialization vector (this is a fixed value in 26ai)
+$ iv=c034d8311c02cef851f0144b81ed4bf2
+$ echo $iv
+<span class="hl-orange">c034d8311c02cef851f0144b81ed4bf2</span>
+
+# Read the aes key from the cwallet.sso header (offsets 13–28)
+$ key=$(od -An -tx1 -j 13 -N 16 $WALLET_ROOT/tde/cwallet.sso | tr -d ' \n')
+$ echo $key
+<span class="hl-blue-medium">347413a45054222c8ef505c511273215</span>
+
+# Read the obfuscated password from the cwallet.sso header (offset 29–44)
+$ cipher=$(od -An -tx1 -j 29 -N 16 $WALLET_ROOT/tde/cwallet.sso | tr -d ' \n')
+$ echo $cipher
+<span class="hl-red">d83e85b3e60af41afc7e05a7b5c999e9</span>
+
+# Deobfuscate and print the randomly generated cwallet.sso password 
+$ password=$(echo -n "$cipher" | perl -pe 's/([0-9a-f]{2})/chr(hex($1))/egi' | 
+             openssl enc -d -aes-128-cbc -nopad -K "$key" -iv "$iv"          | 
+             od -An -tx1 | tr -d ' \n')
+$ echo $password
+<span class="hl-green">402f561f632a71070e29216939263c7f</span>
+</code></pre>
+<figcaption>Listing 9: Manually deobfuscating the obfuscated auto-login wallet password</figcaption>
+</figure>
+<p>Next, we can extract the <code>ewallet.p12</code> contents from the <code>cwallet.sso</code> file and dump them to a file using the <code>dd</code> command shown in Listing 10 below:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span># Extract the encrypted ewallet.p12 contents from the cwallet.sso file (offset 45–end)
+</span></span><span style="display:flex;"><span>$ dd if=$WALLET_ROOT/tde/cwallet.sso of=$WALLET_ROOT/tde/extracted_ewallet.p12 bs=1 skip=45</span></span></code></pre></div>
+<figcaption>Listing 10: Extracting the ewallet.p12 contents from the cwallet.sso into a new PKCS#12 file</figcaption>
+</figure>
+<p>At this stage, the <code>extracted_ewallet.p12</code> file contains the original <code>ewallet.p12</code> contents. However, unlike the original file, its contents are protected by the randomly generated password we deobfuscated in Listing 9. We can therefore now access the contents of <code>extracted_ewallet.p12</code> using the deobfuscated password:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>$ openssl pkcs12                                   \
+</span></span><span style="display:flex;"><span>    -in $WALLET_ROOT/tde/extracted_ewallet.p12     \
+</span></span><span style="display:flex;"><span>    -nodes                                         \
+</span></span><span style="display:flex;"><span>    -passin pass:&#34;$(echo -n &#34;$password&#34;            |
+</span></span><span style="display:flex;"><span>     perl -pe &#39;s/([0-9a-f]{2})/chr(hex($1))/egi&#39;)&#34; 2&gt;/dev/null
+</span></span><span style="display:flex;"><span> 
+</span></span><span style="display:flex;"><span> Bag Attributes
+</span></span><span style="display:flex;"><span>    localKeyID: E6 B6 52 DD 00 00 00 04 00 00 00 00 00 00 00 01 00 00 00 00 00 00 00 01
+</span></span><span style="display:flex;"><span>Key Attributes: &lt;No Attributes&gt;
+</span></span><span style="display:flex;"><span>-----BEGIN PRIVATE KEY-----
+</span></span><span style="display:flex;"><span>MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC06zszppFaZoYK
+</span></span><span style="display:flex;"><span>86SiXt9Xcy4I4aFa59PB1beOJ6T2d/A51NmikHF5GJJB0AQFxvlbjb21qfqgL9aR
+</span></span><span style="display:flex;"><span>9xzEI9C13p9cJm5CJ9MaET+oJCObOe4DVEYUHxvFNUw3Tzijr2AsrMliCC6iI4qK
+</span></span><span style="display:flex;"><span>5bK7FdpnWsv/3KQWf0LUBTQJ5e246nrbph5e78jZqov2n+Z1Pka4xmzAV71XvIlz
+</span></span><span style="display:flex;"><span>YhlQE6eV01qlQmGUwUbLgfmm2dJUaIsnI9Drd9bGyoDda54gqZgDVgMP23OlIlVj
+</span></span><span style="display:flex;"><span>Pk86AK3+WILR/uksNIuO5sdojTH/yiybI2zM6Z/5kbyck98okagGfdzR1NdKpmcS
+</span></span><span style="display:flex;"><span>8mIB4DmvAgMBAAECggEAA66ByZRLLZwb1YnjFiF4yWPLp7HybFIpagQPtIc0ATFW
+</span></span><span style="display:flex;"><span>+dD4uNPYVfmHsxUo78vTyTws2c84DXMhGl6n/t8ntnvC9xzFGPg3Kzb3T6mkm9pl
+</span></span><span style="display:flex;"><span>mzsSI1iwDPxVAmR3UkVrCfMI324r3MV9DUSNYDyanDMp0Zl2MWBXm3mbodPvBC31
+</span></span><span style="display:flex;"><span>6i+geVZiTgLFio0JA5U3RgB/FKAzsywJU3jDIiWG9HYlEK3P35BpEJO9Q2bYXxMb
+</span></span><span style="display:flex;"><span>/HlI28jfmFEcISGMDriknGY+FmFqaK3c2f6L5yc7VSq5d45VRavmgLpO8KqPPyQZ
+</span></span><span style="display:flex;"><span>Q9Ar+HqOz4SViI8DMUcUviVjsORyuTzlKcYh+ZMa6QKBgQDrQvQfk2chnyDCxrbd
+</span></span><span style="display:flex;"><span>ifjR7cNFhYXcRzQk0XUOFwza94fQ4wNyyCpGS7JOdK7FPZRyqTLB+bycO1FY/tG4
+</span></span><span style="display:flex;"><span>BU9xYY3Odl+VypQIkzk91TDCrrTuBqC0ha6j4ap9oafm/ZWBzYB7jNzjoWXBdpb3
+</span></span><span style="display:flex;"><span>Y3z2wtPJ4zTEPAf0VakD0DMjSwKBgQDE3fMyPrt2E7/PdauQ1JOsGOzOlqWKKp/4
+</span></span><span style="display:flex;"><span>uNC18xfdEHzEyS3/vympGXly7UzxNSDtxEWlOrl+AuyPq1kcYLRN+VcdxAApdvHS
+</span></span><span style="display:flex;"><span>PyXIktrUxrPGhSbkekbpSJ/5nB9X3OaXwMGBFt7eHQnuhCGuEIeKMMOBwydISb/V
+</span></span><span style="display:flex;"><span>uOD+h7ggrQKBgQCytlGsCtU0/SRt0XXoJH8XOX40uZFOG+jIbzR0V540WASb8VcV
+</span></span><span style="display:flex;"><span>QmiarbXtU0XQH089KrqcD5HvPEA3UpsNJzuJ7YlDZTiHGTQKr4u0JNa9jOl0RySc
+</span></span><span style="display:flex;"><span>/VAEvdA9Tye0mL2RtQH82KyTXm9l3ygfFTxAVw97NVVIHDIOsWOKugWesQKBgQCO
+</span></span><span style="display:flex;"><span>E2QNEer2R0B5d4GO72t3mzFj0qK7eRGkTbUKatsBBoIU/t+8n3hwelsEzy9lMKOI
+</span></span><span style="display:flex;"><span>FMryeNQflfqloNKZwUy+rUDq0WYQhq/0vPAGtb1KK/DYR4YPBBQjDe+uE7cnENw2
+</span></span><span style="display:flex;"><span>Dr1X7WqAP9LIGQG5fmJjH9go0O+LovXYRynRZ59BrQKBgGWZozBscEGGisAMq/ee
+</span></span><span style="display:flex;"><span>cF9FktyiAvN9EzugO3nTxwhJnnRbECA+CwKkR2b5Q+QrCf09OFd8SzMb81flMKAC
+</span></span><span style="display:flex;"><span>AwX7HUcuo6SkWIuNxk85k1Ia6Dvmwdtk2BnkIjivAXhQMTNKxuZy1mrjcy8yYGA+
+</span></span><span style="display:flex;"><span>eMCE24gRj5mlbtAbKnTQwotR
+</span></span><span style="display:flex;"><span>-----END PRIVATE KEY-----</span></span></code></pre></div>
+<figcaption>Listing 11: Reading the extracted ewallet.p12 file using the deobfuscated password</figcaption>
+</figure>
+<p>Comparing the decrypted contents of the original and extracted <code>ewallet.p12</code> files shows that they are identical, as indicated by the matching SHA-1 digests:&quot;</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-text" data-lang="text"><span style="display:flex;"><span># Original ewallet.p12
+</span></span><span style="display:flex;"><span>$ original_password=p12345
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ openssl pkcs12                                   \
+</span></span><span style="display:flex;"><span>    -in $WALLET_ROOT/tde/ewallet.p12               \
+</span></span><span style="display:flex;"><span>    -nodes                                         \
+</span></span><span style="display:flex;"><span>    -passin pass:&#34;$original_password&#34;  2&gt;/dev/null |
+</span></span><span style="display:flex;"><span>  sha1sum
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>  4f53fa444c1f531371e863bccefa56ac658d8ded  - 
+</span></span><span style="display:flex;"><span>  
+</span></span><span style="display:flex;"><span># Extracted ewallet.p12
+</span></span><span style="display:flex;"><span>$ openssl pkcs12                                               \
+</span></span><span style="display:flex;"><span>    -in $WALLET_ROOT/tde/extracted_ewallet.p12                 \
+</span></span><span style="display:flex;"><span>    -nodes                                                     \
+</span></span><span style="display:flex;"><span>    -passin pass:&#34;$(echo -n &#34;$password&#34;                        |
+</span></span><span style="display:flex;"><span>     perl -pe &#39;s/([0-9a-f]{2})/chr(hex($1))/egi&#39;)&#34; 2&gt;/dev/null |
+</span></span><span style="display:flex;"><span>  sha1sum
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>4f53fa444c1f531371e863bccefa56ac658d8ded  -</span></span></code></pre></div>
+<figcaption>Listing 12: Comparing the original and extracted ewallet.p12 contents</figcaption>
+</figure>
+<p>Since the randomly generated auto-login wallet password may contain non-printable characters, we can change the password of the <code>extracted_ewallet.p12</code> file with the following <code>orapki</code> command:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>$ $ORACLE_HOME/bin/orapki wallet change_pwd       \
+</span></span><span style="display:flex;"><span>  -wallet $WALLET_ROOT/tde/extracted_ewallet.p12  \
+</span></span><span style="display:flex;"><span>  -oldpwd &#34;$(echo -n &#34;$password&#34;                  |
+</span></span><span style="display:flex;"><span>   perl -pe &#39;s/([0-9a-f]{2})/chr(hex($1))/egi&#39;)&#34;  \
+</span></span><span style="display:flex;"><span> -newpwd New_Pwd_1234
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Oracle PKI Tool Release 23.0.0.0.0 - Production
+</span></span><span style="display:flex;"><span>Version 23.0.0.0.0
+</span></span><span style="display:flex;"><span>Copyright (c) 2004, 2025, Oracle and/or its affiliates. All rights reserved.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Wallet password has been changed.</span></span></code></pre></div>
+<figcaption>Listing 13: Changing the password of the extracted ewallet.p12 file</figcaption>
+</figure>
+<p>To verify that the <code>extracted_ewallet.p12</code> contents can be used to access the encrypted data in the database, we move the existing <code>cwallet.sso</code> and <code>ewallet.p12</code> files aside and replace the original <code>ewallet.p12</code> with <code>extracted_ewallet.p12</code>:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>-- Shutdown the database instance
+</span></span><span style="display:flex;"><span>SQL&gt; shutdown immediate
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span># Rename the existing SSO wallet file (cwallet.sso)
+</span></span><span style="display:flex;"><span>$ mv $WALLET_ROOT/tde/cwallet.sso $WALLET_ROOT/tde/cwallet.sso.bak
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span># Rename the existing PKCS#12 file (ewallet.p12)
+</span></span><span style="display:flex;"><span>$ mv $WALLET_ROOT/tde/ewallet.p12 $WALLET_ROOT/tde/ewallet.p12.bak
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span># Rename the extracted PKCS#12 file (extracted_ewallet.p12)
+</span></span><span style="display:flex;"><span>$ mv $WALLET_ROOT/tde/extracted_ewallet.p12 $WALLET_ROOT/tde/ewallet.p12</span></span></code></pre></div>
+<figcaption>Listing 14: Replacing ewallet.p12 with extracted_ewallet.p12</figcaption>
+</figure>
+<p>We can then bounce the database instance and manually open the keystore using the extracted <code>ewallet.p12</code> file and its changed password:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>-- Startup the database instance
+</span></span><span style="display:flex;"><span>SQL&gt; startup
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>-- Open the extracted ewallet.p12 file using the new password
+</span></span><span style="display:flex;"><span>SQL&gt; administer key management set keystore open identified by New_Pwd_1234;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>-- Check the wallet status
+</span></span><span style="display:flex;"><span>SQL&gt; select con_id, wrl_type, wrl_parameter, status from v$encryption_wallet where con_id = 1
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span> CON_ID WRL_TYPE  WRL_PARAMETER         STATUS
+</span></span><span style="display:flex;"><span>------- --------- --------------------- --------
+</span></span><span style="display:flex;"><span>      1 FILE      /path/to/wallet/tde/  OPEN</span></span></code></pre></div>
+<figcaption>Listing 15: Opening the extracted ewallet.p12 keystore</figcaption>
+</figure>
+<p>If the wallet opens successfully, this is already a strong sign that everything is working as expected. The final test is to query the encrypted data in the database and verify that we get the expected result:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>-- Check the test data in the encrypted tablespace
+</span></span><span style="display:flex;"><span>SQL&gt; select * from t_enc;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>TXT
+</span></span><span style="display:flex;"><span>---------------
+</span></span><span style="display:flex;"><span>encryption test</span></span></code></pre></div>
+<figcaption>Listing 16: Accessing the encrypted data in the database</figcaption>
+</figure>
+<p>The shell script <a href="https://github.com/Christoph-Lutz/oracle/blob/main/shell/ssoDecrypt26ai.sh">ssoDecrypt26ai.sh</a> automates this process. It deobfuscates the random password protecting the auto-login wallet, extracts the <code>ewallet.p12</code> contents, and changes the password of the extracted wallet. To run the script, you only need to specify the path to the <code>wallet_root</code> directory and a new password for the extracted <code>ewallet.p12</code> file. For example:</p>
+<figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
+<pre class="rawcode"><code>$ ./ssoDecrypt26ai.sh /path/to/wallet_root New_Pwd_1234
+
+WALLET_ROOT   : /oraacfs/TCGNERD1_011
+<span class="hl-blue-medium">enc key       : 347413a45054222c8ef505c511273215</span>
+<span class="hl-orange">iv            : c034d8311c02cef851f0144b81ed4bf2</span>
+<span class="hl-red">obf password  : d83e85b3e60af41afc7e05a7b5c999e9</span>
+<span class="hl-green">password (hex): 402f561f632a71070e29216939263c7f</span>
+
+Extracted PKCS#12 contents (ewallet.p12) from cwallet.sso
+
+Changed extracted ewallet.p12 password
+
+Extracted PKCS#12 contents are (ewallet.p12):
+
+Bag Attributes
+    localKeyID: E6 B6 52 DD 00 00 00 04 00 00 00 00 00 00 00 01 00 00 00 00 00 00 00 01
+Key Attributes: <No Attributes>
+-----BEGIN PRIVATE KEY-----
+MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC06zszppFaZoYK
+86SiXt9Xcy4I4aFa59PB1beOJ6T2d/A51NmikHF5GJJB0AQFxvlbjb21qfqgL9aR
+9xzEI9C13p9cJm5CJ9MaET+oJCObOe4DVEYUHxvFNUw3Tzijr2AsrMliCC6iI4qK
+5bK7FdpnWsv/3KQWf0LUBTQJ5e246nrbph5e78jZqov2n+Z1Pka4xmzAV71XvIlz
+YhlQE6eV01qlQmGUwUbLgfmm2dJUaIsnI9Drd9bGyoDda54gqZgDVgMP23OlIlVj
+Pk86AK3+WILR/uksNIuO5sdojTH/yiybI2zM6Z/5kbyck98okagGfdzR1NdKpmcS
+8mIB4DmvAgMBAAECggEAA66ByZRLLZwb1YnjFiF4yWPLp7HybFIpagQPtIc0ATFW
++dD4uNPYVfmHsxUo78vTyTws2c84DXMhGl6n/t8ntnvC9xzFGPg3Kzb3T6mkm9pl
+mzsSI1iwDPxVAmR3UkVrCfMI324r3MV9DUSNYDyanDMp0Zl2MWBXm3mbodPvBC31
+6i+geVZiTgLFio0JA5U3RgB/FKAzsywJU3jDIiWG9HYlEK3P35BpEJO9Q2bYXxMb
+/HlI28jfmFEcISGMDriknGY+FmFqaK3c2f6L5yc7VSq5d45VRavmgLpO8KqPPyQZ
+Q9Ar+HqOz4SViI8DMUcUviVjsORyuTzlKcYh+ZMa6QKBgQDrQvQfk2chnyDCxrbd
+ifjR7cNFhYXcRzQk0XUOFwza94fQ4wNyyCpGS7JOdK7FPZRyqTLB+bycO1FY/tG4
+BU9xYY3Odl+VypQIkzk91TDCrrTuBqC0ha6j4ap9oafm/ZWBzYB7jNzjoWXBdpb3
+Y3z2wtPJ4zTEPAf0VakD0DMjSwKBgQDE3fMyPrt2E7/PdauQ1JOsGOzOlqWKKp/4
+uNC18xfdEHzEyS3/vympGXly7UzxNSDtxEWlOrl+AuyPq1kcYLRN+VcdxAApdvHS
+PyXIktrUxrPGhSbkekbpSJ/5nB9X3OaXwMGBFt7eHQnuhCGuEIeKMMOBwydISb/V
+uOD+h7ggrQKBgQCytlGsCtU0/SRt0XXoJH8XOX40uZFOG+jIbzR0V540WASb8VcV
+QmiarbXtU0XQH089KrqcD5HvPEA3UpsNJzuJ7YlDZTiHGTQKr4u0JNa9jOl0RySc
+/VAEvdA9Tye0mL2RtQH82KyTXm9l3ygfFTxAVw97NVVIHDIOsWOKugWesQKBgQCO
+E2QNEer2R0B5d4GO72t3mzFj0qK7eRGkTbUKatsBBoIU/t+8n3hwelsEzy9lMKOI
+FMryeNQflfqloNKZwUy+rUDq0WYQhq/0vPAGtb1KK/DYR4YPBBQjDe+uE7cnENw2
+Dr1X7WqAP9LIGQG5fmJjH9go0O+LovXYRynRZ59BrQKBgGWZozBscEGGisAMq/ee
+cF9FktyiAvN9EzugO3nTxwhJnnRbECA+CwKkR2b5Q+QrCf09OFd8SzMb81flMKAC
+AwX7HUcuo6SkWIuNxk85k1Ia6Dvmwdtk2BnkIjivAXhQMTNKxuZy1mrjcy8yYGA+
+eMCE24gRj5mlbtAbKnTQwotR
+-----END PRIVATE KEY-----
+</code></pre>
+<figcaption>Listing 17: Extracting the ewallet.p12 contents from a cwallet.sso file using ssoDecrypt26ai.sh</figcaption>
+</figure>
+<p>This post explained how Oracle 26ai protects auto-login wallets (<code>cwallet.sso</code>) with a randomly generated 16-byte password that is obfuscated using a random 128-bit AES key. Both the AES key and the obfuscated password are stored in the <code>cwallet.sso</code> file, followed by the original <code>ewallet.p12</code> contents. If you lose your wallet but still have the corresponding <code>cwallet.sso</code> file, you can reconstruct the original <code>ewallet.p12</code> file contents based on the process described above. The downside is that anyone with access to the <code>cwallet.sso</code> file can do the same. Therefore, access to this file should be protected very carefully.</p>
+<h2 id="references">References</h2>
+<ol>
+<li><a id="source1"></a><a href="/posts/2026-08-07-deobfuscating-oracle-credential-passwords/">Christoph Lutz, Deobfuscating Oracle Credential Passwords, 2026-08-07</a></li>
+<li><a id="source2"></a><a href="/posts/2026-08-12-deobfuscating-database-link-passwords-in-oracle-26ai/">Christoph Lutz, Deobfuscating Database Link Passwords in Oracle 26ai, 2026-08-12</a></li>
+<li><a id="source3"></a><a id="source4"></a><a href="https://github.com/tejado/ssoDecrypt">Tjado Mäcke, ssoDecrypt GitHub Repository, 2016-08-13</a></li>
+<li><a id="source4"></a><a href="https://loopback.org/kb/dba/how-to-crack-oracle-wallets_9469972/">Unknown Author, loopback.org Knowledge Base: How to crack Oracle Wallets, undated</a></li>
+<li><a id="source5"></a><a href="https://web.archive.org/web/20190824202438/https://blogs.loopback.org/2015/11/oracle-wallets-hacken/">Unknown Author, Oracle Wallets hacken, undated, archived by the Internet Archive’s Wayback Machine, 2019-08-24</a></li>
+<li><a id="source6"></a><a href="https://docs.oracle.com/en/database/oracle/oracle-database/26/dbseg/using-the-orapki-utility-to-manage-pki-elements.html#GUID-B24417A4-ED1D-428C-AB18-E3E7D32D9005">Oracle Corp., Oracle AI Database, Security Guide, 26ai, Appendix B: Managing Oracle AI Database Wallets and Certificates, G43025-06, July 2026</a></li>
+<li><a id="source7"></a><a href="https://docs.oracle.com/en/database/oracle/oracle-database/26/dbseg/release-changes.html#GUID-A4C844E6-C3C6-42D5-AB7D-862FE7A7ADB3">Oracle Corp., Oracle AI Database, Security Guide, 26ai, Changes in This Release for Oracle AI Database Security Guide, Improved and More Secure Local Auto-Login Wallets, G43025-06, July 2026</a></li>
+<li><a id="source8"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/nzurrf_wf_rf_31.bt">Christoph Lutz, oracle GitHub Repository, bpftrace Script nzurrf_wf_rf_31.bt</a></li>
+<li><a id="source9"></a> <a href="https://docs.openssl.org/3.1/man3/RAND_bytes/">OpenSSL Documentation RAND_bytes, OpenSSL 3.1, undated</a></li>
+<li><a id="source10"></a> <a href="https://man.openbsd.org/AES_encrypt.3">OpenBSD manual pages, AES_ENCRYPT(3), undated</a></li>
+<li><a id="source11"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/shell/ssoDecrypt26ai.sh">Christoph Lutz, oracle GitHub Repository, Shell Script ssoDecrypt26ai.sh</a></li>
+</ol>
+
+</main>
+
+  <footer>
+  
+  <hr/>
+  © <a href="https://www.0xChris.dev">Christoph Lutz</a> 2025 &ndash; 2026
+  
+  <hr/>
+  <script src="https://giscus.app/client.js"
+            data-repo="Christoph-Lutz/0xChris-Comments"
+            data-repo-id="R_kgDOQo-jcg"
+            data-category="Comments"
+            data-category-id="DIC_kwDOQo-jcs4Cz0NV"
+            data-mapping="pathname"
+            data-strict="1"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="light"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+        </script>
+    <script id="partials/analytics.html" 
+  data-goatcounter="https://0xchris.goatcounter.com/count"
+  async src="//gc.zgo.at/count.js"></script>
+
+  </footer>
+  </body>
+</html>
+
