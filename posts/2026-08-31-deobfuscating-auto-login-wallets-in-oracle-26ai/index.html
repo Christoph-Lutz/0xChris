@@ -364,7 +364,7 @@ $ echo -n "$password" | perl -pe 's/([0-9a-f]{2})/chr(hex($1))/egi' > /tmp/cwall
 </span></span><span style="display:flex;"><span>    -nodes                                     \
 </span></span><span style="display:flex;"><span>    -passin file:/tmp/cwallet.pwd 2&gt;/dev/null  |
 </span></span><span style="display:flex;"><span>  sha1sum
-</span></span><span style="display:flex;"><span>4f53fa444c1f531371e863bccefa56ac658d8ded  -</span></span></code></pre></div>
+</span></span><span style="display:flex; background-color:#dfdfdf"><span>4f53fa444c1f531371e863bccefa56ac658d8ded  -</span></span></code></pre></div>
 <figcaption>Listing 12: Comparing the original and extracted ewallet.p12 contents</figcaption>
 </figure>
 <p>Since the randomly generated auto-login wallet password may contain non-printable characters, we can change the password of the <code>extracted_ewallet.p12</code> file with the following <code>orapki</code> command:</p>
