@@ -294,6 +294,9 @@ $ password=$(echo -n "$cipher" | perl -pe 's/([0-9a-f]{2})/chr(hex($1))/egi' |
              od -An -tx1 | tr -d ' \n')
 $ echo $password
 <span class="hl-green">402f561f632a71070e29216939263c7f</span>
+
+# Write the hex password to a file to make it binary save
+$ echo -n "$password" | perl -pe 's/([0-9a-f]{2})/chr(hex($1))/egi' > /tmp/cwallet.pwd
 </code></pre>
 <figcaption>Listing 9: Manually deobfuscating the obfuscated auto-login wallet password</figcaption>
 </figure>
@@ -303,13 +306,12 @@ $ echo $password
 </span></span><span style="display:flex;"><span>$ dd if=$WALLET_ROOT/tde/cwallet.sso of=$WALLET_ROOT/tde/extracted_ewallet.p12 bs=1 skip=45</span></span></code></pre></div>
 <figcaption>Listing 10: Extracting the ewallet.p12 contents from the cwallet.sso into a new PKCS#12 file</figcaption>
 </figure>
-<p>At this stage, the <code>extracted_ewallet.p12</code> file contains the original <code>ewallet.p12</code> contents. However, unlike the original file, its contents are protected by the randomly generated password we deobfuscated in Listing 9. We can therefore now access the contents of <code>extracted_ewallet.p12</code> using the deobfuscated password:</p>
+<p>At this stage, the <code>extracted_ewallet.p12</code> file contains the original <code>ewallet.p12</code> contents. However, unlike the original file, its contents are protected by the randomly generated password we deobfuscated in Listing 9. We can therefore now access the contents of <code>extracted_ewallet.p12</code> using the deobfuscated password (note that the password is stored in a file to make it binary-safe):</p>
 <figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>$ openssl pkcs12                                   \
-</span></span><span style="display:flex;"><span>    -in $WALLET_ROOT/tde/extracted_ewallet.p12     \
-</span></span><span style="display:flex;"><span>    -nodes                                         \
-</span></span><span style="display:flex;"><span>    -passin pass:&#34;$(echo -n &#34;$password&#34;            |
-</span></span><span style="display:flex;"><span>     perl -pe &#39;s/([0-9a-f]{2})/chr(hex($1))/egi&#39;)&#34; 2&gt;/dev/null
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>$ openssl pkcs12                              \
+</span></span><span style="display:flex;"><span>    -in $WALLET_ROOT/tde/extracted_ewallet.p12 \
+</span></span><span style="display:flex;"><span>    -nodes                                     \
+</span></span><span style="display:flex;"><span>    -passin file:/tmp/cwallet.pwd 2&gt;/dev/null
 </span></span><span style="display:flex;"><span> 
 </span></span><span style="display:flex;"><span> Bag Attributes
 </span></span><span style="display:flex;"><span>    localKeyID: E6 B6 52 DD 00 00 00 04 00 00 00 00 00 00 00 01 00 00 00 00 00 00 00 01
@@ -352,27 +354,25 @@ $ echo $password
 </span></span><span style="display:flex;"><span>$ openssl pkcs12                                   \
 </span></span><span style="display:flex;"><span>    -in $WALLET_ROOT/tde/ewallet.p12               \
 </span></span><span style="display:flex;"><span>    -nodes                                         \
-</span></span><span style="display:flex;"><span>    -passin pass:&#34;$original_password&#34;  2&gt;/dev/null |
+</span></span><span style="display:flex;"><span>    -passin &#34;pass:$original_password&#34;  2&gt;/dev/null |
 </span></span><span style="display:flex;"><span>  sha1sum
 </span></span><span style="display:flex; background-color:#dfdfdf"><span>  4f53fa444c1f531371e863bccefa56ac658d8ded  - 
 </span></span><span style="display:flex;"><span>  
 </span></span><span style="display:flex;"><span># Extracted ewallet.p12
-</span></span><span style="display:flex;"><span>$ openssl pkcs12                                               \
-</span></span><span style="display:flex;"><span>    -in $WALLET_ROOT/tde/extracted_ewallet.p12                 \
-</span></span><span style="display:flex;"><span>    -nodes                                                     \
-</span></span><span style="display:flex;"><span>    -passin pass:&#34;$(echo -n &#34;$password&#34;                        |
-</span></span><span style="display:flex;"><span>     perl -pe &#39;s/([0-9a-f]{2})/chr(hex($1))/egi&#39;)&#34; 2&gt;/dev/null |
+</span></span><span style="display:flex;"><span>openssl pkcs12                               \
+</span></span><span style="display:flex;"><span>    -in $WALLET_ROOT/tde/extracted_ewallet.p12 \
+</span></span><span style="display:flex;"><span>    -nodes                                     \
+</span></span><span style="display:flex;"><span>    -passin file:/tmp/cwallet.pwd 2&gt;/dev/null  |
 </span></span><span style="display:flex;"><span>  sha1sum
-</span></span><span style="display:flex; background-color:#dfdfdf"><span>4f53fa444c1f531371e863bccefa56ac658d8ded  -</span></span></code></pre></div>
+</span></span><span style="display:flex;"><span>4f53fa444c1f531371e863bccefa56ac658d8ded  -</span></span></code></pre></div>
 <figcaption>Listing 12: Comparing the original and extracted ewallet.p12 contents</figcaption>
 </figure>
 <p>Since the randomly generated auto-login wallet password may contain non-printable characters, we can change the password of the <code>extracted_ewallet.p12</code> file with the following <code>orapki</code> command:</p>
 <figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
-<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>$ $ORACLE_HOME/bin/orapki wallet change_pwd       \
-</span></span><span style="display:flex;"><span>  -wallet $WALLET_ROOT/tde/extracted_ewallet.p12  \
-</span></span><span style="display:flex;"><span>  -oldpwd &#34;$(echo -n &#34;$password&#34;                  |
-</span></span><span style="display:flex;"><span>   perl -pe &#39;s/([0-9a-f]{2})/chr(hex($1))/egi&#39;)&#34;  \
-</span></span><span style="display:flex;"><span> -newpwd New_Pwd_1234
+<div class="highlight"><pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>$ORACLE_HOME/bin/orapki wallet change_pwd        \
+</span></span><span style="display:flex;"><span>    -wallet $WALLET_ROOT/tde/extracted_ewallet.p12 \
+</span></span><span style="display:flex;"><span>    -oldpwd &#34;$(cat /tmp/cwallet.pwd)&#34;              \
+</span></span><span style="display:flex;"><span>    -newpwd New_Pwd_1234
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>Oracle PKI Tool Release 23.0.0.0.0 - Production
 </span></span><span style="display:flex;"><span>Version 23.0.0.0.0
