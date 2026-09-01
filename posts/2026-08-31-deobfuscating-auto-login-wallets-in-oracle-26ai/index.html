@@ -295,7 +295,7 @@ $ password=$(echo -n "$cipher" | perl -pe 's/([0-9a-f]{2})/chr(hex($1))/egi' |
 $ echo $password
 <span class="hl-green">402f561f632a71070e29216939263c7f</span>
 
-# Write the hex password to a file to make it binary save
+# Write the hex password to a file to make it binary-safe
 $ echo -n "$password" | perl -pe 's/([0-9a-f]{2})/chr(hex($1))/egi' > /tmp/cwallet.pwd
 </code></pre>
 <figcaption>Listing 9: Manually deobfuscating the obfuscated auto-login wallet password</figcaption>
