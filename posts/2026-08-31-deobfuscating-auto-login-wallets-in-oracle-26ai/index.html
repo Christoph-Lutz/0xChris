@@ -283,7 +283,7 @@ $ key=$(od -An -tx1 -j 13 -N 16 $WALLET_ROOT/tde/cwallet.sso | tr -d ' \n')
 $ echo $key
 <span class="hl-blue-medium">347413a45054222c8ef505c511273215</span>
 
-# Read the obfuscated password from the cwallet.sso header (offset 29–44)
+# Read the obfuscated password from the cwallet.sso header (offsets 29–44)
 $ cipher=$(od -An -tx1 -j 29 -N 16 $WALLET_ROOT/tde/cwallet.sso | tr -d ' \n')
 $ echo $cipher
 <span class="hl-red">d83e85b3e60af41afc7e05a7b5c999e9</span>
