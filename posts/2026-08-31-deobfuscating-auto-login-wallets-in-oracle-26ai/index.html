@@ -405,7 +405,7 @@ $ echo $password
 </span></span><span style="display:flex;"><span>SQL&gt; administer key management set keystore open identified by New_Pwd_1234;
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>-- Check the wallet status
-</span></span><span style="display:flex;"><span>SQL&gt; select con_id, wrl_type, wrl_parameter, status from v$encryption_wallet where con_id = 1
+</span></span><span style="display:flex;"><span>SQL&gt; select con_id, wrl_type, wrl_parameter, status from v$encryption_wallet where con_id = 1;
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span> CON_ID WRL_TYPE  WRL_PARAMETER         STATUS
 </span></span><span style="display:flex;"><span>------- --------- --------------------- --------
@@ -426,7 +426,7 @@ $ echo $password
 <figure style="display:block; width:100%; margin:0; padding:0; box-sizing:border-box;">
 <pre class="rawcode"><code>$ ./ssoDecrypt26ai.sh /path/to/wallet_root New_Pwd_1234
 
-WALLET_ROOT   : /oraacfs/TCGNERD1_011
+WALLET_ROOT   : /path/to/wallet_root
 <span class="hl-blue-medium">enc key       : 347413a45054222c8ef505c511273215</span>
 <span class="hl-orange">iv            : c034d8311c02cef851f0144b81ed4bf2</span>
 <span class="hl-red">obf password  : d83e85b3e60af41afc7e05a7b5c999e9</span>

@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Encryption | 0xChris</title>
+    <title>Deobfuscating Local Auto-Login Wallets in Oracle 26ai | 0xChris</title>
 
     
     <link rel="stylesheet" href="/css/style.css" />
@@ -13,12 +13,13 @@
     
     
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Encryption">
+  <meta name="twitter:title" content="Deobfuscating Local Auto-Login Wallets in Oracle 26ai">
+  <meta name="twitter:description" content="Deobfuscating Local Auto-Login Wallets in Oracle 26ai">
 
 
-<meta property="og:title" content="Encryption">
-<meta property="og:description" content="">
-<meta property="og:url" content="https://www.0xChris.dev/categories/encryption/">
+<meta property="og:title" content="Deobfuscating Local Auto-Login Wallets in Oracle 26ai">
+<meta property="og:description" content="Deobfuscating Local Auto-Login Wallets in Oracle 26ai">
+<meta property="og:url" content="https://www.0xChris.dev/posts/2026-09-01-deobfuscating-local-auto-login-wallets-in-oracle-26ai/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="0xChris">
 
@@ -97,38 +98,32 @@
     </nav>
   </body>
 </html>
+<div class="article-meta">
+<h1><span class="title">Deobfuscating Local Auto-Login Wallets in Oracle 26ai</span></h1>
 
+<h2 class="date">2026/09/01</h2>
+</div>
 
-<h1>Encryption</h1>
+<main>
+<p>The previous <a href="/posts/2026-08-31-deobfuscating-auto-login-wallets-in-oracle-26ai/">post</a> explained how to deobfuscate auto-login wallets in Oracle 26ai and recover the contents of the <code>ewallet.p12</code> file from a <code>cwallet.sso</code> file (see also <a href="#source1">1</a>). This post now takes a closer look at how Oracle 26ai obfuscates local auto-login wallets and what has changed compared with earlier releases.</p>
+<p>The Oracle 26ai <a href="https://docs.oracle.com/en/database/oracle/oracle-database/26/dbseg/release-changes.html#GUID-A4C844E6-C3C6-42D5-AB7D-862FE7A7ADB3">Security Guide</a> states that local auto-login wallets have been made more secure (see also <a href="https://docs.oracle.com/en/database/oracle/oracle-database/26/dbseg/release-changes.html#GUID-A4C844E6-C3C6-42D5-AB7D-862FE7A7ADB3">2</a>), but provides no details on what this additional security consists of:</p>
+<blockquote class="note">
+Starting with Oracle AI Database 26ai, newly created local auto-login wallets (or pre-release 26ai wallets that have been updated for release 26ai) are more secure.
+<p>A local auto-login wallet is now more tightly bound to the host where it was created or modified. The local auto-login process is also more secure, does not require additional deployment requirements, and does not require root access.</p>
+<p>Local auto-login wallets are more secure now and support both bare metal and virtual environments.</p>
+</blockquote>
+<p>Historically, local auto-login wallets (LSSO wallets) have used an additional obfuscation key derived from the username and hostname on which they were created (see also <a href="#source3">3</a>), but, as we will see shortly, this has changed, and Oracle 26ai now uses an additional data source to derive the obfuscation key.</p>
+<h3 id="local-auto-login-wallet-obfuscation">Local Auto-Login Wallet Obfuscation</h3>
+<h2 id="references">References</h2>
+<ol>
+<li><a id="source1"></a><a href="/posts/2026-08-31-deobfuscating-auto-login-wallets-in-oracle-26ai/">Christoph Lutz, Deobfuscating Auto-Login Wallets in Oracle 26ai, 2026-08-31</a></li>
+<li><a id="source7"></a><a href="https://docs.oracle.com/en/database/oracle/oracle-database/26/dbseg/release-changes.html#GUID-A4C844E6-C3C6-42D5-AB7D-862FE7A7ADB3">Oracle Corp., Oracle AI Database, Security Guide, 26ai, Changes in This Release for Oracle AI Database Security Guide, Improved and More Secure Local Auto-Login Wallets, G43025-06, July 2026</a></li>
+<li><a id="source3"></a><a id="source4"></a><a href="https://github.com/tejado/ssoDecrypt">Tjado Mäcke, ssoDecrypt GitHub Repository, 2016-08-13</a></li>
+<li><a id="source1"></a><a href="/posts/2026-08-07-deobfuscating-oracle-credential-passwords/">Christoph Lutz, Deobfuscating Oracle Credential Passwords, 2026-08-07</a></li>
+<li><a id="source2"></a><a href="/posts/2026-08-12-deobfuscating-database-link-passwords-in-oracle-26ai/">Christoph Lutz, Deobfuscating Database Link Passwords in Oracle 26ai, 2026-08-12</a></li>
+</ol>
 
-
-
-
-<ul>
-  
-  
-  
-  <li>
-    
-    <a href="/posts/2026-09-01-deobfuscating-local-auto-login-wallets-in-oracle-26ai/">Deobfuscating Local Auto-Login Wallets in Oracle 26ai</a>
-  </li>
-  
-  <li>
-    
-    <a href="/posts/2026-08-31-deobfuscating-auto-login-wallets-in-oracle-26ai/">Deobfuscating Auto-Login Wallets in Oracle 26ai</a>
-  </li>
-  
-  <li>
-    
-    <a href="/posts/2026-08-12-deobfuscating-database-link-passwords-in-oracle-26ai/">Deobfuscating Database Link Passwords in Oracle 26ai</a>
-  </li>
-  
-  <li>
-    
-    <a href="/posts/2026-08-07-deobfuscating-oracle-credential-passwords/">Deobfuscating Oracle Credential Passwords</a>
-  </li>
-  
-</ul>
+</main>
 
   <footer>
   
@@ -136,7 +131,21 @@
   © <a href="https://www.0xChris.dev">Christoph Lutz</a> 2025 &ndash; 2026
   
   <hr/>
-  
+  <script src="https://giscus.app/client.js"
+            data-repo="Christoph-Lutz/0xChris-Comments"
+            data-repo-id="R_kgDOQo-jcg"
+            data-category="Comments"
+            data-category-id="DIC_kwDOQo-jcs4Cz0NV"
+            data-mapping="pathname"
+            data-strict="1"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="light"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+        </script>
     <script id="partials/analytics.html" 
   data-goatcounter="https://0xchris.goatcounter.com/count"
   async src="//gc.zgo.at/count.js"></script>
@@ -144,3 +153,4 @@
   </footer>
   </body>
 </html>
+
