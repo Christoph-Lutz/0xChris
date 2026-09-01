@@ -4,13 +4,6 @@
     <link>https://www.0xChris.dev/</link>
     <description>0xChris updates</description>
     <atom:link href="https://www.0xChris.dev/tags/encryption/" rel="self" type="application/rss+xml"/><item>
-      <title>Deobfuscating Local Auto-Login Wallets in Oracle 26ai</title>
-      <link>https://www.0xChris.dev/posts/2026-09-01-deobfuscating-local-auto-login-wallets-in-oracle-26ai/</link>
-      <pubDate>Tue, 01 Sep 2026 00:00:00 UTC</pubDate>
-      <guid>https://www.0xChris.dev/posts/2026-09-01-deobfuscating-local-auto-login-wallets-in-oracle-26ai/</guid>
-      <description>&lt;p&gt;The previous &lt;a href=&#34;https://www.0xChris.dev/posts/2026-08-31-deobfuscating-auto-login-wallets-in-oracle-26ai/&#34;&gt;post&lt;/a&gt; explained how to deobfuscate auto-login wallets in Oracle 26ai and recover the contents of the &lt;code&gt;ewallet.p12&lt;/code&gt; file from a &lt;code&gt;cwallet.sso&lt;/code&gt; file (see also &lt;a href=&#34;#source1&#34;&gt;1&lt;/a&gt;). This post now takes a closer look at how Oracle 26ai obfuscates local auto-login wallets and what has changed compared with earlier releases.&lt;/p&gt;
-&lt;p&gt;The Oracle 26ai &lt;a href=&#34;https://docs.oracle.com/en/database/oracle/oracle-database/26/dbseg/release-changes.html#GUID-A4C844E6-C3C6-42D5-AB7D-862FE7A7ADB3&#34;&gt;Security Guide&lt;/a&gt; states that local auto-login wallets have been made more secure (see also &lt;a href=&#34;https://docs.oracle.com/en/database/oracle/oracle-database/26/dbseg/release-changes.html#GUID-A4C844E6-C3C6-42D5-AB7D-862FE7A7ADB3&#34;&gt;2&lt;/a&gt;), but provides no details on what this additional security consists of:&lt;/p&gt;</description>
-    </item><item>
       <title>Deobfuscating Auto-Login Wallets in Oracle 26ai</title>
       <link>https://www.0xChris.dev/posts/2026-08-31-deobfuscating-auto-login-wallets-in-oracle-26ai/</link>
       <pubDate>Mon, 31 Aug 2026 00:00:00 UTC</pubDate>
