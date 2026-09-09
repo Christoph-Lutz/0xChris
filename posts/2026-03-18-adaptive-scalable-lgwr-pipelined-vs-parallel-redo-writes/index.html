@@ -266,10 +266,12 @@ Interestingly, Oracle provides no instrumentation to indicate whether a redo wri
 </figure>
 <p>The example output above shows that the majority of redo writes at 20:27:02 were pipelined: 56 redo writes used a single worker (line 5), while 16 writes used two workers (line 6) and one write used three workers (line 7).</p>
 <p>If you want to try the script yourself, note that it accesses raw memory addresses in the SGA, which are not stable and may change across Oracle RUs. Therefore, if you are using an Oracle version other than 19.26, it may not function correctly.</p>
-<h3 id="references">References</h3>
-<p>[1] <a href="https://fritshoogland.wordpress.com/2015/09/29/how-the-log-writer-and-foreground-processes-work-together-on-commit/">Frits Hoogland, How the log writer and foreground processes work together on commit, 2015-09-29</a><br>
-[2] <a href="https://fritshoogland.wordpress.com/2018/02/20/a-look-into-into-oracle-redo-part-4-the-log-writer-null-write/">Frits Hoogland, A look into into Oracle redo, part 4: the log writer null write, 2018-02-02</a><br>
-[3] <a href="/posts/2026-03-03-adaptive-scalable-lgwr-mode-switch-threshold-single-scalable/">Christoph Lutz, Adaptive Scalable LGWR Mode Switch Threshold Single-&gt;Scalable, 2026-03-03</a></p>
+<h2 id="references">References</h2>
+<ol>
+<li><a href="https://fritshoogland.wordpress.com/2015/09/29/how-the-log-writer-and-foreground-processes-work-together-on-commit/">Frits Hoogland, How the log writer and foreground processes work together on commit, 2015-09-29</a></li>
+<li><a href="https://fritshoogland.wordpress.com/2018/02/20/a-look-into-into-oracle-redo-part-4-the-log-writer-null-write/">Frits Hoogland, A look into into Oracle redo, part 4: the log writer null write, 2018-02-02</a></li>
+<li><a href="/posts/2026-03-03-adaptive-scalable-lgwr-mode-switch-threshold-single-scalable/">Christoph Lutz, Adaptive Scalable LGWR Mode Switch Threshold Single-&gt;Scalable, 2026-03-03</a></li>
+</ol>
 
 </main>
 

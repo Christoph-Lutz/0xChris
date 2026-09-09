@@ -230,9 +230,11 @@
 <li><code>max_log_write_parallelism &gt; 1 ?</code>  → <code>redorate &gt; switch * 200/100 * 1</code> →  <code>redorate &gt; switch * 2</code></li>
 </ul>
 <p>This means, with the Exadata PMEM log enabled and <code>max_log_write_parallelism</code> set to 1, the average redo rate must be 4 times greater than the <code>switch</code> threshold before LGWR transitions from single to scalable mode.</p>
-<h3 id="references">References</h3>
-<p>[1] <a href="https://fritshoogland.wordpress.com/2018/04/30/a-look-into-oracle-redo-part-11-log-writer-worker-processes/">Frits Hoogland, Frits Hoogland, A look into oracle redo, part 11: log writer worker processes, 2018-04-30</a><br>
-[2] <a href="https://tanelpoder.com/posts/testing-oracles-use-of-optane-persistent-memory-log-file-sync/">Tanel Poder, Testing Oracle&rsquo;s Use of Optane Persistent Memory, Part 2 - Fast Log File Sync Waits, 2022-07-15</a></p>
+<h2 id="references">References</h2>
+<ol>
+<li><a href="https://fritshoogland.wordpress.com/2018/04/30/a-look-into-oracle-redo-part-11-log-writer-worker-processes/">Frits Hoogland, Frits Hoogland, A look into oracle redo, part 11: log writer worker processes, 2018-04-30</a></li>
+<li><a href="https://tanelpoder.com/posts/testing-oracles-use-of-optane-persistent-memory-log-file-sync/">Tanel Poder, Testing Oracle&rsquo;s Use of Optane Persistent Memory, Part 2 - Fast Log File Sync Waits, 2022-07-15</a></li>
+</ol>
 
 </main>
 

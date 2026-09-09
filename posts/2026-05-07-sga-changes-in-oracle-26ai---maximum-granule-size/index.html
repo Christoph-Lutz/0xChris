@@ -520,15 +520,17 @@
 <p>Why did Oracle change the maximum default granule size in 26ai and decide to cap it at 64M by default? Unfortunately, we don&rsquo;t know, because this is an undocumented internal change, so we can only speculate. I suspect part of the motivation relates to this <a href="/posts/2026-05-01-sga-changes-in-oracle-26ai---subpools-and-durations/">SGA change in Oracle 26ai</a> (see source <a href="#source9">9</a>) where, depending on system configuration, the number of subpools and durations may increase compared to earlier versions. Since each of these smaller units requires at least one granule, a smaller maximum granule size could help reduce memory overhead.</p>
 <p>Another reason may be that the old maximum size of 512M turned out to be too large and inflexible for reshuffling memory across different memory pools. So, this change may aim to make reshuffling operations more gradual and less intrusive, as eight smaller 64M reallocations may be less disruptive than one large 512M reallocation.</p>
 <h2 id="references">References</h2>
-<p>[1] <a id="source1"></a><a href="https://www.soocs.de/public/talk/161115_DOAG2016_Hacking_Oracles_Memory_About_Internals_Troubleshooting_PDF.pdf">Stefan Koehler, Hacking Oracle&rsquo;s Memory - About Internals &amp; Troubleshooting, DOAG Conference Paper, November 15-16, 2016</a><br>
-[2] <a id="source2"></a><a href="https://www.amazon.com/Oracle-Core-Essential-Internals-Developers/dp/1430239549">Jonathan Lewis, Chapter 5: Caches and Copies, Oracle Core: Essential Internals for DBAs and Developers, Apress, 2011</a><br>
-[3] <a id="source3"></a><a href="https://www.amazon.com/Oracle-Core-Essential-Internals-Developers/dp/1430239549">Jonathan Lewis, Chapter 7: Parsing and Optimizing, Oracle Core: Essential Internals for DBAs and Developers, Apress, 2011</a><br>
-[4]  <a id="source4"></a><a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=947152">My Oracle Support, How To Determine Granule Size, KB136956, 2025-11-30</a><br>
-[5] <a id="source5"></a><a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=2658593">My Oracle Support, Granule Size Change in Oracle Release 12.2, 18c, and 19c (KB119333), 2025-11-28</a><br>
-[6] <a id="source6"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/C/sga-sz-gran-sz-mapping.c">Christoph Lutz, oracle GitHub Repository, C Program sga-sz-gran-sz-mapping.c</a><br>
-[7] <a id="source7"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/ksmg_max_def_gran_size_chk.bt">Christoph Lutz, oracle GitHub Repository, bpftrace Script ksmg_max_def_gran_size_chk.bt</a><br>
-[8] <a id="source8"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/ksmglgchk.bt">Christoph Lutz, oracle GitHub Repository, bpftrace Script ksmglgchk.bt</a><br>
-[9] <a id="source9"></a><a href="/posts/2026-05-01-sga-changes-in-oracle-26ai---subpools-and-durations/">Christoph Lutz, SGA Changes in Oracle 26ai - Subpools and Durations, 2026-05-01</a></p>
+<ol>
+<li><a id="source1"></a><a href="https://www.soocs.de/public/talk/161115_DOAG2016_Hacking_Oracles_Memory_About_Internals_Troubleshooting_PDF.pdf">Stefan Koehler, Hacking Oracle&rsquo;s Memory - About Internals &amp; Troubleshooting, DOAG Conference Paper, November 15-16, 2016</a></li>
+<li><a id="source2"></a><a href="https://www.amazon.com/Oracle-Core-Essential-Internals-Developers/dp/1430239549">Jonathan Lewis, Chapter 5: Caches and Copies, Oracle Core: Essential Internals for DBAs and Developers, Apress, 2011</a></li>
+<li><a id="source3"></a><a href="https://www.amazon.com/Oracle-Core-Essential-Internals-Developers/dp/1430239549">Jonathan Lewis, Chapter 7: Parsing and Optimizing, Oracle Core: Essential Internals for DBAs and Developers, Apress, 2011</a></li>
+<li><a id="source4"></a><a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=947152">My Oracle Support, How To Determine Granule Size, KB136956, 2025-11-30</a></li>
+<li><a id="source5"></a><a href="https://support.oracle.com/ic/builder/rt/customer_portal/live/webApps/customer-portal/?anchorId=&amp;kmContentId=2658593">My Oracle Support, Granule Size Change in Oracle Release 12.2, 18c, and 19c (KB119333), 2025-11-28</a></li>
+<li><a id="source6"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/C/sga-sz-gran-sz-mapping.c">Christoph Lutz, oracle GitHub Repository, C Program sga-sz-gran-sz-mapping.c</a></li>
+<li><a id="source7"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/ksmg_max_def_gran_size_chk.bt">Christoph Lutz, oracle GitHub Repository, bpftrace Script ksmg_max_def_gran_size_chk.bt</a></li>
+<li><a id="source8"></a><a href="https://github.com/Christoph-Lutz/oracle/blob/main/bpftrace/ksmglgchk.bt">Christoph Lutz, oracle GitHub Repository, bpftrace Script ksmglgchk.bt</a></li>
+<li><a id="source9"></a><a href="/posts/2026-05-01-sga-changes-in-oracle-26ai---subpools-and-durations/">Christoph Lutz, SGA Changes in Oracle 26ai - Subpools and Durations, 2026-05-01</a></li>
+</ol>
 
 </main>
 

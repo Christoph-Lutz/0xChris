@@ -430,10 +430,12 @@
 </figure>
 <p>Since the index number corresponds to the element position in both arrays, it can be used as a direct mapping key to relate entries in <code>kqfviw</code> to their corresponding view definitions in <code>kqfvip</code>. To locate a view by name, a simple linear scan over the <code>kqfviw</code> array can be performed: each element is inspected and the view name pointer at offset <code>+0x8</code> is compared against the target name. Once a match is found, the current index position is reused to access the corresponding entry in <code>kqfvip</code>, thereby retrieving the associated view definition — this is precisely the approach used in the script <a href="https://github.com/Christoph-Lutz/oracle/blob/main/gdb/kqfvi.sh">kqfvi.sh</a> does.</p>
 <h2 id="references">References</h2>
-<p>[1] <a id="source1"></a><a href="https://docs.oracle.com/en/database/oracle/oracle-database/26/refrn/datatype-limits.html#GUID-963C79C9-9303-49FE-8F2D-C8AAF04D3095">Oracle Corp., Oracle AI Database, Database Reference, 26ai, A.1 Datatype Limits, G43716-07, April 2026</a><br>
-[2] <a id="source2"></a><a href="https://jonathanlewis.wordpress.com/2022/03/21/v_fixed_view_definition/">Jonathan Lewis, v$fixed_view_definition, 2022-03-21</a><br>
-[3] <a id="source3"></a><a href="https://jonathanlewis.wordpress.com/2022/03/21/v_fixed_view_definition/">Mikhail Velikikh, Comment #3 on &ldquo;v$fixed_view_definition&rdquo;, 2022-03-28</a><br>
-[4] <a id="source4"></a> <a href="https://github.com/Christoph-Lutz/oracle/blob/main/gdb/kqfvi.sh">Christoph Lutz, oracle GitHub Repository, Script kqfvi.sh</a></p>
+<ol>
+<li><a id="source1"></a><a href="https://docs.oracle.com/en/database/oracle/oracle-database/26/refrn/datatype-limits.html#GUID-963C79C9-9303-49FE-8F2D-C8AAF04D3095">Oracle Corp., Oracle AI Database, Database Reference, 26ai, A.1 Datatype Limits, G43716-07, April 2026</a></li>
+<li><a id="source2"></a><a href="https://jonathanlewis.wordpress.com/2022/03/21/v_fixed_view_definition/">Jonathan Lewis, v$fixed_view_definition, 2022-03-21</a></li>
+<li><a id="source3"></a><a href="https://jonathanlewis.wordpress.com/2022/03/21/v_fixed_view_definition/">Mikhail Velikikh, Comment #3 on &ldquo;v$fixed_view_definition&rdquo;, 2022-03-28</a></li>
+<li><a id="source4"></a> <a href="https://github.com/Christoph-Lutz/oracle/blob/main/gdb/kqfvi.sh">Christoph Lutz, oracle GitHub Repository, Script kqfvi.sh</a></li>
+</ol>
 
 </main>
 
